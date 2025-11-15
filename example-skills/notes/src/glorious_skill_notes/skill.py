@@ -1,5 +1,6 @@
 """Notes skill - persistent notes with full-text search."""
 
+import json
 from typing import Any
 
 import typer
@@ -140,25 +141,31 @@ def list(limit: int = 10) -> None:
 
 
 @app.command()
-def search(query: str) -> None:
+def search(query: str, json_output: bool = typer.Option(False, "--json", help="Output complete notes as JSON")) -> None:
     """Search notes using full-text search."""
     try:
         results = search_notes(query)
 
         if not results:
-            console.print("[yellow]No results found.[/yellow]")
+            if json_output:
+                console.print(json.dumps([]))
+            else:
+                console.print("[yellow]No results found.[/yellow]")
             return
 
-        table = Table(title=f"Search Results for '{query}'")
-        table.add_column("ID", style="cyan")
-        table.add_column("Content", style="white")
-        table.add_column("Tags", style="yellow")
+        if json_output:
+            console.print(json.dumps(results, indent=2))
+        else:
+            table = Table(title=f"Search Results for '{query}'")
+            table.add_column("ID", style="cyan")
+            table.add_column("Content", style="white")
+            table.add_column("Tags", style="yellow")
 
-        for note in results:
-            content = note["content"][:50] + "..." if len(note["content"]) > 50 else note["content"]
-            table.add_row(str(note["id"]), content, note["tags"] or "-")
+            for note in results:
+                content = note["content"][:50] + "..." if len(note["content"]) > 50 else note["content"]
+                table.add_row(str(note["id"]), content, note["tags"] or "-")
 
-        console.print(table)
+            console.print(table)
     except ValidationException as e:
         console.print(f"[red]{e.message}[/red]")
 
