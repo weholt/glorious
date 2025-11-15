@@ -4,23 +4,6 @@
 
 This document describes all available skills/tools in this agent workspace.
 
-## prompts
-
-**Version**: 0.1.0
-
-**Description**: Prompt template management and versioning
-
-**Commands**:
-
-- `register`: Register a new prompt template.
-- `list`: List all prompt templates.
-- `render`: Render a prompt template with variables.
-- `delete`: Delete all versions of a prompt.
-
-**Database Tables**: prompts
-
----
-
 ## planner
 
 **Version**: 0.1.0

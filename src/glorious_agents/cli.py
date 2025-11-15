@@ -66,31 +66,76 @@ def version() -> None:
     console.print(f"Glorious Agents v{__version__}")
 
 
-@app.command()
-def init() -> None:
-    """Initialize agent workspace by generating AGENT-TOOLS.md and updating AGENTS.md.
-
-    Creates or updates AGENT-TOOLS.md with descriptions of all available skills,
-    and ensures AGENTS.md references this file. This helps AI agents understand
-    what tools are available in the current workspace.
-
-    Example:
-        $ agent init
-        Generated AGENT-TOOLS.md with 5 skills
-        Updated AGENTS.md with reference
-    """
+def _generate_skill_documentation(skill, registry) -> list[str]:
+    """Generate markdown documentation lines for a single skill."""
     from glorious_agents.core.db import get_connection
 
-    # Ensure skills are loaded
-    registry = get_registry()
-    skills = registry.list_all()
+    manifest = registry.get_manifest(skill.name)
+    if not manifest:
+        return []
 
-    if not skills:
-        console.print("[yellow]No skills loaded. Loading skills...[/yellow]")
-        load_all_skills()
-        skills = registry.list_all()
+    content = []
+    
+    # Skill header
+    content.append(f"## {manifest.name}")
+    content.append("")
+    content.append(f"**Version**: {manifest.version}")
+    content.append("")
+    content.append(f"**Description**: {manifest.description}")
+    content.append("")
 
-    # Generate AGENT-TOOLS.md
+    # Dependencies
+    if manifest.requires:
+        content.append(f"**Requires**: {', '.join(manifest.requires)}")
+        content.append("")
+
+    # Commands
+    app_obj = registry.get_app(skill.name)
+    if app_obj and hasattr(app_obj, "registered_commands"):
+        content.append("**Commands**:")
+        content.append("")
+        for cmd in app_obj.registered_commands:
+            cmd_name = cmd.name or cmd.callback.__name__
+            cmd_help = cmd.help or cmd.callback.__doc__ or "No description"
+            cmd_help_line = cmd_help.split("\n")[0].strip()
+            content.append(f"- `{cmd_name}`: {cmd_help_line}")
+        content.append("")
+
+    # Database info
+    if manifest.requires_db:
+        try:
+            conn = get_connection()
+            skill_table_prefix = skill.name.replace("-", "_")
+            cur = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?",
+                (f"{skill_table_prefix}%",),
+            )
+            tables = [row[0] for row in cur.fetchall()]
+            if tables:
+                content.append(f"**Database Tables**: {', '.join(tables)}")
+                content.append("")
+        except Exception:
+            pass
+
+    # Documentation
+    if manifest.external_doc and manifest.path:
+        usage_path = Path(manifest.path) / manifest.external_doc
+        if usage_path.exists():
+            content.append("**Usage Documentation**:")
+            content.append("")
+            content.append("```")
+            content.append(usage_path.read_text().strip())
+            content.append("```")
+            content.append("")
+
+    content.append("---")
+    content.append("")
+    
+    return content
+
+
+def _generate_agent_tools_md(skills, registry) -> None:
+    """Generate AGENT-TOOLS.md documentation file."""
     agent_tools_path = Path.cwd() / "AGENT-TOOLS.md"
     console.print(f"[blue]Generating {agent_tools_path}...[/blue]")
 
@@ -105,85 +150,44 @@ def init() -> None:
     content.append("")
 
     for skill in skills:
-        manifest = registry.get_manifest(skill.name)
-        if not manifest:
-            continue
-
-        # Skill header
-        content.append(f"## {manifest.name}")
-        content.append("")
-        content.append(f"**Version**: {manifest.version}")
-        content.append("")
-        content.append(f"**Description**: {manifest.description}")
-        content.append("")
-
-        # Dependencies
-        if manifest.requires:
-            content.append(f"**Requires**: {', '.join(manifest.requires)}")
-            content.append("")
-
-        # Commands
-        app_obj = registry.get_app(skill.name)
-        if app_obj and hasattr(app_obj, "registered_commands"):
-            content.append("**Commands**:")
-            content.append("")
-            for cmd in app_obj.registered_commands:
-                cmd_name = cmd.name or cmd.callback.__name__
-                cmd_help = cmd.help or cmd.callback.__doc__ or "No description"
-                cmd_help_line = cmd_help.split("\n")[0].strip()
-                content.append(f"- `{cmd_name}`: {cmd_help_line}")
-            content.append("")
-
-        # Database info
-        if manifest.requires_db:
-            try:
-                conn = get_connection()
-                skill_table_prefix = skill.name.replace("-", "_")
-                cur = conn.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?",
-                    (f"{skill_table_prefix}%",),
-                )
-                tables = [row[0] for row in cur.fetchall()]
-                if tables:
-                    content.append(f"**Database Tables**: {', '.join(tables)}")
-                    content.append("")
-            except Exception:
-                pass
-
-        # Documentation
-        if manifest.external_doc and manifest.path:
-            usage_path = Path(manifest.path) / manifest.external_doc
-            if usage_path.exists():
-                content.append("**Usage Documentation**:")
-                content.append("")
-                content.append("```")
-                content.append(usage_path.read_text().strip())
-                content.append("```")
-                content.append("")
-
-        content.append("---")
-        content.append("")
+        content.extend(_generate_skill_documentation(skill, registry))
 
     agent_tools_path.write_text("\n".join(content))
     console.print(f"[green]✓ Generated {agent_tools_path} with {len(skills)} skills[/green]")
 
-    # Update AGENTS.md
+
+def _update_agents_md() -> None:
+    """Update or create AGENTS.md with reference to AGENT-TOOLS.md."""
     agents_md_path = Path.cwd() / "AGENTS.md"
     reference_text = "See [AGENT-TOOLS.md](./AGENT-TOOLS.md) for available tools and skills."
 
     if agents_md_path.exists():
         content_str = agents_md_path.read_text()
         if reference_text not in content_str:
-            # Add reference at the end
             updated_content = content_str.rstrip() + "\n\n" + reference_text + "\n"
             agents_md_path.write_text(updated_content)
             console.print(f"[green]✓ Updated {agents_md_path} with reference[/green]")
         else:
             console.print(f"[dim]✓ {agents_md_path} already contains reference[/dim]")
     else:
-        # Create new AGENTS.md
         agents_md_path.write_text(f"# Agent Instructions\n\n{reference_text}\n")
         console.print(f"[green]✓ Created {agents_md_path}[/green]")
+
+
+@app.command()
+def init() -> None:
+    """Initialize agent workspace by generating AGENT-TOOLS.md and updating AGENTS.md."""
+    # Ensure skills are loaded
+    registry = get_registry()
+    skills = registry.list_all()
+
+    if not skills:
+        console.print("[yellow]No skills loaded. Loading skills...[/yellow]")
+        load_all_skills()
+        skills = registry.list_all()
+
+    _generate_agent_tools_md(skills, registry)
+    _update_agents_md()
 
 
 @app.command()

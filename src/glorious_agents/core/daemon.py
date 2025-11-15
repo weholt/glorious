@@ -6,7 +6,8 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Header
+from pydantic import BaseModel, Field
 
 from glorious_agents.config import config
 from glorious_agents.core.loader import load_all_skills
@@ -14,6 +15,47 @@ from glorious_agents.core.registry import get_registry
 from glorious_agents.core.runtime import get_ctx, reset_ctx
 
 logger = logging.getLogger(__name__)
+
+
+def verify_api_key(x_api_key: str | None = Header(None)) -> None:
+    """Verify API key if authentication is enabled.
+    
+    Raises:
+        HTTPException: If API key is required but missing or invalid.
+    """
+    # If no API key is configured, allow all requests
+    if config.DAEMON_API_KEY is None:
+        logger.debug("API key authentication disabled")
+        return
+    
+    # If API key is configured, require it
+    if x_api_key is None:
+        raise HTTPException(
+            status_code=401,
+            detail="API key required. Set X-API-Key header.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+    
+    if x_api_key != config.DAEMON_API_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid API key",
+        )
+    
+    logger.debug("API key verified")
+
+
+class RPCRequest(BaseModel):
+    """Request model for RPC calls with validation."""
+
+    params: dict[str, Any] = Field(default_factory=dict, description="Method parameters")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "params": {"key": "value", "count": 5}
+            }
+        }
 
 
 @asynccontextmanager
@@ -50,6 +92,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 daemon_app = FastAPI(title="Glorious Agents Daemon", lifespan=lifespan)
 
 
+@daemon_app.get("/health")
+async def health_check() -> dict[str, str]:
+    """Health check endpoint (no authentication required)."""
+    return {"status": "healthy", "service": "glorious-agents-daemon"}
+
+
 @daemon_app.get("/skills")
 async def list_skills() -> list[dict[str, Any]]:
     """List all loaded skills."""
@@ -72,7 +120,8 @@ async def list_skills() -> list[dict[str, Any]]:
 async def call_skill_method(
     skill: str,
     method: str,
-    params: dict[str, Any] | None = None,
+    request: RPCRequest = RPCRequest(),
+    _auth: None = Depends(verify_api_key),
 ) -> dict[str, Any]:
     """
     Call a skill method via RPC.
@@ -83,7 +132,7 @@ async def call_skill_method(
     Args:
         skill: Skill name.
         method: Method name to call.
-        params: Optional parameters dictionary to pass to the method.
+        request: Validated RPC request with parameters.
 
     Returns:
         Result dictionary with status and data.
@@ -125,16 +174,13 @@ async def call_skill_method(
 
     # Call the function
     try:
-        if params is None:
-            params = {}
-
         # Handle both sync and async functions
         import inspect
 
         if inspect.iscoroutinefunction(func):
-            result = await func(**params)
+            result = await func(**request.params)
         else:
-            result = func(**params)
+            result = func(**request.params)
 
         return {
             "status": "success",
@@ -153,7 +199,11 @@ async def call_skill_method(
 
 
 @daemon_app.post("/events/{topic}")
-async def publish_event(topic: str, data: dict[str, Any]) -> dict[str, str]:
+async def publish_event(
+    topic: str,
+    data: dict[str, Any],
+    _auth: None = Depends(verify_api_key),
+) -> dict[str, str]:
     """
     Publish an event to the event bus.
 
@@ -188,7 +238,7 @@ async def list_topics() -> dict[str, list[str]]:
 
 
 @daemon_app.get("/cache/{key}")
-async def get_cache(key: str) -> dict[str, Any]:
+async def get_cache(key: str, _auth: None = Depends(verify_api_key)) -> dict[str, Any]:
     """
     Retrieve a value from the cache.
 
@@ -211,7 +261,11 @@ async def get_cache(key: str) -> dict[str, Any]:
 
 
 @daemon_app.put("/cache/{key}")
-async def set_cache(key: str, data: dict[str, Any]) -> dict[str, str]:
+async def set_cache(
+    key: str,
+    data: dict[str, Any],
+    _auth: None = Depends(verify_api_key),
+) -> dict[str, str]:
     """
     Store a value in the cache with optional TTL.
 
@@ -236,7 +290,7 @@ async def set_cache(key: str, data: dict[str, Any]) -> dict[str, str]:
 
 
 @daemon_app.delete("/cache/{key}")
-async def delete_cache(key: str) -> dict[str, str]:
+async def delete_cache(key: str, _auth: None = Depends(verify_api_key)) -> dict[str, str]:
     """
     Delete a value from the cache.
 
@@ -256,7 +310,7 @@ async def delete_cache(key: str) -> dict[str, str]:
 
 
 @daemon_app.delete("/cache")
-async def clear_cache() -> dict[str, Any]:
+async def clear_cache(_auth: None = Depends(verify_api_key)) -> dict[str, Any]:
     """
     Clear all cache entries.
 
@@ -270,7 +324,7 @@ async def clear_cache() -> dict[str, Any]:
 
 
 @daemon_app.get("/cache")
-async def cache_stats() -> dict[str, Any]:
+async def cache_stats(_auth: None = Depends(verify_api_key)) -> dict[str, Any]:
     """
     Get cache statistics.
 
