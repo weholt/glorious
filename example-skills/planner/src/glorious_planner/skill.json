@@ -1,0 +1,8 @@
+{
+  "name": "planner",
+  "version": "0.1.0",
+  "description": "Action queue management with priorities and state machine",
+  "requires": [],
+  "schema_file": "schema.sql",
+  "requires_db": true
+}

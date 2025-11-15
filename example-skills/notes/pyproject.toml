@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "glorious-skill-notes"
+version = "0.1.0"
+description = "Notes skill for Glorious Agents - persistent notes with full-text search"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Glorious Agents Team"}
+]
+dependencies = [
+    "glorious-agents>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=5.0.0",
+]
+
+[project.entry-points."glorious_agents.skills"]
+notes = "glorious_skill_notes.skill:app"

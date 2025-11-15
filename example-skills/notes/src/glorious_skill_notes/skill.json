@@ -1,0 +1,11 @@
+{
+  "name": "notes",
+  "version": "0.1.0",
+  "description": "Persistent notes with full-text search",
+  "entry_point": "notes.skill:app",
+  "schema_file": "schema.sql",
+  "requires": [],
+  "requires_db": true,
+  "internal_doc": "instructions.md",
+  "external_doc": "usage.md"
+}

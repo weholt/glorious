@@ -1,0 +1,8 @@
+{
+  "name": "feedback",
+  "version": "0.1.0",
+  "description": "Action outcome tracking and learning",
+  "requires": [],
+  "schema_file": "schema.sql",
+  "requires_db": true
+}

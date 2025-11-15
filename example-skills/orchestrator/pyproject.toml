@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "glorious-orchestrator"
+version = "0.1.0"
+description = "Orchestration - intent routing and workflows"
+requires-python = ">=3.11"
+dependencies = ["glorious-agents>=0.1.0"]
+
+[project.entry-points."glorious_agents.skills"]
+orchestrator = "glorious_orchestrator.skill:app"

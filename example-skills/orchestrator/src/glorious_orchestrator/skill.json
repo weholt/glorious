@@ -1,0 +1,8 @@
+{
+  "name": "orchestrator",
+  "version": "0.1.0",
+  "description": "Intent routing and multi-tool workflows",
+  "requires": [],
+  "schema_file": "schema.sql",
+  "requires_db": true
+}

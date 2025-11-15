@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "glorious-temporal"
+version = "0.1.0"
+description = "Temporal filtering - time-aware queries"
+requires-python = ">=3.11"
+dependencies = ["glorious-agents>=0.1.0"]
+
+[project.entry-points."glorious_agents.skills"]
+temporal = "glorious_temporal.skill:app"

@@ -1,0 +1,8 @@
+{
+  "name": "linker",
+  "version": "0.1.0",
+  "description": "Semantic cross-references between issues, notes, and files",
+  "requires": [],
+  "schema_file": "schema.sql",
+  "requires_db": true
+}

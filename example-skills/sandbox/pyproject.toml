@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "glorious-sandbox"
+version = "0.1.0"
+description = "Sandbox execution - Docker-based isolation"
+requires-python = ">=3.11"
+dependencies = ["glorious-agents>=0.1.0"]
+
+[project.entry-points."glorious_agents.skills"]
+sandbox = "glorious_sandbox.skill:app"

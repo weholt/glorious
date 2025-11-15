@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "glorious-cache"
+version = "0.1.0"
+description = "Cache skill for Glorious Agents - short-term ephemeral storage with TTL"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Glorious Agents Team"}
+]
+dependencies = [
+    "glorious-agents>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=5.0.0",
+]
+
+[project.entry-points."glorious_agents.skills"]
+cache = "glorious_cache.skill:app"

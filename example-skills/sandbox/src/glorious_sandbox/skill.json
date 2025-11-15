@@ -1,0 +1,8 @@
+{
+  "name": "sandbox",
+  "version": "0.1.0",
+  "description": "Docker-based isolated execution",
+  "requires": [],
+  "schema_file": "schema.sql",
+  "requires_db": true
+}

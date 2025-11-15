@@ -1,0 +1,98 @@
+[project]
+name = "glorious-agents"
+version = "0.1.0"
+description = "Modular skill-based agent framework with shared SQLite database"
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+authors = [
+    {name = "Glorious Agents Team"}
+]
+dependencies = [
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "tomli-w>=1.0.0",
+    "ruff>=0.14.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+    "pre-commit>=3.8.0",
+]
+
+[project.scripts]
+agent = "glorious_agents.cli:main"
+
+[project.entry-points."glorious_agents.skills"]
+# External skills can be registered here
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+markers = [
+  "logic: unit tests of pure logic (domain/services)",
+  "integration: tests involving real I/O or external systems",
+]
+addopts = """
+  -q
+  --strict-markers
+  --disable-warnings
+  --cov=src
+  --cov-report=term-missing
+  --cov-report=html
+  --cov-fail-under=75
+"""
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+  "*/__main__.py",
+  "*/tests/*",
+  "*/cli.py",
+  "*/skills_cli.py",
+  "*/identity_cli.py",
+  "*/daemon.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+  "raise NotImplementedError",
+  "if TYPE_CHECKING:",
+  "if 0:",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "C4", "UP", "DTZ", "PYI", "PT"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+exclude = ["tests/"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+]

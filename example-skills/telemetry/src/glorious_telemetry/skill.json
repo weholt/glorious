@@ -1,0 +1,8 @@
+{
+  "name": "telemetry",
+  "version": "0.1.0",
+  "description": "Agent action logging and observability",
+  "requires": [],
+  "schema_file": "schema.sql",
+  "requires_db": true
+}

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "glorious-skill-issues"
+version = "0.1.0"
+description = "Issue tracking skill for Glorious Agents"
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+authors = [
+    {name = "Glorious Agents Team"}
+]
+dependencies = [
+    "glorious-agents>=0.1.0",
+    "glorious-skill-notes>=0.1.0",
+]
+
+[project.entry-points."glorious_agents.skills"]
+issues = "glorious_skill_issues.skill:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/glorious_skill_issues"]

@@ -1,0 +1,8 @@
+{
+  "name": "vacuum",
+  "version": "0.1.0",
+  "description": "Knowledge distillation and optimization",
+  "requires": [],
+  "schema_file": "schema.sql",
+  "requires_db": true
+}

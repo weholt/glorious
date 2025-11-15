@@ -1,0 +1,7 @@
+{
+  "name": "temporal",
+  "version": "0.1.0",
+  "description": "Time-aware filtering across skills",
+  "requires": [],
+  "requires_db": false
+}

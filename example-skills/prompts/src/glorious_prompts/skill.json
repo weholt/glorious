@@ -1,0 +1,8 @@
+{
+  "name": "prompts",
+  "version": "0.1.0",
+  "description": "Prompt template management and versioning",
+  "requires": [],
+  "schema_file": "schema.sql",
+  "requires_db": true
+}
