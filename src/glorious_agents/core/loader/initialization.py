@@ -42,6 +42,8 @@ def init_schemas(sorted_skills: list[str], skills_data: dict[str, dict[str, Any]
 
 def load_skill_entry(entry_point: str, skill_name: str, is_local: bool = False) -> "typer.Typer":
     """Load a skill's Typer app from its entry point."""
+    from glorious_agents.core.isolation import create_restricted_context
+    
     module_path, attr = entry_point.split(":")
 
     # Add skills directory to path only for local skills
@@ -55,11 +57,12 @@ def load_skill_entry(entry_point: str, skill_name: str, is_local: bool = False) 
         module = importlib.import_module(module_path)
         app: typer.Typer = getattr(module, attr)
 
-        # Call init_context if it exists
+        # Call init_context if it exists - provide restricted context
         if hasattr(module, "init_context"):
             init_context = module.init_context
             ctx = get_ctx()
-            init_context(ctx)
+            restricted_ctx = create_restricted_context(ctx, skill_name)
+            init_context(restricted_ctx)
 
         return app
     finally:

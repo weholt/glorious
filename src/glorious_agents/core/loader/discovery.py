@@ -54,6 +54,16 @@ def discover_local_skills(skills_dir: Path | None = None) -> dict[str, dict[str,
                 else:
                     requires_validated = []
 
+                # Extract properties from JSON Schema format if needed
+                config_schema_normalized = None
+                if config_schema_val:
+                    if isinstance(config_schema_val, dict):
+                        # If it's a JSON Schema with "properties", extract them
+                        if "properties" in config_schema_val:
+                            config_schema_normalized = dict(config_schema_val["properties"])
+                        else:
+                            config_schema_normalized = dict(config_schema_val)
+
                 SkillManifest(
                     name=str(manifest_data.get("name", "")),
                     version=str(manifest_data.get("version", "0.0.0")),
@@ -64,7 +74,7 @@ def discover_local_skills(skills_dir: Path | None = None) -> dict[str, dict[str,
                     requires_db=bool(manifest_data.get("requires_db", True)),
                     internal_doc=str(internal_doc_val) if internal_doc_val else None,
                     external_doc=str(external_doc_val) if external_doc_val else None,
-                    config_schema=dict(config_schema_val) if config_schema_val else None,
+                    config_schema=config_schema_normalized,
                     origin="local",
                     path=str(skill_path),
                 )
@@ -141,6 +151,16 @@ def discover_entrypoint_skills(group: str = "glorious_agents.skills") -> dict[st
                 else:
                     requires_validated = []
 
+                # Extract properties from JSON Schema format if needed
+                config_schema_normalized = None
+                if config_schema_val:
+                    if isinstance(config_schema_val, dict):
+                        # If it's a JSON Schema with "properties", extract them
+                        if "properties" in config_schema_val:
+                            config_schema_normalized = dict(config_schema_val["properties"])
+                        else:
+                            config_schema_normalized = dict(config_schema_val)
+
                 SkillManifest(
                     name=str(manifest_data.get("name", ep.name)),
                     version=str(manifest_data.get("version", "0.0.0")),
@@ -151,9 +171,7 @@ def discover_entrypoint_skills(group: str = "glorious_agents.skills") -> dict[st
                     requires_db=bool(manifest_data.get("requires_db", True)),
                     internal_doc=str(internal_doc_val) if internal_doc_val else None,
                     external_doc=str(external_doc_val) if external_doc_val else None,
-                    config_schema=dict(config_schema_val)
-                    if isinstance(config_schema_val, dict)
-                    else None,
+                    config_schema=config_schema_normalized,
                     origin="entrypoint",
                     path=str(path_val) if path_val else None,
                 )

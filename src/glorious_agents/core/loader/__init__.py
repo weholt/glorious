@@ -32,7 +32,11 @@ __all__ = [
     "load_all_skills",
     "parse_version",
     "check_version_constraint",
+    "call_skill_init",
 ]
+
+# Backward compatibility alias
+_call_skill_init = call_skill_init
 
 
 def load_all_skills() -> None:
@@ -64,6 +68,15 @@ def load_all_skills() -> None:
 
         # Create manifest object
         config_schema_data = manifest_data.get("config_schema")
+        # Extract properties from JSON Schema format if needed
+        config_schema_normalized = None
+        if config_schema_data and isinstance(config_schema_data, dict):
+            # If it's a JSON Schema with "properties", extract them
+            if "properties" in config_schema_data:
+                config_schema_normalized = dict(config_schema_data["properties"])
+            else:
+                config_schema_normalized = dict(config_schema_data)
+
         manifest = SkillManifest(
             name=manifest_data["name"],
             version=manifest_data.get("version", "0.0.0"),
@@ -74,9 +87,7 @@ def load_all_skills() -> None:
             requires_db=manifest_data.get("requires_db", True),
             internal_doc=manifest_data.get("internal_doc"),
             external_doc=manifest_data.get("external_doc"),
-            config_schema=dict(config_schema_data)
-            if isinstance(config_schema_data, dict)
-            else None,
+            config_schema=config_schema_normalized,
             origin=manifest_data["_origin"],
             path=str(manifest_data["_path"]) if "_path" in manifest_data else None,
         )
