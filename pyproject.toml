@@ -28,6 +28,46 @@ dev = [
     "pre-commit>=3.8.0",
 ]
 
+# Individual skills - Install via: uv pip install -e ".[notes,planner,issues]"
+ai = ["glorious-ai>=0.1.0"]
+automations = ["glorious-automations>=0.1.0"]
+cache = ["glorious-cache>=0.1.0"]
+code-atlas = ["code-atlas>=0.1.0"]
+docs = ["glorious-skill-docs>=0.1.0"]
+feedback = ["glorious-feedback>=0.1.0"]
+issues = ["issue-tracker>=0.1.0"]
+linker = ["glorious-linker>=0.1.0"]
+migrate = ["glorious-migrate>=0.1.0"]
+notes = ["glorious-skill-notes>=0.1.0"]
+orchestrator = ["glorious-orchestrator>=0.1.0"]
+planner = ["glorious-planner>=0.1.0"]
+prompts = ["glorious-prompts>=0.1.0"]
+sandbox = ["glorious-sandbox>=0.1.0"]
+telemetry = ["glorious-telemetry>=0.1.0"]
+temporal = ["glorious-temporal>=0.1.0"]
+vacuum = ["glorious-vacuum>=0.1.0"]
+
+# Convenience groups
+all-skills = [
+    "glorious-ai>=0.1.0",
+    "glorious-automations>=0.1.0",
+    "glorious-cache>=0.1.0",
+    "code-atlas>=0.1.0",
+    "glorious-skill-docs>=0.1.0",
+    "glorious-feedback>=0.1.0",
+    "issue-tracker>=0.1.0",
+    "glorious-linker>=0.1.0",
+    "glorious-migrate>=0.1.0",
+    "glorious-skill-notes>=0.1.0",
+    "glorious-orchestrator>=0.1.0",
+    "glorious-planner>=0.1.0",
+    "glorious-prompts>=0.1.0",
+    "glorious-sandbox>=0.1.0",
+    "glorious-telemetry>=0.1.0",
+    "glorious-temporal>=0.1.0",
+    "glorious-vacuum>=0.1.0",
+]
+
 [project.scripts]
 agent = "glorious_agents.cli:main"
 
@@ -96,3 +136,23 @@ exclude = ["tests/"]
 dev = [
     "mypy>=1.18.2",
 ]
+
+[tool.uv.sources]
+# Local skill packages for development
+glorious-ai = { path = "src/glorious_agents/skills/ai", editable = true }
+glorious-automations = { path = "src/glorious_agents/skills/automations", editable = true }
+glorious-cache = { path = "src/glorious_agents/skills/cache", editable = true }
+code-atlas = { path = "src/glorious_agents/skills/code-atlas", editable = true }
+glorious-skill-docs = { path = "src/glorious_agents/skills/docs", editable = true }
+glorious-feedback = { path = "src/glorious_agents/skills/feedback", editable = true }
+issue-tracker = { path = "src/glorious_agents/skills/issues", editable = true }
+glorious-linker = { path = "src/glorious_agents/skills/linker", editable = true }
+glorious-migrate = { path = "src/glorious_agents/skills/migrate", editable = true }
+glorious-skill-notes = { path = "src/glorious_agents/skills/notes", editable = true }
+glorious-orchestrator = { path = "src/glorious_agents/skills/orchestrator", editable = true }
+glorious-planner = { path = "src/glorious_agents/skills/planner", editable = true }
+glorious-prompts = { path = "src/glorious_agents/skills/prompts", editable = true }
+glorious-sandbox = { path = "src/glorious_agents/skills/sandbox", editable = true }
+glorious-telemetry = { path = "src/glorious_agents/skills/telemetry", editable = true }
+glorious-temporal = { path = "src/glorious_agents/skills/temporal", editable = true }
+glorious-vacuum = { path = "src/glorious_agents/skills/vacuum", editable = true }

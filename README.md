@@ -584,3 +584,58 @@ Built with:
 ---
 
 **Built with ❤️ for AI agents and their humans**
+
+## Installing Skills
+
+Glorious Agents has a modular skill system. Skills are located in `src/glorious_agents/skills/`.
+
+### Using Extras (Recommended for Production)
+
+Install skills using optional dependencies:
+
+```bash
+# Install specific skills
+uv pip install -e ".[notes,planner,issues]"
+
+# Install all skills
+uv pip install -e ".[all-skills]"
+
+# Using uv add for tools
+uv tool install glorious-agents[planner,issues]
+```
+
+Available skill extras: `ai`, `automations`, `cache`, `code-atlas`, `docs`, `feedback`, `issues`, `linker`, `migrate`, `notes`, `orchestrator`, `planner`, `prompts`, `sandbox`, `telemetry`, `temporal`, `vacuum`, `all-skills`
+
+### Interactive Installation (Great for Development)
+
+Use the glorious TUI installer:
+
+```bash
+./install-skills.sh
+```
+
+This will present an interactive menu where you can:
+- Select individual skills or all at once
+- Use ranges (e.g., `1-5`) or lists (e.g., `1 3 7`)
+- See installation progress in real-time
+- Get a detailed summary of results
+
+### Manual Installation
+
+Install individual skills directly:
+
+```bash
+# Install a single skill
+uv pip install -e ./src/glorious_agents/skills/notes
+
+# Install multiple skills
+uv pip install -e ./src/glorious_agents/skills/{notes,planner,issues}
+
+# Install all skills
+uv pip install -e ./src/glorious_agents/skills/*
+```
+
+### Available Skills
+
+Run the installer to see all available skills with descriptions, or check `src/glorious_agents/skills/`.
+
