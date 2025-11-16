@@ -1,13 +1,11 @@
 """Tests for temporal skill."""
 
 import re
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from datetime import timedelta
 
 import pytest
-from typer.testing import CliRunner
-
 from glorious_temporal.skill import app
+from typer.testing import CliRunner
 
 
 @pytest.fixture
@@ -99,21 +97,21 @@ class TestTimeSpecParsing:
 
     def test_regex_pattern_days(self):
         """Test regex pattern matches days correctly."""
-        pattern = r'(\d+)([dhm])'
+        pattern = r"(\d+)([dhm])"
         match = re.match(pattern, "7d")
         assert match is not None
         assert match.groups() == ("7", "d")
 
     def test_regex_pattern_hours(self):
         """Test regex pattern matches hours correctly."""
-        pattern = r'(\d+)([dhm])'
+        pattern = r"(\d+)([dhm])"
         match = re.match(pattern, "3h")
         assert match is not None
         assert match.groups() == ("3", "h")
 
     def test_regex_pattern_minutes(self):
         """Test regex pattern matches minutes correctly."""
-        pattern = r'(\d+)([dhm])'
+        pattern = r"(\d+)([dhm])"
         match = re.match(pattern, "30m")
         assert match is not None
         assert match.groups() == ("30", "m")

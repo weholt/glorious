@@ -104,7 +104,9 @@ def init_skill_schema(skill_name: str, schema_path: Path) -> None:
                     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            conn.execute("INSERT OR IGNORE INTO _skill_schemas (skill_name) VALUES (?)", (skill_name,))
+            conn.execute(
+                "INSERT OR IGNORE INTO _skill_schemas (skill_name) VALUES (?)", (skill_name,)
+            )
             conn.commit()
         finally:
             conn.close()

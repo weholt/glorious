@@ -70,9 +70,7 @@ def _build_module_mapping(dependencies: dict[str, dict[str, list[str]]]) -> dict
     return module_to_file
 
 
-def _populate_imported_by(
-    dependencies: dict[str, dict[str, list[str]]], module_to_file: dict[str, list[str]]
-) -> None:
+def _populate_imported_by(dependencies: dict[str, dict[str, list[str]]], module_to_file: dict[str, list[str]]) -> None:
     """Populate imported_by lists using module mapping.
 
     Args:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Migrate skill - universal export/import system."""
 
 import base64
@@ -13,6 +15,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 
 app = typer.Typer(help="Data export/import and migration")
 console = Console()
@@ -25,15 +28,15 @@ def init_context(ctx: SkillContext) -> None:
     _ctx = ctx
 
 
-def search(query: str, limit: int = 10) -> list["SearchResult"]:
+def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for migrate skill.
-    
+
     Migrate skill is a utility and has no searchable content.
-    
+
     Args:
         query: Search query string (unused)
         limit: Maximum number of results (unused)
-        
+
     Returns:
         Empty list
     """
@@ -45,14 +48,14 @@ def export_table(conn: sqlite3.Connection, table: str) -> list[dict[str, Any]]:
     cursor = conn.execute(f"SELECT * FROM {table}")
     columns = [desc[0] for desc in cursor.description]
     rows = cursor.fetchall()
-    
+
     result = []
     for row in rows:
         row_dict = {}
         for col, val in zip(columns, row):
             # Convert bytes to base64 string for JSON serialization
             if isinstance(val, bytes):
-                row_dict[col] = {"__type__": "bytes", "data": base64.b64encode(val).decode('utf-8')}
+                row_dict[col] = {"__type__": "bytes", "data": base64.b64encode(val).decode("utf-8")}
             else:
                 row_dict[col] = val
         result.append(row_dict)
@@ -158,6 +161,7 @@ def export(
     else:
         # Get DB path from config
         from glorious_agents.config import config
+
         # Check for agent-specific DB first
         agent_db = Path(".agent/agents/default/agent.db")
         if agent_db.exists():
@@ -167,12 +171,18 @@ def export(
     output_dir = Path(output)
 
     try:
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+        with Progress(
+            SpinnerColumn(), TextColumn("[progress.description]{task.description}")
+        ) as progress:
             task = progress.add_task("Exporting database...", total=None)
             stats = export_database(db, output_dir)
             progress.update(task, completed=True)
 
-        metadata = {"exported_at": datetime.now().isoformat(), "tables": stats, "total_rows": sum(stats.values())}
+        metadata = {
+            "exported_at": datetime.now().isoformat(),
+            "tables": stats,
+            "total_rows": sum(stats.values()),
+        }
         with open(output_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=2)
 
@@ -197,6 +207,7 @@ def import_cmd(
         db = Path(db_path)
     else:
         from glorious_agents.config import config
+
         agent_db = Path(".agent/agents/default/agent.db")
         if agent_db.exists():
             db = agent_db
@@ -214,12 +225,14 @@ def import_cmd(
             shutil.copy2(db, backup_path)
             console.print(f"[blue]Backup created:[/blue] {backup_path}")
 
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+        with Progress(
+            SpinnerColumn(), TextColumn("[progress.description]{task.description}")
+        ) as progress:
             task = progress.add_task("Importing database...", total=None)
             stats = import_database(db, input_dir)
             progress.update(task, completed=True)
 
-        console.print(f"[green]✓ Import complete[/green]")
+        console.print("[green]✓ Import complete[/green]")
         console.print(f"  Tables: {len(stats)}")
         console.print(f"  Total rows: {sum(stats.values())}")
     except Exception as e:
@@ -239,6 +252,7 @@ def backup(
         db = Path(db_path)
     else:
         from glorious_agents.config import config
+
         agent_db = Path(".agent/agents/default/agent.db")
         if agent_db.exists():
             db = agent_db
@@ -269,6 +283,7 @@ def restore(
         db = Path(db_path)
     else:
         from glorious_agents.config import config
+
         agent_db = Path(".agent/agents/default/agent.db")
         if agent_db.exists():
             db = agent_db
@@ -281,7 +296,9 @@ def restore(
         raise typer.Exit(1)
 
     try:
-        current_backup = db.with_suffix(f".pre-restore.{datetime.now().strftime('%Y%m%d_%H%M%S')}.db")
+        current_backup = db.with_suffix(
+            f".pre-restore.{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+        )
         shutil.copy2(db, current_backup)
         console.print(f"[blue]Current DB backed up:[/blue] {current_backup}")
 
@@ -316,10 +333,12 @@ def info(
     elif path_obj.suffix == ".db":
         conn = sqlite3.connect(str(path_obj))
         cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        )
         tables = [row[0] for row in cursor.fetchall()]
 
-        console.print(f"[bold]Database Information[/bold]")
+        console.print("[bold]Database Information[/bold]")
         console.print(f"  File: {path_obj}")
         console.print(f"  Size: {path_obj.stat().st_size:,} bytes")
         console.print(f"  Tables: {len(tables)}")

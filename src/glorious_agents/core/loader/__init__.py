@@ -18,7 +18,7 @@ from glorious_agents.core.registry import SkillManifest, get_registry
 from glorious_agents.core.runtime import get_ctx
 
 if TYPE_CHECKING:
-    import typer
+    pass  # Type checking imports would go here
 
 logger = logging.getLogger(__name__)
 

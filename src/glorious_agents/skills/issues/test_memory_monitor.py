@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Monitor memory usage while running integration tests."""
 
+import gc
 import subprocess
 import sys
 import time
-import gc
 
 # Try to import psutil
 try:
-    import psutil
+    import psutil  # type: ignore[import-untyped]  # noqa: F401
 
     HAS_PSUTIL = True
 except ImportError:
@@ -16,24 +16,25 @@ except ImportError:
     print("Warning: psutil not available, using /proc/meminfo")
 
 
-def get_memory_mb():
+def get_memory_mb() -> float:
     """Get current memory usage in MB."""
     if HAS_PSUTIL:
         import psutil as ps
 
-        return ps.virtual_memory().used / 1024 / 1024
+        result: float = ps.virtual_memory().used / 1024 / 1024
+        return result
     else:
         # Fallback: read from /proc/meminfo
-        with open("/proc/meminfo", "r") as f:
+        with open("/proc/meminfo") as f:
             for line in f:
                 if line.startswith("MemAvailable:"):
                     # Total - Available = Used (approximate)
-                    available = int(line.split()[1]) / 1024  # KB to MB
+                    available: float = int(line.split()[1]) / 1024  # KB to MB
                     return available
-        return 0
+        return 0.0
 
 
-def run_test(test_path):
+def run_test(test_path: str) -> tuple[bool, str, str]:
     """Run a single test and return success status."""
     result = subprocess.run(
         ["uv", "run", "pytest", test_path, "-v", "--tb=line"], capture_output=True, text=True, timeout=20
@@ -41,7 +42,7 @@ def run_test(test_path):
     return result.returncode == 0, result.stdout, result.stderr
 
 
-def main():
+def main() -> int:
     """Run tests and monitor memory."""
     print("Memory Leak Test - Running 3 Integration Tests")
     print("=" * 70)
@@ -84,13 +85,13 @@ def main():
             print(f"  Total delta from baseline: {total_delta:+.1f} MB")
 
             if not success:
-                print(f"\n  Error output:")
+                print("\n  Error output:")
                 print(stderr[-500:] if stderr else stdout[-500:])
 
             results.append({"test": test_name, "success": success, "delta": delta, "total": total_delta})
 
         except subprocess.TimeoutExpired:
-            print(f"  Status: ✗ TIMEOUT")
+            print("  Status: ✗ TIMEOUT")
             results.append({"test": test_name, "success": False, "delta": 0, "total": 0})
         except Exception as e:
             print(f"  Status: ✗ ERROR - {e}")
@@ -117,12 +118,12 @@ def main():
     # 3 tests * 50MB = 150MB max acceptable
     if total_increase > 150:
         print("❌ MEMORY LEAK DETECTED!")
-        print(f"   Expected: < 150 MB increase")
+        print("   Expected: < 150 MB increase")
         print(f"   Actual: {total_increase:.1f} MB increase")
         return 1
     else:
         print("✅ MEMORY USAGE ACCEPTABLE")
-        print(f"   Expected: < 150 MB increase")
+        print("   Expected: < 150 MB increase")
         print(f"   Actual: {total_increase:.1f} MB increase")
         return 0 if passed == 3 else 1
 

@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Header
+from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from glorious_agents.config import config
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def verify_api_key(x_api_key: str | None = Header(None)) -> None:
     """Verify API key if authentication is enabled.
-    
+
     Raises:
         HTTPException: If API key is required but missing or invalid.
     """
@@ -27,7 +27,7 @@ def verify_api_key(x_api_key: str | None = Header(None)) -> None:
     if config.DAEMON_API_KEY is None:
         logger.debug("API key authentication disabled")
         return
-    
+
     # If API key is configured, require it
     if x_api_key is None:
         raise HTTPException(
@@ -35,13 +35,13 @@ def verify_api_key(x_api_key: str | None = Header(None)) -> None:
             detail="API key required. Set X-API-Key header.",
             headers={"WWW-Authenticate": "ApiKey"},
         )
-    
+
     if x_api_key != config.DAEMON_API_KEY:
         raise HTTPException(
             status_code=403,
             detail="Invalid API key",
         )
-    
+
     logger.debug("API key verified")
 
 
@@ -51,11 +51,7 @@ class RPCRequest(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict, description="Method parameters")
 
     class Config:
-        json_schema_extra = {
-            "example": {
-                "params": {"key": "value", "count": 5}
-            }
-        }
+        json_schema_extra = {"example": {"params": {"key": "value", "count": 5}}}
 
 
 @asynccontextmanager
@@ -318,7 +314,7 @@ async def clear_cache(_auth: None = Depends(verify_api_key)) -> dict[str, Any]:
         Status message with count of cleared entries.
     """
     ctx = get_ctx()
-    count = len(ctx._cache)
+    count = len(ctx._cache._cache)
     ctx._cache.clear()
     return {"status": "cleared", "count": count}
 
@@ -333,8 +329,8 @@ async def cache_stats(_auth: None = Depends(verify_api_key)) -> dict[str, Any]:
     """
     ctx = get_ctx()
     return {
-        "size": len(ctx._cache),
-        "keys": list(ctx._cache.keys()),
+        "size": len(ctx._cache._cache),
+        "keys": list(ctx._cache._cache.keys()),
     }
 
 

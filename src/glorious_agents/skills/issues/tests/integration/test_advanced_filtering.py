@@ -11,13 +11,6 @@ Tests all advanced filtering options:
 import json
 import time
 
-from typer.testing import CliRunner
-
-from issue_tracker.cli.app import app
-
-
-import json
-
 import pytest
 from typer.testing import CliRunner
 
@@ -43,7 +36,7 @@ class TestAdvancedFiltering:
         result = runner.invoke(app, ["create", "New issue", "--json"])
         assert result.exit_code == 0
         new_issue = json.loads(result.stdout)
-        new_date = new_issue["created_at"][:10]
+        new_issue["created_at"][:10]
 
         # Filter by date range - should get both
         result = runner.invoke(app, ["list", "--created-after", old_date, "--json"])
@@ -120,7 +113,7 @@ class TestAdvancedFiltering:
 
         result = runner.invoke(app, ["create", "No labels task", "--json"])
         assert result.exit_code == 0
-        no_labels = json.loads(result.stdout)
+        json.loads(result.stdout)
 
         # Filter with OR logic using --label-any
         result = runner.invoke(app, ["list", "--label-any", "frontend,backend", "--json"])
@@ -140,9 +133,7 @@ class TestAdvancedFiltering:
         runner = integration_cli_runner
 
         # Create issues with different text
-        result = runner.invoke(
-            app, ["create", "Implement authentication", "-d", "Add JWT token support", "--json"]
-        )
+        result = runner.invoke(app, ["create", "Implement authentication", "-d", "Add JWT token support", "--json"])
         assert result.exit_code == 0
         auth_issue = json.loads(result.stdout)
 

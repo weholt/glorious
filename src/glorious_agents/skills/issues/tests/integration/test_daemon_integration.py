@@ -13,8 +13,6 @@ Uses HTTP-based IPC which works cross-platform (Windows, Linux, macOS).
 import asyncio
 import json
 import subprocess
-import sys
-import time
 from pathlib import Path
 
 import pytest

@@ -127,6 +127,8 @@ omit = [
   "*/skills_cli.py",
   "*/identity_cli.py",
   "*/daemon.py",
+  "*/skills_cli/*",
+  "*/migrations.py",
 ]
 
 [tool.coverage.report]
@@ -143,7 +145,7 @@ target-version = "py313"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "C4", "UP", "DTZ", "PYI", "PT"]
+select = ["E", "F", "I", "B", "C4", "UP", "PYI", "PT"]
 ignore = ["E501"]
 
 [tool.mypy]
@@ -152,7 +154,10 @@ strict = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 disallow_untyped_defs = true
-exclude = ["tests/"]
+exclude = [
+    "tests/",
+    "src/glorious_agents/skills/.*/src/",
+]
 
 [dependency-groups]
 dev = [

@@ -110,12 +110,12 @@ class BuildRunner:
             cmd.extend(["--check", "--exclude", "tests", "--exclude", "scripts", str(src_path)])
 
         success_format, output_format, error_format = self.run_command(cmd, "ruff format")
-        
+
         check_cmd = ["uv", "run", "ruff", "check"]
         if self.fix:
             check_cmd.append("--fix")
         check_cmd.extend(["--exclude", "tests", "--exclude", "scripts", str(src_path)])
-        
+
         success_check, output_check, error_check = self.run_command(check_cmd, "ruff check")
 
         self.print_result(success_format, "ruff format", output_format, error_format)
@@ -150,10 +150,7 @@ class BuildRunner:
             print(f"[WARN] Source directory not found at {src_path}")
             return False
 
-        success, output, error = self.run_command(
-            ["uv", "run", "mypy", str(src_path)], 
-            f"mypy {src_path}"
-        )
+        success, output, error = self.run_command(["uv", "run", "mypy", str(src_path)], f"mypy {src_path}")
 
         self.print_result(success, f"mypy {src_path}", output, error)
         return success
@@ -210,6 +207,7 @@ class BuildRunner:
             coverage_xml = self.project_root / "coverage.xml"
             if coverage_xml.exists():
                 import xml.etree.ElementTree as ET
+
                 try:
                     tree = ET.parse(coverage_xml)
                     root = tree.getroot()
@@ -265,8 +263,20 @@ class BuildRunner:
             return False
 
         success, output, error = self.run_command(
-            ["uv", "run", "ruff", "check", "--exclude", "tests", "--exclude", "scripts", str(src_path), "--select", "S"], 
-            "Security linting"
+            [
+                "uv",
+                "run",
+                "ruff",
+                "check",
+                "--exclude",
+                "tests",
+                "--exclude",
+                "scripts",
+                str(src_path),
+                "--select",
+                "S",
+            ],
+            "Security linting",
         )
 
         self.print_result(success, "Security Check", output, error)
@@ -375,7 +385,7 @@ class BuildRunner:
             return False
 
 
-def main():
+def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Comprehensive build script for CodeAtlas")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")

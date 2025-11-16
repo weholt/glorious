@@ -54,7 +54,7 @@ def set_nested_key(config: dict[str, Any], key: str, value: Any) -> None:
 
 def get_nested_value(config: dict[str, Any], key: str) -> tuple[Any, bool]:
     """Get a nested configuration value using dot notation.
-    
+
     Returns:
         Tuple of (value, found) where found indicates if the key exists.
     """

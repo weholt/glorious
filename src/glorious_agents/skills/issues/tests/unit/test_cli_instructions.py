@@ -1,7 +1,6 @@
 """Tests for instruction template commands."""
 
 import json
-from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -16,15 +15,16 @@ def templates_dir(tmp_path, monkeypatch):
     """Create temporary templates directory."""
     templates = tmp_path / "templates"
     templates.mkdir()
-    
+
     # Mock get_issues_folder to return tmp_path
     def mock_get_issues_folder():
         return str(tmp_path)
-    
+
     # Patch where it's imported (in the module)
     from issue_tracker.cli import dependencies
+
     monkeypatch.setattr(dependencies, "get_issues_folder", mock_get_issues_folder)
-    
+
     return templates
 
 
@@ -39,7 +39,7 @@ def test_list_templates_with_templates(templates_dir):
     """Test listing templates."""
     (templates_dir / "template1.md").write_text("# Template: Test One\n**Description**: First")
     (templates_dir / "template2.md").write_text("# Template: Test Two\n**Description**: Second")
-    
+
     result = runner.invoke(app, ["list"])
     assert result.exit_code == 0
     assert "template1" in result.stdout
@@ -50,7 +50,7 @@ def test_list_templates_with_templates(templates_dir):
 def test_list_templates_json(templates_dir):
     """Test listing templates as JSON."""
     (templates_dir / "template1.md").write_text("# Template: Test One\n**Description**: First")
-    
+
     result = runner.invoke(app, ["list", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
@@ -63,7 +63,7 @@ def test_show_template_raw(templates_dir):
     """Test showing template raw content."""
     content = "# Template Content"
     (templates_dir / "test.md").write_text(content)
-    
+
     result = runner.invoke(app, ["show", "test", "--raw"])
     assert result.exit_code == 0
     assert content in result.stdout
@@ -97,7 +97,7 @@ Test overview
 - Note 2
 """
     (templates_dir / "test.md").write_text(content)
-    
+
     result = runner.invoke(app, ["show", "test"])
     assert result.exit_code == 0
     assert "Test Template" in result.stdout
@@ -116,7 +116,7 @@ def test_show_template_json(templates_dir):
 **Description**: Task description
 """
     (templates_dir / "test.md").write_text(content)
-    
+
     result = runner.invoke(app, ["show", "test", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)

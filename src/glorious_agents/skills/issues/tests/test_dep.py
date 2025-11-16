@@ -1,6 +1,8 @@
-from typer.testing import CliRunner
-from issue_tracker.cli.app import app
 import json
+
+from typer.testing import CliRunner
+
+from issue_tracker.cli.app import app
 
 runner = CliRunner()
 

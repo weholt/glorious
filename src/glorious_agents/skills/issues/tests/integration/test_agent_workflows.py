@@ -124,9 +124,7 @@ class TestAgentWorkflow:
         assert result.exit_code == 0
 
         # Complete it
-        result = runner.invoke(
-            app, ["close", task["id"], "--reason", "Fixed in commit abc123", "--json"]
-        )
+        result = runner.invoke(app, ["close", task["id"], "--reason", "Fixed in commit abc123", "--json"])
         assert result.exit_code == 0
         closed = json.loads(result.stdout)
 

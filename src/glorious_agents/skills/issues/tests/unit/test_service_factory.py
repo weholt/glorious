@@ -46,7 +46,7 @@ class TestServiceFactory:
         mock_uow = MagicMock()
         mock_clock = MagicMock()
         mock_id = MagicMock()
-        
+
         service = factory.create_issue_service(
             uow=mock_uow,
             clock=mock_clock,

@@ -135,7 +135,18 @@ class BuildRunner:
             print(f"[WARN] Source directory not found at {backend_path}")
             return False
 
-        ruff_cmd = ["uv", "run", "ruff", "check", "--fix", "--exclude", "tests", "--exclude", "scripts", str(backend_path)]
+        ruff_cmd = [
+            "uv",
+            "run",
+            "ruff",
+            "check",
+            "--fix",
+            "--exclude",
+            "tests",
+            "--exclude",
+            "scripts",
+            str(backend_path),
+        ]
 
         success, output, error = self.run_command(ruff_cmd, "ruff linting")
 
@@ -147,7 +158,7 @@ class BuildRunner:
         self.print_step("Deprecated Config Check")
 
         deprecated_tokens = ["docs_dir", "prompts_dir", "resources_dir", "templates_dir"]
-        
+
         # Allowlist: files that can mention these for backward compatibility or documentation
         allowlist = [
             "dotwork/env_config.py",  # Backward compatibility warning
@@ -168,22 +179,22 @@ class BuildRunner:
                 f"Search for config.{token}",
                 check=False,
             )
-            
+
             if success and output:
                 for line in output.strip().split("\n"):
                     if line:
                         # Parse git grep output: file:line:content
                         parts = line.split(":", 2)
                         if len(parts) >= 3:
-                            filepath, linenum, content = parts[0], parts[1], parts[2]
+                            filepath, linenum, _content = parts[0], parts[1], parts[2]
                             # Check if file is in allowlist
                             if not any(allowed in filepath for allowed in allowlist):
                                 violations.append((filepath, token, int(linenum)))
 
         if violations:
             print("[FAIL] Found deprecated config property usage:")
-            for filepath, token, linenum in violations:
-                print(f"  {filepath}:{linenum} - config.{token}")
+            for filepath, token, linenum_val in violations:
+                print(f"  {filepath}:{linenum_val} - config.{token}")
             print("\n[FIX] Replace with:")
             print("  - config.docs_dir → config.data_dir")
             print("  - Use helper functions from dotwork.utils.repo_helpers")
@@ -259,7 +270,9 @@ class BuildRunner:
             print(f"[WARN] Source directory not found at {backend_path}")
             return False
 
-        success_module, output_module, error_module = self.run_command(["uv", "run", "mypy", str(backend_path / "")], f"mypy {backend_path}")
+        success_module, output_module, error_module = self.run_command(
+            ["uv", "run", "mypy", str(backend_path / "")], f"mypy {backend_path}"
+        )
 
         self.print_result(success_module, f"mypy {backend_path}", output_module, error_module)
 
@@ -302,7 +315,7 @@ class BuildRunner:
             "--durations=20",  # Show 20 slowest tests
             "-vv" if self.verbose else "-v",
         ]
-        
+
         # In verbose mode, show even more durations
         if self.verbose:
             cmd[cmd.index("--durations=20")] = "--durations=50"
@@ -321,6 +334,7 @@ class BuildRunner:
             coverage_xml = self.project_root / "coverage.xml"
             if coverage_xml.exists():
                 import xml.etree.ElementTree as ET
+
                 try:
                     tree = ET.parse(coverage_xml)
                     root = tree.getroot()
@@ -391,7 +405,9 @@ class BuildRunner:
             print(f"[WARN] Source directory not found at {backend_path}")
             return False
 
-        success, output, error = self.run_command(["uv", "run", "ruff", "check", str(backend_path), "--select", "S"], "Security linting")
+        success, output, error = self.run_command(
+            ["uv", "run", "ruff", "check", str(backend_path), "--select", "S"], "Security linting"
+        )
 
         self.print_result(success, "Security Check", output, error)
         return success
@@ -440,17 +456,17 @@ class BuildRunner:
             return False
 
         issues = []
-        
+
         # Check trailing whitespace and EOF
         for pyfile in backend_path.rglob("*.py"):
             content = pyfile.read_text()
             lines = content.splitlines(keepends=True)
-            
+
             # Check trailing whitespace
             for i, line in enumerate(lines, 1):
                 if line.rstrip("\r\n") != line.rstrip():
                     issues.append(f"{pyfile.relative_to(self.project_root)}:{i}: trailing whitespace")
-            
+
             # Check EOF newline
             if content and not content.endswith("\n"):
                 issues.append(f"{pyfile.relative_to(self.project_root)}: missing newline at end of file")
@@ -463,7 +479,7 @@ class BuildRunner:
                 print(f"  ... and {len(issues) - 20} more")
             self.print_result(False, "File Quality")
             return False
-        
+
         print("[OK] No file quality issues found")
         self.print_result(True, "File Quality")
         return True
@@ -473,21 +489,22 @@ class BuildRunner:
         self.print_step("Config File Validation")
 
         import json
+
         try:
             import tomllib
         except ImportError:
-            import tomli as tomllib
+            import tomli as tomllib  # type: ignore[import-not-found,no-redef]
         import yaml
 
         issues = []
-        
+
         # Check YAML files
         for yamlfile in self.project_root.glob("*.yaml"):
             try:
                 yaml.safe_load(yamlfile.read_text())
             except Exception as e:
                 issues.append(f"{yamlfile.name}: invalid YAML - {e}")
-        
+
         for yamlfile in self.project_root.glob("*.yml"):
             try:
                 yaml.safe_load(yamlfile.read_text())
@@ -516,7 +533,7 @@ class BuildRunner:
                 print(f"  {issue}")
             self.print_result(False, "Config Validation")
             return False
-        
+
         print("[OK] All config files valid")
         self.print_result(True, "Config Validation")
         return True
@@ -609,7 +626,7 @@ class BuildRunner:
             return False
 
 
-def main():
+def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Comprehensive build script for DotWork")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")

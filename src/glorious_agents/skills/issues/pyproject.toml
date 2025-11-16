@@ -2,11 +2,11 @@
 name = "issue-tracker"
 version = "0.1.0"
 description = "Git-backed issue tracking with hash IDs, hierarchical relationships, and MCP server"
-authors = [{name = "DotWork Team"}]
+authors = [
+    { name = "DotWork Team" },
+]
 requires-python = ">=3.11"
 readme = "README.md"
-license = {text = "MIT"}
-
 dependencies = [
     "sqlmodel>=0.0.16",
     "gitpython>=3.1.40",
@@ -21,9 +21,16 @@ dependencies = [
     "pydantic-settings>=2.12.0",
 ]
 
+[project.license]
+text = "MIT"
+
 [project.optional-dependencies]
-agentmail = ["redis>=5.0.0"]
-postgres = ["psycopg2-binary>=2.9.9"]
+agentmail = [
+    "redis>=5.0.0",
+]
+postgres = [
+    "psycopg2-binary>=2.9.9",
+]
 dev = [
     "pytest>=7.4.3",
     "pytest-cov>=4.1.0",
@@ -43,7 +50,9 @@ issues = "issue_tracker.cli.__main__:main"
 issues = "issue_tracker.skill:app"
 
 [build-system]
-requires = ["hatchling"]
+requires = [
+    "hatchling",
+]
 build-backend = "hatchling.build"
 
 [tool.ruff]
@@ -51,8 +60,18 @@ line-length = 120
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP", "S"]
-ignore = ["E501"]
+select = [
+    "E",
+    "F",
+    "I",
+    "N",
+    "W",
+    "UP",
+]
+ignore = [
+    "E501",
+    "S101",
+]
 
 [tool.mypy]
 python_version = "3.11"
@@ -60,23 +79,29 @@ strict = false
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
-
-[[tool.mypy.overrides]]
-module = "issue_tracker.adapters.db.migrations.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "aiohttp.*"
-ignore_missing_imports = true
+overrides = [
+    { module = "issue_tracker.adapters.db.migrations.*", ignore_errors = true },
+    { module = "aiohttp.*", ignore_missing_imports = true },
+]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
+testpaths = [
+    "tests",
+]
+python_files = [
+    "test_*.py",
+]
+python_classes = [
+    "Test*",
+]
+python_functions = [
+    "test_*",
+]
 addopts = "--timeout=5"
 asyncio_mode = "auto"
-pythonpath = ["src"]
+pythonpath = [
+    "src",
+]
 
 [dependency-groups]
 dev = [

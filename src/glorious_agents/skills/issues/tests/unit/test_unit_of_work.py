@@ -1,7 +1,8 @@
 """Tests for UnitOfWork."""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import Mock, patch
 from sqlmodel import Session, create_engine
 
 from issue_tracker.adapters.db.unit_of_work import UnitOfWork
@@ -21,8 +22,8 @@ class TestUnitOfWorkRollback:
         """Test rollback when in transaction."""
         uow = UnitOfWork(mock_session)
         uow._in_transaction = True
-        
-        with patch.object(mock_session, 'rollback') as mock_rollback:
+
+        with patch.object(mock_session, "rollback") as mock_rollback:
             uow.rollback()
             mock_rollback.assert_called_once()
 
@@ -30,8 +31,8 @@ class TestUnitOfWorkRollback:
         """Test rollback when not in transaction."""
         uow = UnitOfWork(mock_session)
         uow._in_transaction = False
-        
-        with patch.object(mock_session, 'rollback') as mock_rollback:
+
+        with patch.object(mock_session, "rollback") as mock_rollback:
             uow.rollback()
             mock_rollback.assert_not_called()
 
@@ -42,16 +43,16 @@ class TestUnitOfWorkClose:
     def test_close_session(self, mock_session: Session) -> None:
         """Test closing the session."""
         uow = UnitOfWork(mock_session)
-        
-        with patch.object(mock_session, 'close') as mock_close:
+
+        with patch.object(mock_session, "close") as mock_close:
             uow.close()
             mock_close.assert_called_once()
 
     def test_close_with_exception(self, mock_session: Session) -> None:
         """Test close handles exceptions gracefully."""
         uow = UnitOfWork(mock_session)
-        
-        with patch.object(mock_session, 'close', side_effect=Exception("Close error")):
+
+        with patch.object(mock_session, "close", side_effect=Exception("Close error")):
             # Should not raise exception
             uow.close()
 
@@ -59,7 +60,7 @@ class TestUnitOfWorkClose:
         """Test __exit__ with exception rolls back."""
         uow = UnitOfWork(mock_session)
         uow.__enter__()
-        
-        with patch.object(mock_session, 'rollback') as mock_rollback:
+
+        with patch.object(mock_session, "rollback") as mock_rollback:
             uow.__exit__(Exception, Exception("error"), None)
             mock_rollback.assert_called_once()

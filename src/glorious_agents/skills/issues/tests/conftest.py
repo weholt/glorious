@@ -1,6 +1,6 @@
 """Shared test fixtures and configuration for issue tracker tests."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -73,8 +73,9 @@ def mock_repository() -> MagicMock:
 @pytest.fixture
 def mock_service() -> MagicMock:
     """Create a mock issue service with proper return value wrapping and state tracking."""
-    from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType, Comment
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
+    from issue_tracker.domain import Comment, Issue, IssuePriority, IssueStatus, IssueType
 
     service = MagicMock()
 
@@ -375,7 +376,7 @@ def mock_service() -> MagicMock:
                     priority=issue.priority,
                     type=issue.type,
                     assignee=issue.assignee,
-                    labels=[l for l in issue.labels if l != label],
+                    labels=[lbl for lbl in issue.labels if lbl != label],
                     epic_id=issue.epic_id,
                     created_at=issue.created_at,
                     updated_at=datetime.now(UTC),
@@ -486,9 +487,10 @@ def mock_service() -> MagicMock:
 @pytest.fixture
 def mock_graph_service() -> MagicMock:
     """Create a mock graph service with state tracking for dependencies."""
+    from datetime import UTC, datetime
+
     from issue_tracker.domain import Dependency
     from issue_tracker.domain.entities.dependency import DependencyType
-    from datetime import datetime, UTC
 
     service = MagicMock()
 
@@ -554,7 +556,7 @@ def mock_graph_service() -> MagicMock:
 
     def build_dependency_tree_wrapper(issue_id: str, reverse: bool = False, max_depth: int | None = None):
         """Build dependency tree recursively."""
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         def build_tree(node_id: str, current_depth: int = 0, visited: set | None = None) -> dict:
             if visited is None:
@@ -699,8 +701,8 @@ def sample_issue() -> dict[str, Any]:
         "description": "Sample description",
         "assignee": None,
         "labels": [],
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
+        "updated_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -756,7 +758,7 @@ def sample_comment() -> dict[str, Any]:
         "issue_id": "issue-abc123",
         "author": "bob",
         "text": "This is a comment",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -779,6 +781,7 @@ def integration_cli_runner(tmp_path: Path) -> CliRunner:
     inject mocks - it uses real services.
     """
     import os
+
     from typer.testing import CliRunner
 
     # Create workspace

@@ -64,9 +64,7 @@ class TestDependencyDataModel:
             to_issue = json.loads(result.stdout)
 
             # Add dependency with specific type
-            result = runner.invoke(
-                app, ["dependencies", "add", from_issue["id"], dep_type, to_issue["id"], "--json"]
-            )
+            result = runner.invoke(app, ["dependencies", "add", from_issue["id"], dep_type, to_issue["id"], "--json"])
             assert result.exit_code == 0, f"Failed to add {dep_type} dependency"
 
             data = json.loads(result.stdout)

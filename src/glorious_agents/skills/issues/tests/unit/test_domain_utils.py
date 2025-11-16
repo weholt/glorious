@@ -61,7 +61,7 @@ class TestUtcnowNaive:
     def test_not_local_time(self):
         """Test that result is UTC, not local time."""
         result = utcnow_naive()
-        local_now = datetime.now()
+        datetime.now()
 
         # If not in UTC timezone, these should differ
         # We can't guarantee they differ (user might be in UTC)

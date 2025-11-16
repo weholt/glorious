@@ -1,10 +1,9 @@
 """Unit tests for issues show command."""
 
 import json
-from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
+
 from issue_tracker.cli.app import app
 
 
@@ -13,7 +12,6 @@ class TestIssuesShow:
 
     def test_show_single_issue(self, cli_runner: CliRunner):
         """Test showing a single issue."""
-        from issue_tracker.cli.app import app
 
         # Create issue first
         create_result = cli_runner.invoke(app, ["create", "Test Issue", "--json"])
@@ -27,7 +25,6 @@ class TestIssuesShow:
 
     def test_show_json_output(self, cli_runner: CliRunner):
         """Test show with JSON output."""
-        from issue_tracker.cli.app import app
 
         # Create issue first
         create_result = cli_runner.invoke(app, ["create", "JSON Test", "--json"])
@@ -44,7 +41,6 @@ class TestIssuesShow:
 
     def test_show_multiple_issues(self, cli_runner: CliRunner):
         """Test showing multiple issues."""
-        from issue_tracker.cli.app import app
 
         # Create three issues
         result1 = cli_runner.invoke(app, ["create", "First Issue", "--json"])
@@ -64,7 +60,6 @@ class TestIssuesShow:
 
     def test_show_with_comments(self, cli_runner: CliRunner):
         """Test showing issue with comments."""
-        from issue_tracker.cli.app import app
 
         # Create issue first
         create_result = cli_runner.invoke(app, ["create", "Issue with comments", "--json"])
@@ -78,7 +73,6 @@ class TestIssuesShow:
 
     def test_show_with_history(self, cli_runner: CliRunner):
         """Test showing issue with history."""
-        from issue_tracker.cli.app import app
 
         # Create issue first
         create_result = cli_runner.invoke(app, ["create", "Issue with history", "--json"])
@@ -92,7 +86,6 @@ class TestIssuesShow:
 
     def test_show_with_dependencies(self, cli_runner: CliRunner):
         """Test showing issue with dependencies."""
-        from issue_tracker.cli.app import app
 
         # Create issue first
         create_result = cli_runner.invoke(app, ["create", "Issue with deps", "--json"])
@@ -106,7 +99,6 @@ class TestIssuesShow:
 
     def test_show_all_details(self, cli_runner: CliRunner):
         """Test showing issue with all details."""
-        from issue_tracker.cli.app import app
 
         # Create issue first
         create_result = cli_runner.invoke(app, ["create", "Issue with all details", "--json"])
@@ -129,7 +121,6 @@ class TestIssuesShow:
 
     def test_show_nonexistent_issue(self, cli_runner: CliRunner):
         """Test showing a non-existent issue."""
-        from issue_tracker.cli.app import app
 
         result = cli_runner.invoke(app, ["show", "issue-nonexistent"])
 
@@ -138,7 +129,6 @@ class TestIssuesShow:
 
     def test_show_best_effort_multiple(self, cli_runner: CliRunner):
         """Test showing multiple issues with some missing."""
-        from issue_tracker.cli.app import app
 
         # Create two issues
         result1 = cli_runner.invoke(app, ["create", "First Issue", "--json"])

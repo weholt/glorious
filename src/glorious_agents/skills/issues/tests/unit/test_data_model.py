@@ -9,24 +9,20 @@ Validates that the planned data model matches the original Beads schema:
 """
 
 import json
-from datetime import datetime
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 from typer.testing import CliRunner
 
 from issue_tracker.cli.app import app
-from issue_tracker.domain.entities.issue import Issue, IssueStatus, IssueType, IssuePriority
+from issue_tracker.domain.entities.issue import Issue, IssuePriority, IssueStatus, IssueType
 from issue_tracker.domain.exceptions import InvariantViolationError
 
 
 class TestIssueDataModel:
     """Validate Issue entity matches Beads schema."""
 
-    def test_issue_has_required_fields(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_issue_has_required_fields(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test issue has all required fields from Beads schema."""
         issue = {
             "id": "issue-abc",
@@ -46,9 +42,7 @@ class TestIssueDataModel:
 
         mock_service.create_issue.return_value = issue
 
-        result = cli_runner.invoke(
-            app, ["create", "Test issue", "-d", "Description text", "--json"]
-        )
+        result = cli_runner.invoke(app, ["create", "Test issue", "-d", "Description text", "--json"])
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
@@ -64,14 +58,12 @@ class TestIssueDataModel:
         assert "created_at" in data
         assert "updated_at" in data
 
-    def test_issue_status_enum_values(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_issue_status_enum_values(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test issue status follows Beads enum: open, in_progress, blocked, resolved, closed, archived."""
         # Create issue first
         create_result = cli_runner.invoke(app, ["create", "Test Issue", "--json"])
         issue_id = json.loads(create_result.stdout)["id"]
-        
+
         valid_statuses = [
             "open",
             "in_progress",
@@ -87,17 +79,13 @@ class TestIssueDataModel:
                 "status": status,
             }
 
-            result = cli_runner.invoke(
-                app, ["update", issue_id, "--status", status, "--json"]
-            )
+            result = cli_runner.invoke(app, ["update", issue_id, "--status", status, "--json"])
 
             assert result.exit_code == 0
             data = json.loads(result.stdout)
             assert data["status"] == status
 
-    def test_issue_priority_range_0_to_4(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_issue_priority_range_0_to_4(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test priority follows Beads range: 0=critical, 1=high, 2=medium, 3=low, 4=backlog."""
         for priority in range(5):  # 0-4
             mock_service.create_issue.return_value = {
@@ -106,17 +94,13 @@ class TestIssueDataModel:
                 "priority": priority,
             }
 
-            result = cli_runner.invoke(
-                app, ["create", "Test", "-p", str(priority), "--json"]
-            )
+            result = cli_runner.invoke(app, ["create", "Test", "-p", str(priority), "--json"])
 
             assert result.exit_code == 0
             data = json.loads(result.stdout)
             assert data["priority"] == priority
 
-    def test_issue_type_enum_values(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_issue_type_enum_values(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test issue type follows Beads enum: bug, feature, task, epic, chore."""
         valid_types = ["bug", "feature", "task", "epic", "chore"]
 
@@ -127,17 +111,13 @@ class TestIssueDataModel:
                 "type": issue_type,
             }
 
-            result = cli_runner.invoke(
-                app, ["create", "Test", "-t", issue_type, "--json"]
-            )
+            result = cli_runner.invoke(app, ["create", "Test", "-t", issue_type, "--json"])
 
             assert result.exit_code == 0
             data = json.loads(result.stdout)
             assert data["type"] == issue_type
 
-    def test_issue_assignee_nullable(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_issue_assignee_nullable(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test assignee field is optional/nullable."""
         mock_service.create_issue.return_value = {
             "id": "issue-1",
@@ -151,9 +131,7 @@ class TestIssueDataModel:
         data = json.loads(result.stdout)
         assert data["assignee"] is None
 
-    def test_issue_epic_relationship_nullable(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_issue_epic_relationship_nullable(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test epic_id field is optional/nullable (only set for non-epic issues)."""
         mock_service.create_issue.return_value = {
             "id": "issue-1",
@@ -168,9 +146,7 @@ class TestIssueDataModel:
         data = json.loads(result.stdout)
         assert data["epic_id"] is None
 
-    def test_issue_labels_array(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_issue_labels_array(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test labels stored as array of strings."""
         mock_service.create_issue.return_value = {
             "id": "issue-1",
@@ -178,18 +154,14 @@ class TestIssueDataModel:
             "labels": ["bug", "critical", "frontend"],
         }
 
-        result = cli_runner.invoke(
-            app, ["create", "Test", "--label", "bug,critical,frontend", "--json"]
-        )
+        result = cli_runner.invoke(app, ["create", "Test", "--label", "bug,critical,frontend", "--json"])
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert isinstance(data["labels"], list)
         assert len(data["labels"]) == 3
 
-    def test_issue_timestamps(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_issue_timestamps(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test issue has created_at, updated_at, closed_at timestamps."""
         mock_service.create_issue.return_value = {
             "id": "issue-1",
@@ -212,9 +184,7 @@ class TestLabelDataModel:
     """Validate Label entity matches Beads schema."""
 
     @pytest.mark.skip(reason="Rich label entities not implemented - labels are currently simple strings")
-    def test_label_has_required_fields(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_label_has_required_fields(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test label entity has id, name, color, description, timestamps."""
         mock_service.list_labels.return_value = [
             {
@@ -241,9 +211,7 @@ class TestLabelDataModel:
         assert "created_at" in label
         assert "updated_at" in label
 
-    def test_label_name_uniqueness(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_label_name_uniqueness(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test label names must be unique (no duplicates)."""
         # First label creation succeeds
         mock_service.create_label.return_value = {
@@ -255,7 +223,7 @@ class TestLabelDataModel:
         create_result = cli_runner.invoke(app, ["create", "Test Issue", "--json"])
         assert create_result.exit_code == 0
         issue_id = json.loads(create_result.stdout)["id"]
-        
+
         # First label addition succeeds
         result = cli_runner.invoke(app, ["labels", "add", issue_id, "bug", "--json"])
         assert result.exit_code == 0
@@ -269,9 +237,7 @@ class TestLabelDataModel:
 class TestEpicDataModel:
     """Validate Epic entity matches Beads schema."""
 
-    def test_epic_has_required_fields(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_epic_has_required_fields(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test epic entity has id, title, description, status, timestamps."""
         mock_service.create_issue.return_value = {
             "id": "epic-1",
@@ -304,17 +270,11 @@ class TestEpicDataModel:
         assert "title" in data
         assert "status" in data
 
-    def test_epic_cannot_have_parent_epic(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_epic_cannot_have_parent_epic(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test epic issues cannot have epic_id set (no nested epics)."""
-        mock_service.create_issue.side_effect = Exception(
-            "Epic issues cannot have parent epic"
-        )
+        mock_service.create_issue.side_effect = Exception("Epic issues cannot have parent epic")
 
-        result = cli_runner.invoke(
-            app, ["create", "Child Epic", "-t", "epic", "--json"]
-        )
+        cli_runner.invoke(app, ["create", "Child Epic", "-t", "epic", "--json"])
 
         # If trying to set epic_id on epic type, should fail
         # This would be enforced at service layer
@@ -324,9 +284,7 @@ class TestEpicDataModel:
 class TestCommentDataModel:
     """Validate Comment entity matches Beads schema."""
 
-    def test_comment_has_required_fields(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_comment_has_required_fields(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test comment entity has id, issue_id, author, text, timestamps."""
         mock_service.list_comments.return_value = [
             {
@@ -353,9 +311,7 @@ class TestCommentDataModel:
         assert "created_at" in comment
         assert "updated_at" in comment
 
-    def test_comment_linked_to_issue(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_comment_linked_to_issue(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test comment has foreign key to issue."""
         mock_service.add_comment.return_value = {
             "id": "comment-1",
@@ -364,9 +320,7 @@ class TestCommentDataModel:
             "text": "Comment text",
         }
 
-        result = cli_runner.invoke(
-            app, ["comments", "add", "issue-abc", "Comment text", "--json"]
-        )
+        result = cli_runner.invoke(app, ["comments", "add", "issue-abc", "Comment text", "--json"])
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
@@ -416,9 +370,7 @@ class TestDatabaseIndexes:
 class TestDataModelConstraints:
     """Test business rule constraints enforced at domain layer."""
 
-    def test_title_cannot_be_empty(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_title_cannot_be_empty(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test issue title must be non-empty."""
         mock_service.create_issue.side_effect = Exception("Title cannot be empty")
 
@@ -426,9 +378,7 @@ class TestDataModelConstraints:
 
         assert result.exit_code != 0
 
-    def test_priority_must_be_0_to_4(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_priority_must_be_0_to_4(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test priority must be in range 0-4."""
         mock_service.create_issue.side_effect = Exception("Invalid priority")
 
@@ -436,9 +386,7 @@ class TestDataModelConstraints:
 
         assert result.exit_code != 0
 
-    def test_labels_are_deduplicated(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_labels_are_deduplicated(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test labels list has no duplicates."""
         mock_service.create_issue.return_value = {
             "id": "issue-1",
@@ -446,30 +394,22 @@ class TestDataModelConstraints:
             "labels": ["bug", "critical"],  # Duplicates removed
         }
 
-        result = cli_runner.invoke(
-            app, ["create", "Test", "--label", "bug,critical,bug", "--json"]
-        )
+        result = cli_runner.invoke(app, ["create", "Test", "--label", "bug,critical,bug", "--json"])
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         # Labels should be deduplicated
         assert len(data["labels"]) == 2
 
-    def test_assignee_cannot_be_empty_string(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_assignee_cannot_be_empty_string(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test assignee must be None or non-empty string."""
-        mock_service.update_issue.side_effect = Exception(
-            "Assignee cannot be empty string"
-        )
+        mock_service.update_issue.side_effect = Exception("Assignee cannot be empty string")
 
         result = cli_runner.invoke(app, ["update", "issue-1", "--assignee", "", "--json"])
 
         assert result.exit_code != 0
 
-    def test_closed_at_set_on_close(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_closed_at_set_on_close(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test closed_at timestamp set when issue closed."""
         mock_service.close_issue.return_value = {
             "id": "issue-1",
@@ -477,9 +417,7 @@ class TestDataModelConstraints:
             "closed_at": "2024-01-15T10:00:00Z",
         }
 
-        result = cli_runner.invoke(
-            app, ["close", "issue-1", "--reason", "Done", "--json"]
-        )
+        result = cli_runner.invoke(app, ["close", "issue-1", "--reason", "Done", "--json"])
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
@@ -489,9 +427,7 @@ class TestDataModelConstraints:
 class TestBeadsCompatibility:
     """Test compatibility with Beads issue tracker conventions."""
 
-    def test_issue_id_format(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_issue_id_format(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test issue IDs follow format: issue-<hash> or issue-<hash>.<child>."""
         mock_service.create_issue.return_value = {
             "id": "issue-a3f8e9",
@@ -506,9 +442,7 @@ class TestBeadsCompatibility:
         assert data["id"].startswith("issue-")
 
     @pytest.mark.skip(reason="Hierarchical ID format not yet implemented")
-    def test_hierarchical_id_format(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_hierarchical_id_format(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test child issue IDs follow format: parent-id.1, parent-id.2, etc."""
         mock_service.create_issue.return_value = {
             "id": "issue-a3f8e9.1",
@@ -523,9 +457,7 @@ class TestBeadsCompatibility:
         # Child ID should have .N suffix
         assert "." in data["id"]
 
-    def test_json_output_format(
-        self, cli_runner: CliRunner, mock_service: MagicMock
-    ):
+    def test_json_output_format(self, cli_runner: CliRunner, mock_service: MagicMock):
         """Test JSON output is valid and parseable."""
         mock_service.create_issue.return_value = {
             "id": "issue-1",

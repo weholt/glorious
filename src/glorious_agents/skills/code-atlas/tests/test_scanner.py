@@ -18,7 +18,7 @@ def test_scan_file_basic() -> None:
 
 class Greeter:
     """A greeter class."""
-    
+
     def greet(self, name: str) -> str:
         """Greet someone."""
         return f"Hello, {name}"

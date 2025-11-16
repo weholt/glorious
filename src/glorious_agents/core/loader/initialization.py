@@ -4,7 +4,6 @@ import importlib
 import importlib.util
 import logging
 import sys
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from glorious_agents.config import config
@@ -43,7 +42,7 @@ def init_schemas(sorted_skills: list[str], skills_data: dict[str, dict[str, Any]
 def load_skill_entry(entry_point: str, skill_name: str, is_local: bool = False) -> "typer.Typer":
     """Load a skill's Typer app from its entry point."""
     from glorious_agents.core.isolation import create_restricted_context
-    
+
     module_path, attr = entry_point.split(":")
 
     # Add skills directory to path only for local skills

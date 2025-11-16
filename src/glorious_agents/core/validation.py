@@ -70,7 +70,9 @@ class SkillInput(BaseModel):
     model_config = {"extra": "forbid", "str_strip_whitespace": True}
 
 
-def _bind_arguments(func: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]) -> dict[str, Any]:
+def _bind_arguments(
+    func: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> dict[str, Any]:
     """Bind function arguments and apply defaults."""
     sig = inspect.signature(func)
     try:
@@ -85,7 +87,7 @@ def _validate_parameter(param_name: str, value: Any, param_type: Any) -> Any:
     """Validate a single parameter against its type hint."""
     if not (param_type and isinstance(param_type, type) and issubclass(param_type, BaseModel)):
         return value
-    
+
     try:
         if isinstance(value, param_type):
             return value

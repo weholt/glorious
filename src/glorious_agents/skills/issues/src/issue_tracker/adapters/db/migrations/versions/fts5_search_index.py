@@ -19,7 +19,7 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Add FTS5 virtual table and triggers."""
-    
+
     # Create FTS5 virtual table for full-text search
     op.execute("""
         CREATE VIRTUAL TABLE IF NOT EXISTS issues_fts USING fts5(
@@ -28,14 +28,14 @@ def upgrade() -> None:
             description
         );
     """)
-    
+
     # Populate FTS table with existing data
     op.execute("""
         INSERT INTO issues_fts(rowid, id, title, description)
         SELECT rowid, id, title, COALESCE(description, '')
         FROM issues;
     """)
-    
+
     # Create trigger to keep FTS index in sync on INSERT
     op.execute("""
         CREATE TRIGGER IF NOT EXISTS issues_fts_insert
@@ -45,7 +45,7 @@ def upgrade() -> None:
             VALUES (NEW.rowid, NEW.id, NEW.title, COALESCE(NEW.description, ''));
         END;
     """)
-    
+
     # Create trigger to keep FTS index in sync on UPDATE
     op.execute("""
         CREATE TRIGGER IF NOT EXISTS issues_fts_update
@@ -57,7 +57,7 @@ def upgrade() -> None:
             WHERE rowid = NEW.rowid;
         END;
     """)
-    
+
     # Create trigger to keep FTS index in sync on DELETE
     op.execute("""
         CREATE TRIGGER IF NOT EXISTS issues_fts_delete
@@ -70,7 +70,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Remove FTS5 virtual table and triggers."""
-    
+
     op.execute("DROP TRIGGER IF EXISTS issues_fts_delete;")
     op.execute("DROP TRIGGER IF EXISTS issues_fts_update;")
     op.execute("DROP TRIGGER IF EXISTS issues_fts_insert;")

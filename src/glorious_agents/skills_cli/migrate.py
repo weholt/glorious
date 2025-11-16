@@ -27,7 +27,7 @@ def create(
     try:
         migration_path = create_migration_file(skill_name, Path(migrations_dir), description)
         console.print(f"[green]✓ Created migration:[/green] {migration_path}")
-        console.print(f"[dim]Edit the file to add your SQL statements[/dim]")
+        console.print("[dim]Edit the file to add your SQL statements[/dim]")
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)

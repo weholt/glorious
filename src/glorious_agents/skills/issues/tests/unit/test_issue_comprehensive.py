@@ -1,8 +1,10 @@
 """Comprehensive issue entity tests."""
 
-import pytest
 from datetime import datetime
-from issue_tracker.domain.entities.issue import Issue, IssueStatus, IssuePriority, IssueType
+
+import pytest
+
+from issue_tracker.domain.entities.issue import Issue, IssuePriority, IssueStatus, IssueType
 from issue_tracker.domain.exceptions import InvariantViolationError
 
 
@@ -16,7 +18,7 @@ def test_issue_metadata():
         status=IssueStatus.OPEN,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        labels=["custom", "value"]
+        labels=["custom", "value"],
     )
     assert "custom" in issue.labels
     assert "value" in issue.labels
@@ -34,7 +36,7 @@ def test_issue_with_timestamps():
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
         created_at=now,
-        updated_at=now
+        updated_at=now,
     )
     assert issue.created_at == now
     assert issue.updated_at == now
@@ -65,7 +67,7 @@ def test_issue_remove_nonexistent_label():
         status=IssueStatus.OPEN,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        labels=["existing"]
+        labels=["existing"],
     )
     updated = issue.remove_label("nonexistent")
     assert "existing" in updated.labels
@@ -138,7 +140,7 @@ def test_issue_closed_with_timestamp():
         status=IssueStatus.CLOSED,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        closed_at=closed_at
+        closed_at=closed_at,
     )
     assert issue.closed_at == closed_at
 
@@ -168,7 +170,7 @@ def test_issue_transition_from_archived_to_open():
         status=IssueStatus.ARCHIVED,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        closed_at=datetime.now()
+        closed_at=datetime.now(),
     )
     updated = issue.transition(IssueStatus.OPEN)
     assert updated.status == IssueStatus.OPEN
@@ -185,7 +187,7 @@ def test_issue_with_epic_id():
         status=IssueStatus.OPEN,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        epic_id="epic-1"
+        epic_id="epic-1",
     )
     assert issue.epic_id == "epic-1"
 
@@ -200,7 +202,7 @@ def test_issue_with_assignee():
         status=IssueStatus.OPEN,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        assignee="user1"
+        assignee="user1",
     )
     assert issue.assignee == "user1"
 

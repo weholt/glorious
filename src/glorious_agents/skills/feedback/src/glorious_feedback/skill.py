@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Feedback skill - action outcome tracking."""
 
 import json
@@ -8,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
 app = typer.Typer(help="Action feedback tracking")
@@ -30,7 +33,9 @@ class RecordFeedbackInput(SkillInput):
 
 
 @validate_input
-def record_feedback(action_id: str, status: str, reason: str = "", action_type: str = "", meta: dict | None = None) -> int:
+def record_feedback(
+    action_id: str, status: str, reason: str = "", action_type: str = "", meta: dict | None = None
+) -> int:
     """
     Record action feedback.
 
@@ -55,7 +60,7 @@ def record_feedback(action_id: str, status: str, reason: str = "", action_type: 
     cur = _ctx.conn.execute(
         """INSERT INTO feedback (action_id, action_type, status, reason, meta)
            VALUES (?, ?, ?, ?, ?)""",
-        (action_id, action_type, status, reason, meta_json)
+        (action_id, action_type, status, reason, meta_json),
     )
     _ctx.conn.commit()
     return cur.lastrowid
@@ -78,12 +83,15 @@ def list(limit: int = 50) -> None:
         console.print("[red]Context not initialized[/red]")
         return
 
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT id, action_id, action_type, status, reason, created_at
         FROM feedback
         ORDER BY created_at DESC
         LIMIT ?
-    """, (limit,))
+    """,
+        (limit,),
+    )
 
     table = Table(title="Recent Feedback")
     table.add_column("ID", style="cyan")
@@ -110,14 +118,17 @@ def stats(group_by: str = "status", limit: int = 10) -> None:
         console.print("[red]Invalid group_by. Must be: status or action_type[/red]")
         return
 
-    cur = _ctx.conn.execute(f"""
+    cur = _ctx.conn.execute(
+        f"""
         SELECT {group_by}, COUNT(*) as count
         FROM feedback
         WHERE {group_by} IS NOT NULL AND {group_by} != ''
         GROUP BY {group_by}
         ORDER BY count DESC
         LIMIT ?
-    """, (limit,))
+    """,
+        (limit,),
+    )
 
     table = Table(title=f"Feedback Statistics (by {group_by})")
     table.add_column(group_by.title(), style="cyan")
@@ -132,14 +143,26 @@ def stats(group_by: str = "status", limit: int = 10) -> None:
 def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for feedback entries."""
     from glorious_agents.core.search import SearchResult
+
     if _ctx is None:
         return []
     query_lower = query.lower()
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT id, action, feedback FROM feedback_log
         WHERE LOWER(action) LIKE ? OR LOWER(feedback) LIKE ?
         LIMIT ?
-    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
-    return [SearchResult(skill="feedback", id=row[0], type="feedback",
-                        content=f"{row[1]}: {row[2][:80]}", metadata={}, score=0.6)
-           for row in cur]
+    """,
+        (f"%{query_lower}%", f"%{query_lower}%", limit),
+    )
+    return [
+        SearchResult(
+            skill="feedback",
+            id=row[0],
+            type="feedback",
+            content=f"{row[1]}: {row[2][:80]}",
+            metadata={},
+            score=0.6,
+        )
+        for row in cur
+    ]

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Cache skill - short-term ephemeral storage with TTL."""
 
 import json
@@ -10,6 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
 app = typer.Typer(help="Cache management with TTL")
@@ -56,12 +59,15 @@ def set_cache(key: str, value: str, ttl_seconds: int | None = None, kind: str = 
         raise RuntimeError("Context not initialized")
 
     # Convert value to bytes for BLOB storage
-    value_bytes = value.encode('utf-8')
+    value_bytes = value.encode("utf-8")
 
-    _ctx.conn.execute("""
+    _ctx.conn.execute(
+        """
         INSERT OR REPLACE INTO cache_entries (key, value, kind, created_at, ttl_seconds)
         VALUES (?, ?, ?, ?, ?)
-    """, (key, value_bytes, kind, datetime.utcnow().isoformat(), ttl_seconds))
+    """,
+        (key, value_bytes, kind, datetime.utcnow().isoformat(), ttl_seconds),
+    )
     _ctx.conn.commit()
 
 
@@ -82,11 +88,14 @@ def get_cache(key: str) -> str | None:
     if _ctx is None:
         raise RuntimeError("Context not initialized")
 
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT value, created_at, ttl_seconds
         FROM cache_entries
         WHERE key = ?
-    """, (key,))
+    """,
+        (key,),
+    )
 
     row = cur.fetchone()
     if not row:
@@ -104,7 +113,7 @@ def get_cache(key: str) -> str | None:
             _ctx.conn.commit()
             return None
 
-    return value_bytes.decode('utf-8')
+    return value_bytes.decode("utf-8")
 
 
 def prune_expired() -> int:
@@ -146,7 +155,7 @@ def set(
     key: str,
     value: str,
     ttl: int | None = typer.Option(None, help="TTL in seconds"),
-    kind: str = typer.Option("general", help="Cache kind")
+    kind: str = typer.Option("general", help="Cache kind"),
 ) -> None:
     """Set a cache entry with optional TTL."""
     try:
@@ -241,7 +250,7 @@ def prune(expired_only: bool = typer.Option(True, help="Only remove expired entr
 @app.command()
 def warmup(
     project_id: str = typer.Option(..., help="Project ID to warmup"),
-    kinds: str = typer.Option("ast,symbols,deps", help="Comma-separated cache kinds")
+    kinds: str = typer.Option("ast,symbols,deps", help="Comma-separated cache kinds"),
 ) -> None:
     """Warmup cache with project-specific data."""
     console.print(f"[yellow]Warmup for project '{project_id}' with kinds: {kinds}[/yellow]")
@@ -282,26 +291,32 @@ def delete(key: str) -> None:
 def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for cache entries."""
     from glorious_agents.core.search import SearchResult
+
     if _ctx is None:
         return []
-    
+
     query_lower = query.lower()
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT key, value, expires_at
         FROM cache_entries
         WHERE LOWER(key) LIKE ? OR LOWER(value) LIKE ?
         ORDER BY created_at DESC
         LIMIT ?
-    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
-    
+    """,
+        (f"%{query_lower}%", f"%{query_lower}%", limit),
+    )
+
     results = []
     for row in cur:
-        results.append(SearchResult(
-            skill="cache",
-            id=row[0],
-            type="cache_entry",
-            content=f"{row[0]}: {row[1][:50]}...",
-            metadata={"expires_at": row[2]},
-            score=0.7
-        ))
+        results.append(
+            SearchResult(
+                skill="cache",
+                id=row[0],
+                type="cache_entry",
+                content=f"{row[0]}: {row[1][:50]}...",
+                metadata={"expires_at": row[2]},
+                score=0.7,
+            )
+        )
     return results

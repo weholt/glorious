@@ -1,9 +1,6 @@
 """Tests for template module."""
 
-import json
 from pathlib import Path
-
-import pytest
 
 
 class TestTemplate:
@@ -205,7 +202,7 @@ class TestTemplateManager:
         assert not templates_dir.exists()
 
         # Manager should create it
-        manager = TemplateManager(templates_dir)
+        TemplateManager(templates_dir)
 
         assert templates_dir.exists()
         assert templates_dir.is_dir()

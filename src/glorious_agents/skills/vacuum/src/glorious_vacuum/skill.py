@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 """Vacuum skill - knowledge distillation and optimization."""
 
 import typer
 from rich.console import Console
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 
 app = typer.Typer(help="Knowledge distillation")
 console = Console()
@@ -17,7 +20,9 @@ def init_context(ctx: SkillContext) -> None:
 
 
 @app.command()
-def run(mode: str = typer.Option("summarize", help="Mode: summarize, dedupe, promote-rules, sharpen")) -> None:
+def run(
+    mode: str = typer.Option("summarize", help="Mode: summarize, dedupe, promote-rules, sharpen"),
+) -> None:
     """Run vacuum operation."""
     console.print(f"[yellow]Vacuum mode: {mode}[/yellow]")
     console.print("[yellow]Vacuum (placeholder) - requires LLM integration[/yellow]")
@@ -30,8 +35,7 @@ def run(mode: str = typer.Option("summarize", help="Mode: summarize, dedupe, pro
     # Record operation
     if _ctx:
         _ctx.conn.execute(
-            "INSERT INTO vacuum_operations (mode, status) VALUES (?, 'completed')",
-            (mode,)
+            "INSERT INTO vacuum_operations (mode, status) VALUES (?, 'completed')", (mode,)
         )
         _ctx.conn.commit()
 
@@ -54,20 +58,34 @@ def history() -> None:
 
     console.print("[cyan]Vacuum History:[/cyan]")
     for row in cur:
-        console.print(f"  #{row[0]} - {row[1]} | Processed: {row[2]}, Modified: {row[3]} [{row[5]}]")
+        console.print(
+            f"  #{row[0]} - {row[1]} | Processed: {row[2]}, Modified: {row[3]} [{row[5]}]"
+        )
 
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for vacuum knowledge entries."""
     from glorious_agents.core.search import SearchResult
+
     if _ctx is None:
         return []
     query_lower = query.lower()
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT id, title, summary FROM vacuum_knowledge
         WHERE LOWER(title) LIKE ? OR LOWER(summary) LIKE ?
         LIMIT ?
-    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
-    return [SearchResult(skill="vacuum", id=row[0], type="knowledge", 
-                        content=f"{row[1]}: {row[2][:80]}", metadata={}, score=0.7)
-           for row in cur]
+    """,
+        (f"%{query_lower}%", f"%{query_lower}%", limit),
+    )
+    return [
+        SearchResult(
+            skill="vacuum",
+            id=row[0],
+            type="knowledge",
+            content=f"{row[1]}: {row[2][:80]}",
+            metadata={},
+            score=0.7,
+        )
+        for row in cur
+    ]

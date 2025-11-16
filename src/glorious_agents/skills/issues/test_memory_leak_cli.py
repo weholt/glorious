@@ -1,35 +1,36 @@
 #!/usr/bin/env python3
 """Test memory leak with integration_cli_runner fixture tests."""
 
+import gc
 import subprocess
 import sys
 import time
-import gc
 
 try:
-    import psutil
+    import psutil  # type: ignore[import-untyped]  # noqa: F401
 
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
 
 
-def get_memory_mb():
+def get_memory_mb() -> float:
     """Get current memory usage in MB."""
     if HAS_PSUTIL:
         import psutil as ps
 
-        return ps.virtual_memory().used / 1024 / 1024
+        result: float = ps.virtual_memory().used / 1024 / 1024
+        return result
     else:
-        with open("/proc/meminfo", "r") as f:
+        with open("/proc/meminfo") as f:
             for line in f:
                 if line.startswith("MemAvailable:"):
-                    available = int(line.split()[1]) / 1024
+                    available: float = int(line.split()[1]) / 1024
                     return available
-        return 0
+        return 0.0
 
 
-def run_test(test_path):
+def run_test(test_path: str) -> tuple[bool, str, str]:
     """Run a single test."""
     result = subprocess.run(
         ["uv", "run", "pytest", test_path, "-v", "--tb=line"], capture_output=True, text=True, timeout=30
@@ -37,7 +38,7 @@ def run_test(test_path):
     return result.returncode == 0, result.stdout, result.stderr
 
 
-def main():
+def main() -> int:
     """Run tests that use integration_cli_runner fixture."""
     print("Memory Leak Test - integration_cli_runner Fixture")
     print("=" * 70)
@@ -82,7 +83,7 @@ def main():
             print(f"  Total delta: {total_delta:+.1f} MB")
 
             if not success:
-                print(f"\n  Error:")
+                print("\n  Error:")
                 error_msg = stderr if stderr else stdout
                 lines = error_msg.split("\n")
                 for line in lines[-20:]:
@@ -92,7 +93,7 @@ def main():
             results.append({"test": test_name, "success": success, "delta": delta, "total": total_delta})
 
         except subprocess.TimeoutExpired:
-            print(f"  Status: ✗ TIMEOUT")
+            print("  Status: ✗ TIMEOUT")
             results.append({"test": test_name, "success": False, "delta": 0, "total": 0})
         except Exception as e:
             print(f"  Status: ✗ ERROR - {e}")
@@ -119,14 +120,14 @@ def main():
     # Without fix: 3 tests * 50MB+ = 150MB+ leaked
     if total_increase > 150:
         print("❌ MEMORY LEAK DETECTED!")
-        print(f"   Without fix, expected: > 150 MB")
-        print(f"   With fix, expected: < 100 MB")
+        print("   Without fix, expected: > 150 MB")
+        print("   With fix, expected: < 100 MB")
         print(f"   Actual: {total_increase:.1f} MB")
         return 1
     else:
         print("✅ MEMORY LEAK FIXED!")
-        print(f"   Without fix: would leak > 150 MB")
-        print(f"   With fix: < 100 MB is expected")
+        print("   Without fix: would leak > 150 MB")
+        print("   With fix: < 100 MB is expected")
         print(f"   Actual: {total_increase:.1f} MB")
         return 0 if passed == 3 else 1
 

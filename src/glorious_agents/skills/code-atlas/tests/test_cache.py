@@ -1,7 +1,5 @@
 """Tests for file caching system."""
 
-from pathlib import Path
-
 import pytest
 
 from code_atlas.cache import FileCache

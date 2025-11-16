@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Orchestrator skill - intent routing and workflows."""
 
 import json
@@ -6,6 +8,7 @@ import typer
 from rich.console import Console
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 
 app = typer.Typer(help="Workflow orchestration")
 console = Console()
@@ -18,62 +21,64 @@ def init_context(ctx: SkillContext) -> None:
     _ctx = ctx
 
 
-def search(query: str, limit: int = 10) -> list["SearchResult"]:
+def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for workflows.
-    
+
     Searches workflow names and intents.
-    
+
     Args:
         query: Search query string
         limit: Maximum number of results
-        
+
     Returns:
         List of SearchResult objects
     """
     from glorious_agents.core.search import SearchResult
-    
+
     if _ctx is None:
         return []
-    
+
     rows = _ctx.conn.execute(
         "SELECT id, name, intent, status, created_at, completed_at FROM workflows"
     ).fetchall()
-    
+
     results = []
     query_lower = query.lower()
-    
+
     for wf_id, name, intent, status, created_at, completed_at in rows:
         score = 0.0
         matched = False
-        
+
         if query_lower in name.lower():
             score += 0.8
             matched = True
-        
+
         if intent and query_lower in intent.lower():
             score += 0.6
             matched = True
-        
+
         if query_lower in status.lower():
             score += 0.3
             matched = True
-        
+
         if matched:
             score = min(1.0, score)
-            
-            results.append(SearchResult(
-                skill="orchestrator",
-                id=wf_id,
-                type="workflow",
-                content=f"{name}\n{intent or ''}",
-                metadata={
-                    "status": status,
-                    "created_at": created_at,
-                    "completed_at": completed_at,
-                },
-                score=score
-            ))
-    
+
+            results.append(
+                SearchResult(
+                    skill="orchestrator",
+                    id=wf_id,
+                    type="workflow",
+                    content=f"{name}\n{intent or ''}",
+                    metadata={
+                        "status": status,
+                        "created_at": created_at,
+                        "completed_at": completed_at,
+                    },
+                    score=score,
+                )
+            )
+
     results.sort(key=lambda r: r.score, reverse=True)
     return results[:limit]
 
@@ -112,10 +117,13 @@ def status(workflow_id: int) -> None:
         console.print("[red]Context not initialized[/red]")
         return
 
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT name, status, steps, created_at, completed_at
         FROM workflows WHERE id = ?
-    """, (workflow_id,))
+    """,
+        (workflow_id,),
+    )
 
     row = cur.fetchone()
     if row:

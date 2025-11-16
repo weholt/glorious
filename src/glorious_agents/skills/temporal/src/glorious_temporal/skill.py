@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 """Temporal skill - time-aware filtering."""
 
 import typer
 from rich.console import Console
+
+from glorious_agents.core.search import SearchResult
 
 app = typer.Typer(help="Temporal filtering utilities")
 console = Console()
@@ -17,15 +21,15 @@ def parse(time_spec: str) -> None:
     import re
     from datetime import datetime, timedelta
 
-    if match := re.match(r'(\d+)([dhm])', time_spec):
+    if match := re.match(r"(\d+)([dhm])", time_spec):
         amount, unit = match.groups()
         amount = int(amount)
 
-        if unit == 'd':
+        if unit == "d":
             delta = timedelta(days=amount)
-        elif unit == 'h':
+        elif unit == "h":
             delta = timedelta(hours=amount)
-        elif unit == 'm':
+        elif unit == "m":
             delta = timedelta(minutes=amount)
         else:
             console.print("[red]Invalid unit[/red]")
@@ -59,7 +63,7 @@ def examples() -> None:
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for temporal filters."""
-    from glorious_agents.core.search import SearchResult
+
     if _ctx is None:
         return []
     return []  # Temporal has no searchable content

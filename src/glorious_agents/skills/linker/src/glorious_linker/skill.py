@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Linker skill - semantic cross-references between entities."""
 
 from typing import Any
@@ -8,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
 app = typer.Typer(help="Link management between entities")
@@ -21,64 +24,66 @@ def init_context(ctx: SkillContext) -> None:
     _ctx = ctx
 
 
-def search(query: str, limit: int = 10) -> list["SearchResult"]:
+def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for links.
-    
+
     Searches links by entity types and IDs.
-    
+
     Args:
         query: Search query string
         limit: Maximum number of results
-        
+
     Returns:
         List of SearchResult objects
     """
     from glorious_agents.core.search import SearchResult
-    
+
     if _ctx is None:
         return []
-    
+
     rows = _ctx.conn.execute(
         "SELECT id, kind, a_type, a_id, b_type, b_id, weight, created_at FROM links"
     ).fetchall()
-    
+
     results = []
     query_lower = query.lower()
-    
+
     for link_id, kind, a_type, a_id, b_type, b_id, weight, created_at in rows:
         score = 0.0
         matched = False
-        
+
         if query_lower in kind.lower():
             score += 0.7
             matched = True
-        
+
         if query_lower in a_type.lower() or query_lower in a_id.lower():
             score += 0.5
             matched = True
-        
+
         if query_lower in b_type.lower() or query_lower in b_id.lower():
             score += 0.5
             matched = True
-        
+
         if matched:
             score = min(1.0, score)
-            
-            results.append(SearchResult(
-                skill="linker",
-                id=link_id,
-                type="link",
-                content=f"{kind}: {a_type}:{a_id} → {b_type}:{b_id}",
-                metadata={
-                    "kind": kind,
-                    "source": f"{a_type}:{a_id}",
-                    "target": f"{b_type}:{b_id}",
-                    "weight": weight,
-                    "created_at": created_at,
-                },
-                score=score
-            ))
-    
+
+            results.append(
+                SearchResult(
+                    skill="linker",
+                    id=link_id,
+                    type="link",
+                    content=f"{kind}: {a_type}:{a_id} → {b_type}:{b_id}",
+                    metadata={
+                        "kind": kind,
+                        "source": f"{a_type}:{a_id}",
+                        "target": f"{b_type}:{b_id}",
+                        "weight": weight,
+                        "created_at": created_at,
+                    },
+                    score=score,
+                )
+            )
+
     results.sort(key=lambda r: r.score, reverse=True)
     return results[:limit]
 
@@ -119,7 +124,7 @@ def add_link(kind: str, a_type: str, a_id: str, b_type: str, b_id: str, weight: 
     cur = _ctx.conn.execute(
         """INSERT INTO links (kind, a_type, a_id, b_type, b_id, weight)
            VALUES (?, ?, ?, ?, ?, ?)""",
-        (kind, a_type, a_id, b_type, b_id, weight)
+        (kind, a_type, a_id, b_type, b_id, weight),
     )
     _ctx.conn.commit()
     return cur.lastrowid
@@ -139,23 +144,21 @@ def get_context_bundle(entity_type: str, entity_id: str) -> list[dict[str, Any]]
     if _ctx is None:
         raise RuntimeError("Context not initialized")
 
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT kind, b_type, b_id, weight FROM links
         WHERE a_type = ? AND a_id = ?
         UNION
         SELECT kind, a_type, a_id, weight FROM links
         WHERE b_type = ? AND b_id = ?
         ORDER BY weight DESC
-    """, (entity_type, entity_id, entity_type, entity_id))
+    """,
+        (entity_type, entity_id, entity_type, entity_id),
+    )
 
     results = []
     for row in cur:
-        results.append({
-            "kind": row[0],
-            "type": row[1],
-            "id": row[2],
-            "weight": row[3]
-        })
+        results.append({"kind": row[0], "type": row[1], "id": row[2], "weight": row[3]})
     return results
 
 
@@ -164,7 +167,7 @@ def add(
     kind: str,
     a: str = typer.Option(..., help="Source entity (type:id)"),
     b: str = typer.Option(..., help="Target entity (type:id)"),
-    weight: float = 1.0
+    weight: float = 1.0,
 ) -> None:
     """Add a link between two entities."""
     try:
@@ -188,12 +191,15 @@ def list(limit: int = 50) -> None:
         console.print("[red]Context not initialized[/red]")
         return
 
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT id, kind, a_type, a_id, b_type, b_id, weight, created_at
         FROM links
         ORDER BY created_at DESC
         LIMIT ?
-    """, (limit,))
+    """,
+        (limit,),
+    )
 
     table = Table(title="Links")
     table.add_column("ID", style="cyan")

@@ -1,9 +1,5 @@
 """Tests for instruction template parser and manager."""
 
-from pathlib import Path
-
-import pytest
-
 from issue_tracker.templates.instruction_template import (
     InstructionTemplate,
     InstructionTemplateManager,
@@ -94,7 +90,7 @@ def test_parser_parse_tasks():
 """
     template = InstructionTemplateParser.parse(content, "test")
     assert len(template.tasks) == 2
-    
+
     task1 = template.tasks[0]
     assert task1.number == 1
     assert task1.title == "Task One"
@@ -104,7 +100,7 @@ def test_parser_parse_tasks():
     assert len(task1.subtasks) == 2
     assert task1.subtasks[0] == "Subtask A"
     assert len(task1.acceptance_criteria) == 2
-    
+
     task2 = template.tasks[1]
     assert task2.number == 2
     assert task2.title == "Task Two"
@@ -129,15 +125,15 @@ def test_template_manager_list_templates(tmp_path):
     """Test listing templates."""
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
-    
+
     # Create test templates
     (templates_dir / "test1.md").write_text("# Template: Test One\n**Description**: First")
     (templates_dir / "test2.md").write_text("# Template: Test Two\n**Description**: Second")
     (templates_dir / "not-template.txt").write_text("Not a template")
-    
+
     manager = InstructionTemplateManager(templates_dir)
     templates = manager.list_templates()
-    
+
     assert len(templates) == 2
     names = [t[0] for t in templates]
     assert "test1" in names
@@ -148,10 +144,10 @@ def test_template_manager_list_templates_empty(tmp_path):
     """Test listing templates in empty directory."""
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
-    
+
     manager = InstructionTemplateManager(templates_dir)
     templates = manager.list_templates()
-    
+
     assert len(templates) == 0
 
 
@@ -159,7 +155,7 @@ def test_template_manager_load_template(tmp_path):
     """Test loading a template."""
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
-    
+
     content = """# Template: Test Template
 **Description**: Test description
 
@@ -169,10 +165,10 @@ def test_template_manager_load_template(tmp_path):
 Task description
 """
     (templates_dir / "test.md").write_text(content)
-    
+
     manager = InstructionTemplateManager(templates_dir)
     template = manager.load_template("test")
-    
+
     assert template is not None
     assert template.name == "test"
     assert template.title == "Test Template"
@@ -183,10 +179,10 @@ def test_template_manager_load_nonexistent(tmp_path):
     """Test loading non-existent template."""
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
-    
+
     manager = InstructionTemplateManager(templates_dir)
     template = manager.load_template("missing")
-    
+
     assert template is None
 
 
@@ -194,13 +190,13 @@ def test_template_manager_get_template_content(tmp_path):
     """Test getting raw template content."""
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
-    
+
     content = "# Test Content"
     (templates_dir / "test.md").write_text(content)
-    
+
     manager = InstructionTemplateManager(templates_dir)
     result = manager.get_template_content("test")
-    
+
     assert result == content
 
 
@@ -208,20 +204,20 @@ def test_template_manager_get_content_nonexistent(tmp_path):
     """Test getting content of non-existent template."""
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
-    
+
     manager = InstructionTemplateManager(templates_dir)
     result = manager.get_template_content("missing")
-    
+
     assert result is None
 
 
 def test_template_manager_creates_directory(tmp_path):
     """Test manager creates templates directory if missing."""
     templates_dir = tmp_path / "templates"
-    
+
     manager = InstructionTemplateManager(templates_dir)
     templates = manager.list_templates()
-    
+
     assert templates_dir.exists()
     assert len(templates) == 0
 

@@ -195,7 +195,10 @@ def print_next_steps(version: str, dry_run: bool = False):
 
 def main():
     """Main release workflow."""
-    parser = argparse.ArgumentParser(description="Release automation for Glorious Agents")
+    parser = argparse.ArgumentParser(
+        description="Release automation for Glorious Agents",
+        epilog="Tip: Use scripts/bump_version.py to bump version before releasing"
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -211,10 +214,28 @@ def main():
         action="store_true",
         help="Skip quality checks (not recommended)"
     )
+    parser.add_argument(
+        "--bump",
+        choices=["major", "minor", "patch"],
+        help="Automatically bump version before release"
+    )
     
     args = parser.parse_args()
     
     print("🚀 Starting release process for Glorious Agents\n")
+    
+    # Bump version if requested
+    if args.bump:
+        print(f"🔢 Bumping {args.bump} version...\n")
+        bump_script = Path(__file__).parent / "bump_version.py"
+        result = run_command(
+            ["python3", str(bump_script), args.bump],
+            check=False
+        )
+        if result.returncode != 0:
+            print("❌ Version bump failed!")
+            sys.exit(1)
+        print("\n")
     
     # Get version
     version = get_current_version()

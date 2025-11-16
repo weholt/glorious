@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 """Telemetry skill - agent action logging and observability."""
 
 import json
-from datetime import datetime
 
 import typer
 from pydantic import Field
@@ -9,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
 app = typer.Typer(help="Agent telemetry and event logging")
@@ -22,67 +24,69 @@ def init_context(ctx: SkillContext) -> None:
     _ctx = ctx
 
 
-def search(query: str, limit: int = 10) -> list["SearchResult"]:
+def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for telemetry events.
-    
+
     Searches telemetry events by category, event description, and skill.
-    
+
     Args:
         query: Search query string
         limit: Maximum number of results
-        
+
     Returns:
         List of SearchResult objects
     """
     from glorious_agents.core.search import SearchResult
-    
+
     if _ctx is None:
         return []
-    
+
     rows = _ctx.conn.execute(
         "SELECT id, timestamp, category, event, skill, duration_ms, status FROM events"
     ).fetchall()
-    
+
     results = []
     query_lower = query.lower()
-    
+
     for event_id, timestamp, category, event, skill, duration_ms, status in rows:
         score = 0.0
         matched = False
-        
+
         if query_lower in category.lower():
             score += 0.7
             matched = True
-        
+
         if query_lower in event.lower():
             score += 0.8
             matched = True
-        
+
         if skill and query_lower in skill.lower():
             score += 0.5
             matched = True
-        
+
         if query_lower in status.lower():
             score += 0.3
             matched = True
-        
+
         if matched:
             score = min(1.0, score)
-            
-            results.append(SearchResult(
-                skill="telemetry",
-                id=event_id,
-                type="event",
-                content=f"{category}: {event}",
-                metadata={
-                    "timestamp": timestamp,
-                    "skill": skill or "",
-                    "duration_ms": duration_ms,
-                    "status": status,
-                },
-                score=score
-            ))
-    
+
+            results.append(
+                SearchResult(
+                    skill="telemetry",
+                    id=event_id,
+                    type="event",
+                    content=f"{category}: {event}",
+                    metadata={
+                        "timestamp": timestamp,
+                        "skill": skill or "",
+                        "duration_ms": duration_ms,
+                        "status": status,
+                    },
+                    score=score,
+                )
+            )
+
     results.sort(key=lambda r: r.score, reverse=True)
     return results[:limit]
 
@@ -105,7 +109,7 @@ def log_event(
     duration_ms: int = 0,
     status: str = "success",
     project_id: str = "",
-    meta: dict | None = None
+    meta: dict | None = None,
 ) -> int:
     """
     Log a telemetry event (callable API).
@@ -133,7 +137,7 @@ def log_event(
     cur = _ctx.conn.execute(
         """INSERT INTO events (category, event, project_id, skill, duration_ms, status, meta)
            VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (category, event, project_id, skill, duration_ms, status, meta_json)
+        (category, event, project_id, skill, duration_ms, status, meta_json),
     )
     _ctx.conn.commit()
     return cur.lastrowid
@@ -141,11 +145,7 @@ def log_event(
 
 @app.command()
 def log(
-    category: str,
-    message: str,
-    skill: str = "",
-    duration: int = 0,
-    status: str = "success"
+    category: str, message: str, skill: str = "", duration: int = 0, status: str = "success"
 ) -> None:
     """Log a telemetry event."""
     try:
@@ -166,14 +166,17 @@ def stats(group_by: str = "category", limit: int = 10) -> None:
         console.print("[red]Invalid group_by. Must be: category, skill, or status[/red]")
         return
 
-    cur = _ctx.conn.execute(f"""
+    cur = _ctx.conn.execute(
+        f"""
         SELECT {group_by}, COUNT(*) as count, AVG(duration_ms) as avg_duration
         FROM events
         WHERE {group_by} IS NOT NULL AND {group_by} != ''
         GROUP BY {group_by}
         ORDER BY count DESC
         LIMIT ?
-    """, (limit,))
+    """,
+        (limit,),
+    )
 
     table = Table(title=f"Event Statistics (by {group_by})")
     table.add_column(group_by.title(), style="cyan")
@@ -196,20 +199,26 @@ def list(category: str = "", limit: int = 50) -> None:
         return
 
     if category:
-        cur = _ctx.conn.execute("""
+        cur = _ctx.conn.execute(
+            """
             SELECT id, timestamp, category, event, skill, duration_ms, status
             FROM events
             WHERE category = ?
             ORDER BY timestamp DESC
             LIMIT ?
-        """, (category, limit))
+        """,
+            (category, limit),
+        )
     else:
-        cur = _ctx.conn.execute("""
+        cur = _ctx.conn.execute(
+            """
             SELECT id, timestamp, category, event, skill, duration_ms, status
             FROM events
             ORDER BY timestamp DESC
             LIMIT ?
-        """, (limit,))
+        """,
+            (limit,),
+        )
 
     table = Table(title="Recent Events")
     table.add_column("ID", style="cyan")
@@ -224,13 +233,7 @@ def list(category: str = "", limit: int = 50) -> None:
         event_text = event[:40] + "..." if len(event) > 40 else event
         # Extract time only from timestamp
         time_only = timestamp.split("T")[1][:8] if "T" in timestamp else timestamp
-        table.add_row(
-            str(event_id),
-            time_only,
-            cat or "-",
-            event_text,
-            status or "?"
-        )
+        table.add_row(str(event_id), time_only, cat or "-", event_text, status or "?")
 
     console.print(table)
 

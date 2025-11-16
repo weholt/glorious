@@ -1,9 +1,10 @@
 """Tests for entity utility functions."""
 
-from issue_tracker.domain.entities.label import utcnow_naive as label_utcnow
-from issue_tracker.domain.entities.epic import utcnow_naive as epic_utcnow
-from issue_tracker.domain.entities.dependency import utcnow_naive as dep_utcnow
 from datetime import datetime
+
+from issue_tracker.domain.entities.dependency import utcnow_naive as dep_utcnow
+from issue_tracker.domain.entities.epic import utcnow_naive as epic_utcnow
+from issue_tracker.domain.entities.label import utcnow_naive as label_utcnow
 
 
 def test_label_utcnow_naive():

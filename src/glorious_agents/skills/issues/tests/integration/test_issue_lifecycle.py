@@ -132,20 +132,14 @@ class TestDependencyWorkflows:
         issue3 = issue_service.create_issue(title="Issue 3")
 
         # Add valid dependencies: 1 -> 2 -> 3
-        dep1 = issue_service.add_dependency(
-            issue1.id, issue2.id, DependencyType.BLOCKS
-        )
+        dep1 = issue_service.add_dependency(issue1.id, issue2.id, DependencyType.BLOCKS)
         assert dep1 is not None
 
-        dep2 = issue_service.add_dependency(
-            issue2.id, issue3.id, DependencyType.BLOCKS
-        )
+        dep2 = issue_service.add_dependency(issue2.id, issue3.id, DependencyType.BLOCKS)
         assert dep2 is not None
 
         # Try to create cycle: 3 -> 1 (should fail)
-        dep3 = issue_service.add_dependency(
-            issue3.id, issue1.id, DependencyType.BLOCKS
-        )
+        dep3 = issue_service.add_dependency(issue3.id, issue1.id, DependencyType.BLOCKS)
         assert dep3 is None  # Cycle rejected
 
         # Verify no cycles exist
@@ -189,9 +183,7 @@ class TestDependencyWorkflows:
         ready_ids2 = [issue.id for issue in ready2]
         assert issue2.id in ready_ids2
 
-    def test_remove_dependency(
-        self, issue_service: IssueService, graph_service: IssueGraphService
-    ) -> None:
+    def test_remove_dependency(self, issue_service: IssueService, graph_service: IssueGraphService) -> None:
         """Test removing dependencies."""
         # Create issues with dependency
         issue1 = issue_service.create_issue(title="Issue 1")
@@ -259,8 +251,8 @@ class TestBulkOperations:
     def test_list_by_status(self, issue_service: IssueService) -> None:
         """Test filtering issues by status."""
         # Create issues with different statuses
-        issue1 = issue_service.create_issue(title="Open issue 1")
-        issue2 = issue_service.create_issue(title="Open issue 2") 
+        issue_service.create_issue(title="Open issue 1")
+        issue_service.create_issue(title="Open issue 2")
         issue3 = issue_service.create_issue(title="In progress issue")
 
         issue_service.transition_issue(issue3.id, IssueStatus.IN_PROGRESS)
@@ -336,9 +328,7 @@ class TestBulkOperations:
 class TestComplexScenarios:
     """Test complex multi-step scenarios."""
 
-    def test_epic_with_dependencies(
-        self, issue_service: IssueService, graph_service: IssueGraphService
-    ) -> None:
+    def test_epic_with_dependencies(self, issue_service: IssueService, graph_service: IssueGraphService) -> None:
         """Test epic with dependent tasks."""
         # Create epic
         epic = issue_service.create_issue(
@@ -376,23 +366,17 @@ class TestComplexScenarios:
         assert tree["issue"].id == task1.id
         assert len(tree["dependencies"]) == 1
 
-    def test_multiple_dependency_types(
-        self, issue_service: IssueService, graph_service: IssueGraphService
-    ) -> None:
+    def test_multiple_dependency_types(self, issue_service: IssueService, graph_service: IssueGraphService) -> None:
         """Test multiple dependency types between issues."""
         # Create issues
         issue1 = issue_service.create_issue(title="Issue 1")
         issue2 = issue_service.create_issue(title="Issue 2")
 
         # Add different dependency types
-        dep1 = issue_service.add_dependency(
-            issue1.id, issue2.id, DependencyType.BLOCKS
-        )
+        dep1 = issue_service.add_dependency(issue1.id, issue2.id, DependencyType.BLOCKS)
         assert dep1 is not None
 
-        dep2 = issue_service.add_dependency(
-            issue1.id, issue2.id, DependencyType.RELATED_TO
-        )
+        dep2 = issue_service.add_dependency(issue1.id, issue2.id, DependencyType.RELATED_TO)
         assert dep2 is not None
 
         # Get all dependencies

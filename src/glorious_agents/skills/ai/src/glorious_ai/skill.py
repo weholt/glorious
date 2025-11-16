@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """AI skill - LLM integration with embeddings and semantic search."""
 
 import json
@@ -12,6 +14,7 @@ from rich.console import Console
 from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, validate_input
 
 app = typer.Typer(help="AI and LLM integration")
@@ -144,7 +147,7 @@ def embed(content: str, model: str = "text-embedding-ada-002") -> list[float]:
         raise ValueError("OpenAI library not installed")
 
 
-def search(query: str, limit: int = 10) -> list["SearchResult"]:
+def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for AI completions and embeddings.
 
     Searches completion prompts and responses using simple text matching.
@@ -267,7 +270,7 @@ def embed_cmd(
         if json_output:
             console.print(json.dumps({"embedding": embedding, "dimensions": len(embedding)}))
         else:
-            console.print(f"[bold green]Embedding generated:[/bold green]")
+            console.print("[bold green]Embedding generated:[/bold green]")
             console.print(f"Dimensions: {len(embedding)}")
             console.print(f"Preview: {embedding[:5]}...")
     except Exception as e:

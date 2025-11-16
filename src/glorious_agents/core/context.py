@@ -117,14 +117,16 @@ class SkillContext:
     def _load_skill_config(self, skill_name: str, config_key: str) -> None:
         """Load skill configuration from TOML file."""
         from pathlib import Path
+
         from glorious_agents.config import config
-        
+
         config_dir = Path(config.AGENT_FOLDER) / "config"
         config_file = config_dir / f"{skill_name}.toml"
-        
+
         if config_file.exists():
             try:
                 import tomllib
+
                 with open(config_file, "rb") as f:
                     skill_config = tomllib.load(f)
                 setattr(self, config_key, skill_config)

@@ -4,7 +4,7 @@ This module has been refactored into a package structure for better maintainabil
 The original file was 1071 lines, now split into focused modules:
 - list_describe.py: list, describe, check, doctor commands
 - reload.py: reload command
-- export.py: export command  
+- export.py: export command
 - config.py: config command
 - __init__.py: app assembly
 """

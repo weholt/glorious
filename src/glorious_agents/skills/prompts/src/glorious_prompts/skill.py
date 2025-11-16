@@ -57,7 +57,7 @@ def register_prompt(name: str, template: str, meta: dict | None = None) -> int:
 
     cur = _ctx.conn.execute(
         "INSERT INTO prompts (name, version, template, meta) VALUES (?, ?, ?, ?)",
-        (name, new_version, template, meta_json)
+        (name, new_version, template, meta_json),
     )
     _ctx.conn.commit()
     return cur.lastrowid
@@ -111,12 +111,15 @@ def render(name: str, vars: str = "{}") -> None:
         console.print("[red]Invalid JSON for variables[/red]")
         return
 
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT template FROM prompts
         WHERE name = ?
         ORDER BY version DESC
         LIMIT 1
-    """, (name,))
+    """,
+        (name,),
+    )
 
     row = cur.fetchone()
     if not row:
@@ -128,7 +131,7 @@ def render(name: str, vars: str = "{}") -> None:
     # Simple variable substitution
     try:
         rendered = template.format(**variables)
-        console.print(f"\n[bold cyan]Rendered Prompt:[/bold cyan]\n")
+        console.print("\n[bold cyan]Rendered Prompt:[/bold cyan]\n")
         console.print(rendered)
     except KeyError as e:
         console.print(f"[red]Missing variable: {e}[/red]")
@@ -152,44 +155,49 @@ def delete(name: str) -> None:
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for prompt templates.
-    
+
     Searches through prompt names and templates.
-    
+
     Args:
         query: Search query string
         limit: Maximum number of results
-        
+
     Returns:
         List of SearchResult objects
     """
     if _ctx is None:
         return []
-    
+
     query_lower = query.lower()
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT id, name, version, template, created_at
         FROM prompts
         WHERE LOWER(name) LIKE ? OR LOWER(template) LIKE ?
         ORDER BY created_at DESC
         LIMIT ?
-    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
-    
+    """,
+        (f"%{query_lower}%", f"%{query_lower}%", limit),
+    )
+
     results = []
     for row in cur:
         # Score based on name match (higher) vs template match (lower)
         score = 0.9 if query_lower in row[1].lower() else 0.6
-        
-        results.append(SearchResult(
-            skill="prompts",
-            id=f"{row[1]}_v{row[2]}",
-            type="prompt",
-            content=f"{row[1]} (v{row[2]}): {row[3][:100]}...",
-            metadata={
-                "name": row[1],
-                "version": row[2],
-                "created_at": row[4],
-            },
-            score=score
-        ))
-    
+
+        results.append(
+            SearchResult(
+                skill="prompts",
+                id=f"{row[1]}_v{row[2]}",
+                type="prompt",
+                content=f"{row[1]} (v{row[2]}): {row[3][:100]}...",
+                metadata={
+                    "name": row[1],
+                    "version": row[2],
+                    "created_at": row[4],
+                },
+                score=score,
+            )
+        )
+
     return results

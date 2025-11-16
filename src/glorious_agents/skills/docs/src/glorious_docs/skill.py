@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Documentation management skill."""
 
 import hashlib
@@ -12,6 +14,7 @@ from rich.markdown import Markdown
 from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 
 app = typer.Typer(help="Documentation management")
 console = Console()
@@ -30,7 +33,7 @@ def generate_doc_id(title: str) -> str:
     return f"doc-{hash_obj.hexdigest()[:8]}"
 
 
-def search(query: str, limit: int = 10) -> list["SearchResult"]:
+def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for documents.
 
     Searches document titles and content using FTS.

@@ -1,7 +1,5 @@
 """Tests for domain exceptions."""
 
-import pytest
-
 from issue_tracker.domain.exceptions import (
     DomainError,
     InvalidTransitionError,

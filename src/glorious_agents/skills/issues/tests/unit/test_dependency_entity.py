@@ -1,10 +1,6 @@
 """Tests for Dependency entity."""
 
-import pytest
-from datetime import UTC, datetime
-
 from issue_tracker.domain.entities.dependency import Dependency, DependencyType
-from issue_tracker.domain.exceptions import InvariantViolationError
 
 
 class TestDependencyValidation:

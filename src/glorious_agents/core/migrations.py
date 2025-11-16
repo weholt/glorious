@@ -1,7 +1,6 @@
 """Database migration system for schema versioning."""
 
 import hashlib
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -77,7 +76,8 @@ def apply_migration(skill_name: str, version: int, migration_path: Path) -> None
     try:
         # Check if already applied
         existing = conn.execute(
-            "SELECT checksum FROM _migrations WHERE skill_name = ? AND version = ?", (skill_name, version)
+            "SELECT checksum FROM _migrations WHERE skill_name = ? AND version = ?",
+            (skill_name, version),
         ).fetchone()
 
         if existing:
@@ -203,7 +203,10 @@ def get_migration_history(skill_name: str | None = None) -> list[dict[str, Any]]
                 "SELECT skill_name, version, migration_file, applied_at FROM _migrations ORDER BY skill_name, version"
             ).fetchall()
 
-        return [{"skill_name": r[0], "version": r[1], "migration_file": r[2], "applied_at": r[3]} for r in rows]
+        return [
+            {"skill_name": r[0], "version": r[1], "migration_file": r[2], "applied_at": r[3]}
+            for r in rows
+        ]
     finally:
         conn.close()
 
@@ -226,7 +229,8 @@ def rollback_migration(skill_name: str, target_version: int) -> None:
             return
 
         conn.execute(
-            "DELETE FROM _migrations WHERE skill_name = ? AND version > ?", (skill_name, target_version)
+            "DELETE FROM _migrations WHERE skill_name = ? AND version > ?",
+            (skill_name, target_version),
         )
         conn.commit()
     finally:

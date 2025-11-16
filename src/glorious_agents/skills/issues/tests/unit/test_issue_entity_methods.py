@@ -1,11 +1,12 @@
 """Tests for Issue entity additional methods."""
 
-import pytest
 from datetime import UTC, datetime
 
+import pytest
+
 from issue_tracker.domain.entities.issue import Issue, IssueStatus, IssueType
-from issue_tracker.domain.value_objects import IssuePriority
 from issue_tracker.domain.exceptions import InvariantViolationError
+from issue_tracker.domain.value_objects import IssuePriority
 
 
 class TestIssueAssignment:
@@ -24,7 +25,7 @@ class TestIssueAssignment:
             created_at=datetime.now(UTC).replace(tzinfo=None),
             updated_at=datetime.now(UTC).replace(tzinfo=None),
         )
-        
+
         with pytest.raises(InvariantViolationError, match="empty string"):
             issue.assign_to(user_id="   ")
 
@@ -41,7 +42,7 @@ class TestIssueAssignment:
             created_at=datetime.now(UTC).replace(tzinfo=None),
             updated_at=datetime.now(UTC).replace(tzinfo=None),
         )
-        
+
         updated = issue.assign_to(user_id="  user123  ")
         assert updated.assignee == "user123"
 
@@ -58,7 +59,7 @@ class TestIssueAssignment:
             created_at=datetime.now(UTC).replace(tzinfo=None),
             updated_at=datetime.now(UTC).replace(tzinfo=None),
         )
-        
+
         with pytest.raises(InvariantViolationError, match="Cannot set epic"):
             epic.assign_to_epic("EPIC-002")
 
@@ -75,6 +76,6 @@ class TestIssueAssignment:
             created_at=datetime.now(UTC).replace(tzinfo=None),
             updated_at=datetime.now(UTC).replace(tzinfo=None),
         )
-        
+
         updated = issue.assign_to_epic("EPIC-001")
         assert updated.epic_id == "EPIC-001"

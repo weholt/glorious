@@ -25,7 +25,7 @@ def test_create_db_engine_memory():
     engine = create_db_engine("sqlite:///:memory:")
     assert engine is not None
     assert engine.pool.__class__ == StaticPool
-    
+
     with engine.connect() as conn:
         result = conn.execute(text("SELECT 1"))
         assert result.scalar() == 1
@@ -43,7 +43,7 @@ def test_create_db_engine_file(tmp_path):
     db_file = tmp_path / "test.db"
     engine = create_db_engine(f"sqlite:///{db_file}")
     assert engine is not None
-    
+
     with engine.connect() as conn:
         result = conn.execute(text("SELECT 1"))
         assert result.scalar() == 1

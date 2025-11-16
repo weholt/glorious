@@ -8,7 +8,6 @@ Tests for:
 
 import json
 
-import pytest
 from typer.testing import CliRunner
 
 
@@ -18,7 +17,7 @@ class TestEpicSet:
     def test_epic_set_assigns_issue_to_epic(self, cli_runner: CliRunner, mock_service):
         """Test epic-set assigns issue to epic."""
         from issue_tracker.cli.app import app
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         # Create mock issue
         issue = Issue(
@@ -42,7 +41,7 @@ class TestEpicSet:
     def test_epic_set_json_output(self, cli_runner: CliRunner, mock_service):
         """Test epic-set with JSON output."""
         from issue_tracker.cli.app import app
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         # Create mock issue with epic
         issue = Issue(
@@ -95,7 +94,7 @@ class TestEpicClear:
     def test_epic_clear_removes_epic(self, cli_runner: CliRunner, mock_service):
         """Test epic-clear removes epic from issue."""
         from issue_tracker.cli.app import app
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         # Create mock issue without epic
         issue = Issue(
@@ -120,7 +119,7 @@ class TestEpicClear:
     def test_epic_clear_json_output(self, cli_runner: CliRunner, mock_service):
         """Test epic-clear with JSON output."""
         from issue_tracker.cli.app import app
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         # Create mock issue without epic
         issue = Issue(
@@ -157,7 +156,7 @@ class TestEpicClear:
     def test_epic_clear_issue_without_epic(self, cli_runner: CliRunner, mock_service):
         """Test epic-clear on issue that has no epic (should succeed)."""
         from issue_tracker.cli.app import app
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         # Create mock issue without epic
         issue = Issue(
@@ -184,7 +183,7 @@ class TestLabelList:
     def test_label_list_displays_labels(self, cli_runner: CliRunner, mock_service):
         """Test label-list displays labels for issue."""
         from issue_tracker.cli.app import app
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         # Create mock issue with labels
         issue = Issue(
@@ -211,7 +210,7 @@ class TestLabelList:
     def test_label_list_no_labels(self, cli_runner: CliRunner, mock_service):
         """Test label-list with issue that has no labels."""
         from issue_tracker.cli.app import app
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         # Create mock issue without labels
         issue = Issue(
@@ -234,7 +233,7 @@ class TestLabelList:
     def test_label_list_json_output(self, cli_runner: CliRunner, mock_service):
         """Test label-list with JSON output."""
         from issue_tracker.cli.app import app
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         # Create mock issue with labels
         issue = Issue(
@@ -259,7 +258,7 @@ class TestLabelList:
     def test_label_list_json_output_no_labels(self, cli_runner: CliRunner, mock_service):
         """Test label-list JSON output with no labels."""
         from issue_tracker.cli.app import app
-        from issue_tracker.domain import Issue, IssueStatus, IssuePriority, IssueType
+        from issue_tracker.domain import Issue, IssuePriority, IssueStatus, IssueType
 
         # Create mock issue without labels
         issue = Issue(

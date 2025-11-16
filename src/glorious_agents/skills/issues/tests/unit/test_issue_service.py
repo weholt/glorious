@@ -1,7 +1,7 @@
 """Unit tests for IssueService with mocked repositories."""
 
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
 
@@ -69,9 +69,9 @@ class TestIssueServiceCRUD:
     def test_create_issue_minimal(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test creating an issue with minimal parameters."""
         mock_uow.issues.save = Mock(side_effect=lambda issue: issue)
-        
+
         result = issue_service.create_issue("Test Title")
-        
+
         assert result.id == "issue-MOCK123"
         assert result.title == "Test Title"
         assert result.status == IssueStatus.OPEN
@@ -85,23 +85,25 @@ class TestIssueServiceCRUD:
         """Test creating an issue with a custom ID."""
         mock_uow.issues.get = Mock(return_value=None)
         mock_uow.issues.save = Mock(side_effect=lambda issue: issue)
-        
+
         result = issue_service.create_issue("Test Title", custom_id="CUSTOM-123")
-        
+
         assert result.id == "CUSTOM-123"
         mock_uow.issues.get.assert_called_once_with("CUSTOM-123")
 
-    def test_create_issue_duplicate_custom_id(self, issue_service: IssueService, mock_uow: Mock, sample_issue: Issue) -> None:
+    def test_create_issue_duplicate_custom_id(
+        self, issue_service: IssueService, mock_uow: Mock, sample_issue: Issue
+    ) -> None:
         """Test creating an issue with duplicate custom ID raises ValueError."""
         mock_uow.issues.get = Mock(return_value=sample_issue)
-        
+
         with pytest.raises(ValueError, match="already exists"):
             issue_service.create_issue("Test Title", custom_id="issue-TEST")
 
     def test_create_issue_with_all_fields(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test creating an issue with all optional fields."""
         mock_uow.issues.save = Mock(side_effect=lambda issue: issue)
-        
+
         result = issue_service.create_issue(
             title="Full Issue",
             description="Complete description",
@@ -112,7 +114,7 @@ class TestIssueServiceCRUD:
             labels=["urgent", "frontend"],
             project_id=TEST_PROJECT_ID,
         )
-        
+
         assert result.title == "Full Issue"
         assert result.description == "Complete description"
         assert result.priority == IssuePriority.HIGH
@@ -125,18 +127,18 @@ class TestIssueServiceCRUD:
     def test_get_issue_found(self, issue_service: IssueService, mock_uow: Mock, sample_issue: Issue) -> None:
         """Test getting an existing issue."""
         mock_uow.issues.get = Mock(return_value=sample_issue)
-        
+
         result = issue_service.get_issue("issue-TEST")
-        
+
         assert result == sample_issue
         mock_uow.issues.get.assert_called_once_with("issue-TEST")
 
     def test_get_issue_not_found(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test getting a non-existent issue."""
         mock_uow.issues.get = Mock(return_value=None)
-        
+
         result = issue_service.get_issue("nonexistent")
-        
+
         assert result is None
 
     def test_update_issue(self, issue_service: IssueService, mock_uow: Mock, sample_issue: Issue) -> None:
@@ -153,10 +155,10 @@ class TestIssueServiceCRUD:
             created_at=sample_issue.created_at,
             updated_at=TEST_TIMESTAMP,
         )
-        
+
         mock_uow.issues.get = Mock(return_value=sample_issue)
         mock_uow.issues.save = Mock(return_value=updated_issue)
-        
+
         result = issue_service.update_issue(
             "issue-TEST",
             title="Updated Title",
@@ -164,7 +166,7 @@ class TestIssueServiceCRUD:
             priority=IssuePriority.HIGH,
             assignee="new-user",
         )
-        
+
         assert result is not None
         assert result.title == "Updated Title"
         assert result.priority == IssuePriority.HIGH
@@ -173,26 +175,26 @@ class TestIssueServiceCRUD:
     def test_update_nonexistent_issue(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test updating a non-existent issue returns None."""
         mock_uow.issues.get = Mock(return_value=None)
-        
+
         result = issue_service.update_issue("nonexistent", title="New Title")
-        
+
         assert result is None
 
     def test_delete_issue(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test deleting an issue."""
         mock_uow.issues.delete = Mock(return_value=True)
-        
+
         result = issue_service.delete_issue("issue-TEST")
-        
+
         assert result is True
         mock_uow.issues.delete.assert_called_once_with("issue-TEST")
 
     def test_delete_nonexistent_issue(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test deleting a non-existent issue."""
         mock_uow.issues.delete = Mock(return_value=False)
-        
+
         result = issue_service.delete_issue("nonexistent")
-        
+
         assert result is False
 
 
@@ -214,18 +216,18 @@ class TestIssueServiceStateTransitions:
             updated_at=TEST_TIMESTAMP,
         )
         mock_uow.issues.save = Mock(return_value=transitioned)
-        
+
         result = issue_service.transition_issue("issue-TEST", IssueStatus.IN_PROGRESS)
-        
+
         assert result is not None
         assert result.status == IssueStatus.IN_PROGRESS
 
     def test_transition_nonexistent_issue(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test transitioning a non-existent issue."""
         mock_uow.issues.get = Mock(return_value=None)
-        
+
         result = issue_service.transition_issue("nonexistent", IssueStatus.CLOSED)
-        
+
         assert result is None
 
     def test_close_issue(self, issue_service: IssueService, mock_uow: Mock) -> None:
@@ -256,9 +258,9 @@ class TestIssueServiceStateTransitions:
             closed_at=TEST_TIMESTAMP,
         )
         mock_uow.issues.save = Mock(return_value=closed_issue)
-        
+
         result = issue_service.close_issue("issue-TEST")
-        
+
         assert result is not None
         assert result.status == IssueStatus.CLOSED
         assert result.closed_at == TEST_TIMESTAMP
@@ -291,9 +293,9 @@ class TestIssueServiceStateTransitions:
             closed_at=None,
         )
         mock_uow.issues.save = Mock(return_value=reopened)
-        
+
         result = issue_service.reopen_issue("issue-TEST")
-        
+
         assert result is not None
         assert result.status == IssueStatus.OPEN
         assert result.closed_at is None
@@ -301,17 +303,17 @@ class TestIssueServiceStateTransitions:
     def test_close_issue_not_found(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test closing a non-existent issue."""
         mock_uow.issues.get = Mock(return_value=None)
-        
+
         result = issue_service.close_issue("nonexistent")
-        
+
         assert result is None
 
     def test_reopen_issue_not_found(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test reopening a non-existent issue."""
         mock_uow.issues.get = Mock(return_value=None)
-        
+
         result = issue_service.reopen_issue("nonexistent")
-        
+
         assert result is None
 
 
@@ -327,9 +329,9 @@ class TestIssueServiceDependencies:
         )
         mock_uow.graph.has_cycle = Mock(return_value=False)
         mock_uow.graph.add_dependency = Mock(return_value=dep)
-        
+
         result = issue_service.add_dependency("issue-A", "issue-B", DependencyType.BLOCKS)
-        
+
         assert result == dep
         mock_uow.graph.has_cycle.assert_called_once_with("issue-A", "issue-B")
         mock_uow.graph.add_dependency.assert_called_once()
@@ -337,9 +339,9 @@ class TestIssueServiceDependencies:
     def test_add_dependency_creates_cycle(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test that adding a dependency that creates a cycle is rejected."""
         mock_uow.graph.has_cycle = Mock(return_value=True)
-        
+
         result = issue_service.add_dependency("issue-A", "issue-B", DependencyType.BLOCKS)
-        
+
         assert result is None
         mock_uow.graph.has_cycle.assert_called_once_with("issue-A", "issue-B")
         mock_uow.graph.add_dependency.assert_not_called()
@@ -347,18 +349,18 @@ class TestIssueServiceDependencies:
     def test_remove_dependency(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test removing a dependency."""
         mock_uow.graph.remove_dependency = Mock(return_value=True)
-        
+
         result = issue_service.remove_dependency("issue-A", "issue-B", DependencyType.BLOCKS)
-        
+
         assert result is True
         mock_uow.graph.remove_dependency.assert_called_once_with("issue-A", "issue-B", DependencyType.BLOCKS)
 
     def test_get_blockers(self, issue_service: IssueService, mock_uow: Mock, sample_issue: Issue) -> None:
         """Test getting issues that block a target issue."""
         mock_uow.graph.get_blockers = Mock(return_value=["issue-B1", "issue-B2"])
-        
+
         result = issue_service.get_blockers("issue-TEST")
-        
+
         assert len(result) == 2
         assert result[0] == "issue-B1"
         assert result[1] == "issue-B2"
@@ -367,9 +369,9 @@ class TestIssueServiceDependencies:
     def test_get_blocked_issues(self, issue_service: IssueService, mock_uow: Mock) -> None:
         """Test getting issues blocked by a source issue."""
         mock_uow.graph.get_blocked_by = Mock(return_value=["issue-BK1"])
-        
+
         result = issue_service.get_blocked_issues("issue-TEST")
-        
+
         assert len(result) == 1
         assert result[0] == "issue-BK1"
         mock_uow.graph.get_blocked_by.assert_called_once_with("issue-TEST")
@@ -389,9 +391,9 @@ class TestIssueServiceComments:
         )
         mock_uow.issues.get = Mock(return_value=Mock())  # Issue exists
         mock_uow.comments.save = Mock(return_value=comment)
-        
+
         result = issue_service.add_comment("issue-TEST", "user123", "Test comment")
-        
+
         assert result.id == "comment-MOCK123"
         assert result.issue_id == "issue-TEST"
         assert result.author == "user123"
@@ -417,9 +419,9 @@ class TestIssueServiceComments:
             ),
         ]
         mock_uow.comments.list_by_issue = Mock(return_value=comments)
-        
+
         result = issue_service.list_comments("issue-TEST")
-        
+
         assert len(result) == 2
         assert result[0].id == "comment-1"
         assert result[1].id == "comment-2"
@@ -455,9 +457,9 @@ class TestIssueServiceListing:
             ),
         ]
         mock_uow.issues.list_all = Mock(return_value=issues)
-        
+
         result = issue_service.list_issues()
-        
+
         assert len(result) == 2
         mock_uow.issues.list_all.assert_called_once()
 
@@ -477,9 +479,9 @@ class TestIssueServiceListing:
             ),
         ]
         mock_uow.issues.list_by_status = Mock(return_value=issues)
-        
+
         result = issue_service.list_issues(status=IssueStatus.OPEN)
-        
+
         assert len(result) == 1
         assert result[0].status == IssueStatus.OPEN
         mock_uow.issues.list_by_status.assert_called_once_with(IssueStatus.OPEN, 100, 0)
@@ -500,9 +502,9 @@ class TestIssueServiceListing:
             ),
         ]
         mock_uow.issues.list_by_priority = Mock(return_value=issues)
-        
+
         result = issue_service.list_issues(priority=IssuePriority.HIGH)
-        
+
         assert len(result) == 1
         assert result[0].priority == IssuePriority.HIGH
         mock_uow.issues.list_by_priority.assert_called_once_with(IssuePriority.HIGH, 100, 0)
@@ -524,9 +526,9 @@ class TestIssueServiceListing:
             ),
         ]
         mock_uow.issues.list_by_assignee = Mock(return_value=issues)
-        
+
         result = issue_service.list_issues(assignee="user123")
-        
+
         assert len(result) == 1
         assert result[0].assignee == "user123"
         mock_uow.issues.list_by_assignee.assert_called_once_with("user123", 100, 0)
@@ -548,9 +550,9 @@ class TestIssueServiceListing:
             ),
         ]
         mock_uow.issues.list_by_epic = Mock(return_value=issues)
-        
+
         result = issue_service.list_issues(epic_id="epic-001")
-        
+
         assert len(result) == 1
         assert result[0].epic_id == "epic-001"
         mock_uow.issues.list_by_epic.assert_called_once_with("epic-001", 100, 0)
@@ -571,9 +573,9 @@ class TestIssueServiceListing:
             ),
         ]
         mock_uow.issues.list_by_type = Mock(return_value=issues)
-        
+
         result = issue_service.list_issues(issue_type=IssueType.BUG)
-        
+
         assert len(result) == 1
         assert result[0].type == IssueType.BUG
         mock_uow.issues.list_by_type.assert_called_once_with(IssueType.BUG, 100, 0)

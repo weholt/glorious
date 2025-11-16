@@ -7,8 +7,10 @@ from glorious_agents.skills_cli.export import export_skills
 from glorious_agents.skills_cli.list_describe import (
     check_skill,
     describe_skill,
-    doctor,
     list_skills,
+)
+from glorious_agents.skills_cli.list_describe import (
+    doctor as doctor,
 )
 from glorious_agents.skills_cli.migrate import app as migrate_app
 from glorious_agents.skills_cli.reload import reload_skills

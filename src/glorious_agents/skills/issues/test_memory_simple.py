@@ -1,27 +1,31 @@
 #!/usr/bin/env python3
 """Simple memory leak test with working tests."""
 
+import gc
 import subprocess
 import sys
 import time
-import gc
 
 try:
-    import psutil
+    import psutil  # type: ignore[import-untyped]  # noqa: F401
+
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
 
 
-def get_memory_mb():
+def get_memory_mb() -> float:
     """Get current memory usage in MB."""
     if HAS_PSUTIL:
-        return psutil.Process().memory_info().rss / 1024 / 1024
+        import psutil as ps
+
+        result: float = ps.Process().memory_info().rss / 1024 / 1024
+        return result
     else:
-        return 0
+        return 0.0
 
 
-def run_test(test_path):
+def run_test(test_path: str) -> tuple[bool, str, str]:
     """Run a single test."""
     result = subprocess.run(
         ["uv", "run", "pytest", test_path, "-xvs", "--tb=line"],
@@ -32,7 +36,7 @@ def run_test(test_path):
     return result.returncode == 0, result.stdout, result.stderr
 
 
-def main():
+def main() -> int:
     """Run tests."""
     print("Memory Leak Test - Simple Tests")
     print("=" * 70)
@@ -74,7 +78,7 @@ def main():
             print(f"  Total delta: {total_delta:+.1f} MB")
 
             if not success:
-                print(f"\n  Error:")
+                print("\n  Error:")
                 error_msg = stderr if stderr else stdout
                 lines = error_msg.split("\n")
                 for line in lines[-20:]:
@@ -84,7 +88,7 @@ def main():
             results.append({"test": test_name, "success": success, "delta": delta, "total": total_delta})
 
         except subprocess.TimeoutExpired:
-            print(f"  Status: ✗ TIMEOUT")
+            print("  Status: ✗ TIMEOUT")
             results.append({"test": test_name, "success": False, "delta": 0, "total": 0})
         except Exception as e:
             print(f"  Status: ✗ ERROR - {e}")

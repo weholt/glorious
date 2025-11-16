@@ -4,9 +4,8 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-from typer.testing import CliRunner
-
 from glorious_feedback.skill import app, init_context, record_feedback
+from typer.testing import CliRunner
 
 
 @pytest.fixture
@@ -36,7 +35,7 @@ class TestRecordFeedbackFunction:
         mock_cursor = MagicMock()
         mock_cursor.lastrowid = 42
         mock_ctx.conn.execute.return_value = mock_cursor
-        
+
         result = record_feedback("test-action", "success", "Test reason")
         assert result == 42
         mock_ctx.conn.execute.assert_called_once()
@@ -45,8 +44,9 @@ class TestRecordFeedbackFunction:
     def test_record_feedback_without_context(self):
         """Test record_feedback raises error without context."""
         import glorious_feedback.skill as skill_module
+
         skill_module._ctx = None
-        
+
         with pytest.raises(RuntimeError, match="Context not initialized"):
             record_feedback("test", "success")
 
@@ -56,10 +56,10 @@ class TestRecordFeedbackFunction:
         mock_cursor = MagicMock()
         mock_cursor.lastrowid = 1
         mock_ctx.conn.execute.return_value = mock_cursor
-        
+
         meta = {"key": "value", "count": 5}
         result = record_feedback("action", "success", "reason", meta=meta)
-        
+
         assert result == 1
         call_args = mock_ctx.conn.execute.call_args
         assert json.loads(call_args[0][1][4]) == meta
@@ -74,7 +74,7 @@ class TestRecordCommand:
         mock_cursor = MagicMock()
         mock_cursor.lastrowid = 1
         mock_ctx.conn.execute.return_value = mock_cursor
-        
+
         result = runner.invoke(app, ["record", "my-action", "success", "--reason", "All good"])
         assert result.exit_code == 0
         assert "Feedback 1 recorded" in result.output
@@ -85,7 +85,7 @@ class TestRecordCommand:
         mock_cursor = MagicMock()
         mock_cursor.lastrowid = 5
         mock_ctx.conn.execute.return_value = mock_cursor
-        
+
         result = runner.invoke(app, ["record", "action-id", "failed"])
         assert result.exit_code == 0
         assert "Feedback 5 recorded" in result.output
@@ -104,12 +104,16 @@ class TestListCommand:
     def test_list_with_data(self, mock_ctx, runner):
         """Test list command displays feedback."""
         mock_cursor = MagicMock()
-        mock_cursor.__iter__ = MagicMock(return_value=iter([
-            (1, "action1", "success", "Good"),
-            (2, "action2", "failed", "Bad"),
-        ]))
+        mock_cursor.__iter__ = MagicMock(
+            return_value=iter(
+                [
+                    (1, "action1", "success", "Good"),
+                    (2, "action2", "failed", "Bad"),
+                ]
+            )
+        )
         mock_ctx.conn.execute.return_value = mock_cursor
-        
+
         result = runner.invoke(app, ["list"])
         assert result.exit_code == 0
         assert "Feedback" in result.output or "Recent" in result.output
@@ -131,6 +135,7 @@ class TestInitContext:
     def test_init_context(self, mock_context):
         """Test context initialization."""
         import glorious_feedback.skill as skill_module
+
         init_context(mock_context)
         assert skill_module._ctx == mock_context
 

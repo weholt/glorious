@@ -7,10 +7,14 @@ import tempfile
 from pathlib import Path
 
 
-def test_engine_registry():
+def test_engine_registry() -> int:
     """Test that engines are tracked and can be disposed."""
     # Import after changing dir to avoid polluting real workspace
-    from issue_tracker.cli.dependencies import get_engine, dispose_all_engines, _engine_registry
+    from issue_tracker.cli.dependencies import (
+        _engine_registry,
+        dispose_all_engines,
+        get_engine,
+    )
 
     print("Test 1: Creating engines for different DB URLs")
     print("=" * 70)
@@ -32,13 +36,13 @@ def test_engine_registry():
         get_db_url.cache_clear()
 
         # Get engine
-        engine = get_engine()
+        engine = get_engine()  # type: ignore[no-untyped-call]
         engines.append(engine)
 
         print(f"  Created engine {i + 1}: {engine.url}")
 
     print(f"\nEngines in registry: {len(_engine_registry)}")
-    print(f"Expected: 3")
+    print("Expected: 3")
 
     assert len(_engine_registry) == 3, f"Expected 3 engines, got {len(_engine_registry)}"
 
@@ -55,10 +59,10 @@ def test_engine_registry():
     print("Test 2: Disposing all engines")
     print("=" * 70)
 
-    dispose_all_engines()
+    dispose_all_engines()  # type: ignore[no-untyped-call]
 
     print(f"Engines in registry after dispose: {len(_engine_registry)}")
-    print(f"Expected: 0")
+    print("Expected: 0")
 
     assert len(_engine_registry) == 0, f"Registry should be empty, has {len(_engine_registry)}"
 
@@ -71,7 +75,7 @@ def test_engine_registry():
     os.environ["ISSUES_FOLDER"] = str(temp_dirs[0] / ".issues")
     get_db_url.cache_clear()
 
-    new_engine = get_engine()
+    new_engine = get_engine()  # type: ignore[no-untyped-call]
     print(f"New engine created: {new_engine.url}")
     print(f"Engines in registry: {len(_engine_registry)}")
 
@@ -81,7 +85,7 @@ def test_engine_registry():
     print("✓ New engine created correctly\n")
 
     # Final cleanup
-    dispose_all_engines()
+    dispose_all_engines()  # type: ignore[no-untyped-call]
 
     # Clean up temp dirs
     import shutil
@@ -89,7 +93,7 @@ def test_engine_registry():
     for tmp_dir in temp_dirs:
         try:
             shutil.rmtree(tmp_dir)
-        except:
+        except Exception:
             pass
 
     print("=" * 70)

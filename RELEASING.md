@@ -35,15 +35,30 @@ Glorious Agents uses **PyPI Trusted Publishing** via GitHub Actions OIDC. This e
 
 ### Step 1: Prepare the Release
 
-1. **Update Version** in `pyproject.toml`:
-   ```toml
-   version = "0.2.0"  # Bump version number
+1. **Bump Version** using the automated script:
+   ```bash
+   # Bump patch version (0.1.0 → 0.1.1)
+   python scripts/bump_version.py patch
+   
+   # Bump minor version (0.1.0 → 0.2.0)
+   python scripts/bump_version.py minor
+   
+   # Bump major version (0.1.0 → 1.0.0)
+   python scripts/bump_version.py major
+   
+   # Dry run to preview changes
+   python scripts/bump_version.py --dry-run minor
    ```
+   
+   This will:
+   - ✓ Update version in `pyproject.toml`
+   - ✓ Create/update `CHANGELOG.md` with new version section
+   - ✓ Show git commits since last release
 
-2. **Update CHANGELOG.md** (if exists):
-   - Add new version section
-   - List all changes since last release
-   - Include breaking changes, new features, bug fixes
+2. **Update CHANGELOG.md**:
+   - Review the auto-generated changelog entry
+   - Add details for breaking changes, new features, bug fixes
+   - Edit as needed for clarity
 
 3. **Run Pre-Release Checks**:
    ```bash
@@ -70,8 +85,11 @@ Glorious Agents uses **PyPI Trusted Publishing** via GitHub Actions OIDC. This e
 Once all checks pass:
 
 ```bash
-# Run release script (without dry-run)
+# Option 1: Run release script (after manually bumping version)
 python scripts/release.py
+
+# Option 2: Bump version AND release in one command
+python scripts/release.py --bump minor
 
 # This creates a git tag and provides next steps
 ```
@@ -84,6 +102,13 @@ git tag -a v0.2.0 -m "Release 0.2.0"
 
 # Push tag to GitHub
 git push origin v0.2.0
+```
+
+**Quick Release Workflow:**
+```bash
+# Complete release in minimal steps
+python scripts/release.py --bump patch  # Bump and validate
+# Review changes, then push tag as instructed
 ```
 
 ### Step 3: Create GitHub Release
@@ -289,6 +314,13 @@ Continuous integration:
 ```bash
 # Check current version
 grep 'version =' pyproject.toml
+
+# Bump version (automated)
+python scripts/bump_version.py patch  # or minor, or major
+python scripts/bump_version.py --dry-run minor  # Preview changes
+
+# Complete release workflow
+python scripts/release.py --bump patch  # Bump and release
 
 # Build package locally
 uv tool run --from build pyproject-build

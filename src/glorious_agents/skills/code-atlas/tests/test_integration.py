@@ -22,7 +22,7 @@ def simple_function():
 
 class SampleClass:
     """A sample class."""
-    
+
     def method_one(self):
         """Method one."""
         if True:

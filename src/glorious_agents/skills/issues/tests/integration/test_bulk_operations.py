@@ -97,9 +97,7 @@ Description for issue 3
         issue2 = json.loads(result.stdout)
 
         # Bulk add label
-        result = runner.invoke(
-            app, ["bulk-label-add", "critical", issue1["id"], issue2["id"], "--json"]
-        )
+        result = runner.invoke(app, ["bulk-label-add", "critical", issue1["id"], issue2["id"], "--json"])
         assert result.exit_code == 0
 
         data = json.loads(result.stdout)
@@ -123,9 +121,7 @@ Description for issue 3
         runner.invoke(app, ["labels", "add", issue2["id"], "urgent"])
 
         # Bulk remove label
-        result = runner.invoke(
-            app, ["bulk-label-remove", "urgent", issue1["id"], issue2["id"], "--json"]
-        )
+        result = runner.invoke(app, ["bulk-label-remove", "urgent", issue1["id"], issue2["id"], "--json"])
         assert result.exit_code == 0
 
         data = json.loads(result.stdout)

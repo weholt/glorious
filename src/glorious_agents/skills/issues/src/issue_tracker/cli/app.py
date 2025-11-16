@@ -555,42 +555,38 @@ def search(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Full-text search across issue titles and descriptions using FTS5.
-    
+
     Supports SQLite FTS5 query syntax for advanced searches.
-    
+
     Examples:
         Simple search:
             $ issues search "memory leak"
-        
+
         Field-specific search:
             $ issues search "title:authentication"
-        
+
         Phrase search:
             $ issues search '"database connection"'
-        
+
         Proximity search:
             $ issues search "memory NEAR/3 leak"
-        
+
         Boolean operators:
             $ issues search "bug AND (frontend OR backend)"
     """
     try:
         from sqlmodel import Session
-        
+
         from issue_tracker.cli.dependencies import get_engine
         from issue_tracker.services.search_service import SearchService
-        
+
         engine = get_engine()
         session = Session(engine)
-        
+
         try:
             search_service = SearchService(session)
-            results = search_service.search(
-                query=query,
-                limit=limit,
-                include_closed=include_closed
-            )
-            
+            results = search_service.search(query=query, limit=limit, include_closed=include_closed)
+
             if json_output:
                 # Get full issue details for JSON output
                 service = get_issue_service()
@@ -605,7 +601,7 @@ def search(
                             issue_results.append(issue_dict)
                     except Exception:
                         continue
-                
+
                 typer.echo(json.dumps(issue_results))
             else:
                 if not results:
@@ -618,7 +614,7 @@ def search(
                         typer.echo()
         finally:
             session.close()
-    
+
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
@@ -727,7 +723,7 @@ def show(
             else:
                 # Multiple issues: return a mapping of issue-id -> issue-data
                 output_data = {issue_data["id"]: issue_data for issue_data in results}
-            
+
             typer.echo(json.dumps(output_data))
 
         if not_found:
@@ -2094,11 +2090,11 @@ def import_issues(
                             assignee=issue_data.get("assignee"),
                             epic_id=issue_data.get("epic_id"),
                         )
-                        
+
                         # Update status if changed (requires transition)
                         if status != existing.status:
                             service.transition_issue(issue_data["id"], status)
-                        
+
                         # Update labels if provided
                         if "labels" in issue_data:
                             updated_issue = service.get_issue(issue_data["id"])
@@ -2112,7 +2108,7 @@ def import_issues(
                                     if label not in updated_issue.labels:
                                         updated_issue = updated_issue.add_label(label)
                                 service.uow.issues.save(updated_issue)
-                        
+
                         updated_count += 1
                     else:
                         # Create new with custom ID
@@ -2130,7 +2126,7 @@ def import_issues(
                 except Exception as e:
                     typer.echo(f"Warning: Failed to import {issue_data.get('id', 'unknown')}: {e}", err=True)
                     error_count += 1
-            
+
             # Commit all changes
             service.uow.session.commit()
 

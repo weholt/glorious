@@ -1,10 +1,11 @@
 """Additional tests for 70% coverage."""
 
 import pytest
-from issue_tracker.domain.entities.issue import Issue, IssueStatus, IssuePriority, IssueType
-from issue_tracker.domain.entities.epic import Epic, EpicStatus
-from issue_tracker.domain.entities.label import Label
+
 from issue_tracker.domain.entities.dependency import Dependency, DependencyType
+from issue_tracker.domain.entities.epic import Epic, EpicStatus
+from issue_tracker.domain.entities.issue import Issue, IssuePriority, IssueStatus, IssueType
+from issue_tracker.domain.entities.label import Label
 from issue_tracker.domain.exceptions import InvariantViolationError
 
 
@@ -18,7 +19,7 @@ def test_issue_add_label_single():
         status=IssueStatus.OPEN,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        labels=[]
+        labels=[],
     )
     updated = issue.add_label("bug")
     assert "bug" in updated.labels
@@ -34,7 +35,7 @@ def test_issue_add_label_duplicate():
         status=IssueStatus.OPEN,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        labels=["bug"]
+        labels=["bug"],
     )
     updated = issue.add_label("bug")
     assert updated.labels.count("bug") == 1
@@ -50,7 +51,7 @@ def test_issue_remove_label_single():
         status=IssueStatus.OPEN,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        labels=["bug", "feature"]
+        labels=["bug", "feature"],
     )
     updated = issue.remove_label("bug")
     assert "bug" not in updated.labels
@@ -106,21 +107,13 @@ def test_issue_transition_to_done():
 
 def test_dependency_blocked_by():
     """Test BLOCKS dependency type."""
-    dep = Dependency(
-        from_issue_id="issue-1",
-        to_issue_id="issue-2",
-        dependency_type=DependencyType.BLOCKS
-    )
+    dep = Dependency(from_issue_id="issue-1", to_issue_id="issue-2", dependency_type=DependencyType.BLOCKS)
     assert dep.dependency_type == DependencyType.BLOCKS
 
 
 def test_dependency_relates_to():
     """Test RELATED_TO dependency type."""
-    dep = Dependency(
-        from_issue_id="issue-1",
-        to_issue_id="issue-2",
-        dependency_type=DependencyType.RELATED_TO
-    )
+    dep = Dependency(from_issue_id="issue-1", to_issue_id="issue-2", dependency_type=DependencyType.RELATED_TO)
     assert dep.dependency_type == DependencyType.RELATED_TO
 
 

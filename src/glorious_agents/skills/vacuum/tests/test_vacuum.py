@@ -3,9 +3,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from typer.testing import CliRunner
-
 from glorious_vacuum.skill import app, init_context
+from typer.testing import CliRunner
 
 
 @pytest.fixture
@@ -69,7 +68,7 @@ class TestRunCommand:
         """Test run records operation when context is available."""
         mock_conn = MagicMock()
         mock_ctx.conn = mock_conn
-        
+
         result = runner.invoke(app, ["run", "--mode", "dedupe"])
         assert result.exit_code == 0
 
@@ -89,7 +88,7 @@ class TestHistoryCommand:
         mock_cursor = MagicMock()
         mock_cursor.__iter__ = MagicMock(return_value=iter([]))
         mock_ctx.conn.execute.return_value = mock_cursor
-        
+
         result = runner.invoke(app, ["history"])
         assert result.exit_code == 0
         assert "Vacuum History" in result.output
@@ -99,12 +98,16 @@ class TestHistoryCommand:
         """Test history command displays operations."""
         mock_cursor = MagicMock()
         # id, mode, items_processed, items_modified, started_at, status
-        mock_cursor.__iter__ = MagicMock(return_value=iter([
-            (1, "summarize", 10, 5, "2025-11-15", "completed"),
-            (2, "dedupe", 20, 3, "2025-11-14", "completed"),
-        ]))
+        mock_cursor.__iter__ = MagicMock(
+            return_value=iter(
+                [
+                    (1, "summarize", 10, 5, "2025-11-15", "completed"),
+                    (2, "dedupe", 20, 3, "2025-11-14", "completed"),
+                ]
+            )
+        )
         mock_ctx.conn.execute.return_value = mock_cursor
-        
+
         result = runner.invoke(app, ["history"])
         assert result.exit_code == 0
         assert "Vacuum History" in result.output
@@ -116,14 +119,14 @@ class TestInitContext:
     def test_init_context_sets_global(self, mock_context):
         """Test init_context sets global _ctx variable."""
         import glorious_vacuum.skill as skill_module
-        
+
         init_context(mock_context)
         assert skill_module._ctx == mock_context
 
     def test_init_context_with_none(self):
         """Test init_context handles None gracefully."""
         import glorious_vacuum.skill as skill_module
-        
+
         init_context(None)
         assert skill_module._ctx is None
 

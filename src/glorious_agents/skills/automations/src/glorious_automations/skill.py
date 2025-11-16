@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Automations skill - declarative event-driven automation engine."""
 
 import json
@@ -12,6 +14,7 @@ from rich.console import Console
 from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, validate_input
 
 app = typer.Typer(help="Event-driven automations")
@@ -35,7 +38,12 @@ def _register_active_automations() -> None:
 
     for auto_id, name, topic, condition, actions_json in rows:
 
-        def handler(data: dict[str, Any], aid: str = auto_id, cond: str = condition, acts: str = actions_json) -> None:
+        def handler(
+            data: dict[str, Any],
+            aid: str = auto_id,
+            cond: str = condition,
+            acts: str = actions_json,
+        ) -> None:
             _execute_automation(aid, data, cond, acts)
 
         _ctx.subscribe(topic, handler)
@@ -73,7 +81,9 @@ def _execute_automation(
                 _ctx.publish(topic, data)
                 results.append({"type": "publish", "topic": topic, "success": True})
             else:
-                results.append({"type": action_type, "success": False, "error": "Unknown action type"})
+                results.append(
+                    {"type": action_type, "success": False, "error": "Unknown action type"}
+                )
 
         _ctx.conn.execute(
             "INSERT INTO automation_executions (automation_id, trigger_data, status, result) VALUES (?, ?, ?, ?)",
@@ -92,7 +102,9 @@ class CreateAutomationInput(SkillInput):
     """Input validation for creating automations."""
 
     name: str = Field(..., min_length=1, max_length=200, description="Automation name")
-    trigger_topic: str = Field(..., min_length=1, max_length=200, description="Event topic to trigger on")
+    trigger_topic: str = Field(
+        ..., min_length=1, max_length=200, description="Event topic to trigger on"
+    )
     actions: str = Field(..., min_length=1, description="JSON array of actions")
 
 
@@ -143,7 +155,10 @@ def disable(automation_id: str) -> None:
         automation_id: The automation ID.
     """
     assert _ctx is not None
-    _ctx.conn.execute("UPDATE automations SET enabled = 0, updated_at = ? WHERE id = ?", (datetime.now(), automation_id))
+    _ctx.conn.execute(
+        "UPDATE automations SET enabled = 0, updated_at = ? WHERE id = ?",
+        (datetime.now(), automation_id),
+    )
     _ctx.conn.commit()
 
 
@@ -155,11 +170,15 @@ def enable(automation_id: str) -> None:
         automation_id: The automation ID.
     """
     assert _ctx is not None
-    _ctx.conn.execute("UPDATE automations SET enabled = 1, updated_at = ? WHERE id = ?", (datetime.now(), automation_id))
+    _ctx.conn.execute(
+        "UPDATE automations SET enabled = 1, updated_at = ? WHERE id = ?",
+        (datetime.now(), automation_id),
+    )
     _ctx.conn.commit()
 
     row = _ctx.conn.execute(
-        "SELECT trigger_topic, trigger_condition, actions FROM automations WHERE id = ?", (automation_id,)
+        "SELECT trigger_topic, trigger_condition, actions FROM automations WHERE id = ?",
+        (automation_id,),
     ).fetchone()
     if row:
         topic, condition, actions = row
@@ -188,7 +207,9 @@ def create_cmd(
     trigger_topic: str = typer.Argument(..., help="Event topic"),
     actions: str = typer.Argument(..., help="JSON actions array"),
     description: str = typer.Option("", "--description", "-d", help="Description"),
-    condition: str = typer.Option("", "--condition", "-c", help="Trigger condition (Python expression)"),
+    condition: str = typer.Option(
+        "", "--condition", "-c", help="Trigger condition (Python expression)"
+    ),
 ) -> None:
     """Create a new automation."""
     try:
@@ -226,7 +247,9 @@ def create_from_file(
 
 @app.command()
 def list_cmd(
-    enabled_only: bool = typer.Option(False, "--enabled", "-e", help="Show only enabled automations"),
+    enabled_only: bool = typer.Option(
+        False, "--enabled", "-e", help="Show only enabled automations"
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """List all automations."""
@@ -240,7 +263,16 @@ def list_cmd(
     rows = _ctx.conn.execute(query).fetchall()
 
     if json_output:
-        results = [{"id": r[0], "name": r[1], "trigger_topic": r[2], "enabled": bool(r[3]), "created_at": r[4]} for r in rows]
+        results = [
+            {
+                "id": r[0],
+                "name": r[1],
+                "trigger_topic": r[2],
+                "enabled": bool(r[3]),
+                "created_at": r[4],
+            }
+            for r in rows
+        ]
         console.print(json.dumps(results))
     else:
         if not rows:
@@ -296,7 +328,7 @@ def show(
         console.print(f"[bold]Trigger:[/bold] {row[3]}")
         console.print(f"[bold]Condition:[/bold] {row[4] or '(none)'}")
         console.print(f"[bold]Enabled:[/bold] {'Yes' if row[6] else 'No'}")
-        console.print(f"\n[bold]Actions:[/bold]")
+        console.print("\n[bold]Actions:[/bold]")
         actions = json.loads(row[5])
         for i, action in enumerate(actions, 1):
             console.print(f"  {i}. {json.dumps(action, indent=2)}")
@@ -355,7 +387,9 @@ def executions(
     rows = _ctx.conn.execute(query, params).fetchall()
 
     if json_output:
-        results = [{"id": r[0], "automation_id": r[1], "status": r[2], "executed_at": r[3]} for r in rows]
+        results = [
+            {"id": r[0], "automation_id": r[1], "status": r[2], "executed_at": r[3]} for r in rows
+        ]
         console.print(json.dumps(results))
     else:
         if not rows:
@@ -375,61 +409,63 @@ def executions(
         console.print(table)
 
 
-def search(query: str, limit: int = 10) -> list["SearchResult"]:
+def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for automations.
-    
+
     Searches automation names, descriptions, and trigger topics.
-    
+
     Args:
         query: Search query string
         limit: Maximum number of results
-        
+
     Returns:
         List of SearchResult objects
     """
     from glorious_agents.core.search import SearchResult
-    
+
     if _ctx is None:
         return []
-    
+
     rows = _ctx.conn.execute(
         "SELECT id, name, description, trigger_topic, enabled, created_at FROM automations"
     ).fetchall()
-    
+
     results = []
     query_lower = query.lower()
-    
+
     for auto_id, name, description, trigger_topic, enabled, created_at in rows:
         score = 0.0
         matched = False
-        
+
         if query_lower in name.lower():
             score += 0.8
             matched = True
-        
+
         if description and query_lower in description.lower():
             score += 0.5
             matched = True
-        
+
         if query_lower in trigger_topic.lower():
             score += 0.3
             matched = True
-        
+
         if matched:
             score = min(1.0, score)
-            
-            results.append(SearchResult(
-                skill="automations",
-                id=auto_id,
-                type="automation",
-                content=f"{name}\n{description or ''}",
-                metadata={
-                    "trigger_topic": trigger_topic,
-                    "enabled": bool(enabled),
-                    "created_at": created_at,
-                },
-                score=score
-            ))
-    
+
+            results.append(
+                SearchResult(
+                    skill="automations",
+                    id=auto_id,
+                    type="automation",
+                    content=f"{name}\n{description or ''}",
+                    metadata={
+                        "trigger_topic": trigger_topic,
+                        "enabled": bool(enabled),
+                        "created_at": created_at,
+                    },
+                    score=score,
+                )
+            )
+
     results.sort(key=lambda r: r.score, reverse=True)
     return results[:limit]

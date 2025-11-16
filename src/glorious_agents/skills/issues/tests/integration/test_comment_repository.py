@@ -2,14 +2,10 @@
 
 from datetime import UTC, datetime
 
-import pytest
 from sqlmodel import Session
 
 from issue_tracker.adapters.db.repositories.comment_repository import CommentRepository
-from issue_tracker.adapters.db.repositories.issue_repository import IssueRepository
 from issue_tracker.domain.entities.comment import Comment
-from issue_tracker.domain.entities.issue import Issue, IssueStatus, IssueType
-from issue_tracker.domain.value_objects import IssuePriority
 
 
 class TestCommentRepositoryCRUD:
@@ -18,7 +14,7 @@ class TestCommentRepositoryCRUD:
     def test_get_comment(self, test_session: Session) -> None:
         """Test retrieving a comment by ID."""
         repo = CommentRepository(test_session)
-        
+
         # Create and save comment
         comment = Comment(
             id="COM-001",
@@ -29,10 +25,10 @@ class TestCommentRepositoryCRUD:
         )
         saved = repo.save(comment)
         test_session.commit()
-        
+
         # Retrieve comment
         retrieved = repo.get(saved.id)
-        
+
         assert retrieved is not None
         assert retrieved.id == saved.id
         assert retrieved.text == "Test comment"
@@ -47,7 +43,7 @@ class TestCommentRepositoryCRUD:
     def test_delete_comment(self, test_session: Session) -> None:
         """Test deleting a comment."""
         repo = CommentRepository(test_session)
-        
+
         # Create and save comment
         comment = Comment(
             id="COM-002",
@@ -58,11 +54,11 @@ class TestCommentRepositoryCRUD:
         )
         repo.save(comment)
         test_session.commit()
-        
+
         # Delete comment
         result = repo.delete(comment.id)
         test_session.commit()
-        
+
         assert result is True
         assert repo.get(comment.id) is None
 
@@ -75,7 +71,7 @@ class TestCommentRepositoryCRUD:
     def test_list_by_author(self, test_session: Session) -> None:
         """Test listing comments by author."""
         repo = CommentRepository(test_session)
-        
+
         # Create comments by different authors
         comment1 = Comment(
             id="COM-003",
@@ -98,17 +94,17 @@ class TestCommentRepositoryCRUD:
             text="Bob's comment",
             created_at=datetime.now(UTC).replace(tzinfo=None),
         )
-        
+
         repo.save(comment1)
         repo.save(comment2)
         repo.save(comment3)
         test_session.commit()
-        
+
         # List Alice's comments
         alice_comments = repo.list_by_author("alice")
         assert len(alice_comments) == 2
         assert all(c.author == "alice" for c in alice_comments)
-        
+
         # List Bob's comments
         bob_comments = repo.list_by_author("bob")
         assert len(bob_comments) == 1

@@ -89,9 +89,7 @@ def _perform_initial_scan(root_path: Path, output_path: Path, incremental: bool,
     return time.time()
 
 
-def _handle_rescan(
-    root_path: Path, output_path: Path, incremental: bool, deep: bool, is_daemon: bool
-) -> None:
+def _handle_rescan(root_path: Path, output_path: Path, incremental: bool, deep: bool, is_daemon: bool) -> None:
     """Handle rescanning the codebase.
 
     Args:

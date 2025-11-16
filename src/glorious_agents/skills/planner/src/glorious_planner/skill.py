@@ -34,7 +34,9 @@ class AddTaskInput(SkillInput):
 
 
 @validate_input
-def add_task(issue_id: str, priority: int = 0, project_id: str = "", important: bool = False) -> int:
+def add_task(
+    issue_id: str, priority: int = 0, project_id: str = "", important: bool = False
+) -> int:
     """
     Add a task to the queue (callable API).
 
@@ -56,7 +58,7 @@ def add_task(issue_id: str, priority: int = 0, project_id: str = "", important: 
     cur = _ctx.conn.execute(
         """INSERT INTO planner_queue (issue_id, priority, project_id, important, status)
            VALUES (?, ?, ?, ?, 'queued')""",
-        (issue_id, priority, project_id, 1 if important else 0)
+        (issue_id, priority, project_id, 1 if important else 0),
     )
     _ctx.conn.commit()
     return cur.lastrowid
@@ -93,23 +95,20 @@ def get_next_task(respect_important: bool = True) -> dict | None:
             "issue_id": row[1],
             "priority": row[2],
             "project_id": row[3],
-            "important": bool(row[4])
+            "important": bool(row[4]),
         }
     return None
 
 
 @app.command()
-def add(
-    issue_id: str,
-    priority: int = 0,
-    project_id: str = "",
-    important: bool = False
-) -> None:
+def add(issue_id: str, priority: int = 0, project_id: str = "", important: bool = False) -> None:
     """Add a task to the queue."""
     try:
         task_id = add_task(issue_id, priority, project_id, important)
         imp_flag = " [important]" if important else ""
-        console.print(f"[green]Task {task_id} added: {issue_id} (priority: {priority}){imp_flag}[/green]")
+        console.print(
+            f"[green]Task {task_id} added: {issue_id} (priority: {priority}){imp_flag}[/green]"
+        )
     except ValidationException as e:
         console.print(f"[red]{e.message}[/red]")
 
@@ -132,8 +131,7 @@ def next(respect_important: bool = True) -> None:
 
 @app.command()
 def update(
-    task_id: int,
-    status: str = typer.Option(..., help="New status: queued, running, blocked, done")
+    task_id: int, status: str = typer.Option(..., help="New status: queued, running, blocked, done")
 ) -> None:
     """Update task status."""
     if _ctx is None:
@@ -145,9 +143,10 @@ def update(
         return
 
     from datetime import datetime
+
     _ctx.conn.execute(
         "UPDATE planner_queue SET status = ?, updated_at = ? WHERE id = ?",
-        (status, datetime.utcnow().isoformat(), task_id)
+        (status, datetime.utcnow().isoformat(), task_id),
     )
     _ctx.conn.commit()
 
@@ -155,22 +154,22 @@ def update(
 
 
 @app.command()
-def list(
-    status: str = typer.Option("queued", help="Filter by status"),
-    limit: int = 20
-) -> None:
+def list(status: str = typer.Option("queued", help="Filter by status"), limit: int = 20) -> None:
     """List tasks in the queue."""
     if _ctx is None:
         console.print("[red]Context not initialized[/red]")
         return
 
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT id, issue_id, priority, status, important, project_id, created_at
         FROM planner_queue
         WHERE status = ?
         ORDER BY important DESC, priority DESC, created_at ASC
         LIMIT ?
-    """, (status, limit))
+    """,
+        (status, limit),
+    )
 
     table = Table(title=f"Tasks ({status})")
     table.add_column("ID", style="cyan")
@@ -182,13 +181,7 @@ def list(
     for row in cur:
         task_id, issue_id, priority, status_val, important, project_id, _ = row
         flags = "⭐" if important else ""
-        table.add_row(
-            str(task_id),
-            issue_id,
-            str(priority),
-            flags,
-            project_id or "-"
-        )
+        table.add_row(str(task_id), issue_id, str(priority), flags, project_id or "-")
 
     console.print(table)
 
@@ -219,28 +212,31 @@ def delete(task_id: int) -> None:
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for planner tasks.
-    
+
     Searches through issue IDs and project IDs in queued tasks.
-    
+
     Args:
         query: Search query string
         limit: Maximum number of results
-        
+
     Returns:
         List of SearchResult objects
     """
     if _ctx is None:
         return []
-    
+
     query_lower = query.lower()
-    cur = _ctx.conn.execute("""
+    cur = _ctx.conn.execute(
+        """
         SELECT id, issue_id, status, priority, project_id, important
         FROM planner_queue
         WHERE LOWER(issue_id) LIKE ? OR LOWER(project_id) LIKE ?
         ORDER BY priority DESC, id
         LIMIT ?
-    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
-    
+    """,
+        (f"%{query_lower}%", f"%{query_lower}%", limit),
+    )
+
     results = []
     for row in cur:
         # Calculate score based on priority and important flag
@@ -248,20 +244,22 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
         if row[5]:  # important flag
             score += 0.3
         score = min(1.0, max(0.0, score))
-        
-        results.append(SearchResult(
-            skill="planner",
-            id=row[0],
-            type="task",
-            content=f"Task #{row[0]}: {row[1]}",
-            metadata={
-                "issue_id": row[1],
-                "status": row[2],
-                "priority": row[3],
-                "project_id": row[4],
-                "important": bool(row[5]),
-            },
-            score=score
-        ))
-    
+
+        results.append(
+            SearchResult(
+                skill="planner",
+                id=row[0],
+                type="task",
+                content=f"Task #{row[0]}: {row[1]}",
+                metadata={
+                    "issue_id": row[1],
+                    "status": row[2],
+                    "priority": row[3],
+                    "project_id": row[4],
+                    "important": bool(row[5]),
+                },
+                score=score,
+            )
+        )
+
     return results

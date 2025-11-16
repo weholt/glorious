@@ -1,21 +1,15 @@
 """Edge case tests for domain entities."""
 
-import pytest
 from datetime import datetime
-from issue_tracker.domain.entities.issue import Issue, IssueStatus, IssuePriority, IssueType
-from issue_tracker.domain.entities.dependency import Dependency, DependencyType
+
 from issue_tracker.domain.entities.comment import Comment
-from issue_tracker.domain.exceptions import InvariantViolationError
+from issue_tracker.domain.entities.dependency import Dependency, DependencyType
+from issue_tracker.domain.entities.issue import Issue, IssuePriority, IssueStatus, IssueType
 
 
 def test_comment_entity():
     """Test comment entity creation."""
-    comment = Comment(
-        id="comment-1",
-        issue_id="issue-1",
-        author="user1",
-        text="Test comment"
-    )
+    comment = Comment(id="comment-1", issue_id="issue-1", author="user1", text="Test comment")
     assert comment.id == "comment-1"
     assert comment.issue_id == "issue-1"
     assert comment.author == "user1"
@@ -25,14 +19,7 @@ def test_comment_entity():
 def test_comment_with_timestamps():
     """Test comment with custom timestamps."""
     now = datetime.now()
-    comment = Comment(
-        id="comment-1",
-        issue_id="issue-1",
-        author="user1",
-        text="Test",
-        created_at=now,
-        updated_at=now
-    )
+    comment = Comment(id="comment-1", issue_id="issue-1", author="user1", text="Test", created_at=now, updated_at=now)
     assert comment.created_at == now
     assert comment.updated_at == now
 
@@ -43,7 +30,7 @@ def test_dependency_with_metadata():
         from_issue_id="issue-1",
         to_issue_id="issue-2",
         dependency_type=DependencyType.BLOCKS,
-        description="custom value"
+        description="custom value",
     )
     assert dep.description == "custom value"
 
@@ -52,10 +39,7 @@ def test_dependency_with_timestamps():
     """Test dependency with custom timestamps."""
     now = datetime.now()
     dep = Dependency(
-        from_issue_id="issue-1",
-        to_issue_id="issue-2",
-        dependency_type=DependencyType.BLOCKS,
-        created_at=now
+        from_issue_id="issue-1", to_issue_id="issue-2", dependency_type=DependencyType.BLOCKS, created_at=now
     )
     assert dep.created_at == now
 
@@ -71,15 +55,15 @@ def test_issue_all_label_scenarios():
         status=IssueStatus.OPEN,
         type=IssueType.TASK,
         priority=IssuePriority.MEDIUM,
-        labels=["label1", "label2", "label1"]  # With duplicate
+        labels=["label1", "label2", "label1"],  # With duplicate
     )
     # Should deduplicate
     assert issue.labels.count("label1") == 1
-    
+
     # Add label
     issue2 = issue.add_label("label3")
     assert "label3" in issue2.labels
-    
+
     # Remove label
     issue3 = issue2.remove_label("label2")
     assert "label2" not in issue3.labels
@@ -114,7 +98,7 @@ def test_issue_update_preserves_other_fields():
         priority=IssuePriority.MEDIUM,
         assignee="user1",
         epic_id="epic-1",
-        labels=["label1"]
+        labels=["label1"],
     )
     # Change assignee
     updated = issue.assign_to("user2")
@@ -140,6 +124,7 @@ def test_issue_transition_updates_timestamp():
     original_updated = issue.updated_at
     # Small delay to ensure timestamp difference
     import time
+
     time.sleep(0.01)
     updated = issue.transition(IssueStatus.IN_PROGRESS)
     # Timestamp should be updated (can't assert exact value, but should be different)
