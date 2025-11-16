@@ -1,5 +1,7 @@
 """Unit tests for context and event bus."""
 
+from pathlib import Path
+
 import pytest
 
 from glorious_agents.core.context import EventBus, SkillContext
@@ -146,6 +148,79 @@ def test_skill_context_cache_prune_expired(skill_context: SkillContext) -> None:
     assert skill_context.cache_get("permanent") == "value"
     assert skill_context.cache_get("expires1") is None
     assert skill_context.cache_get("expires2") is None
+
+
+@pytest.mark.logic
+def test_skill_context_get_config_no_skill(skill_context: SkillContext) -> None:
+    """Test get_config when no skill name is set."""
+    # No _skill_name attribute set
+    result = skill_context.get_config("some.key", default="default_value")
+    assert result == "default_value"
+
+
+@pytest.mark.logic
+def test_skill_context_get_config_nonexistent_file(
+    skill_context: SkillContext, temp_agent_folder: Path
+) -> None:
+    """Test get_config with nonexistent config file."""
+    skill_context._skill_name = "test_skill"
+    
+    # Config file doesn't exist
+    result = skill_context.get_config("some.key", default="default_value")
+    assert result == "default_value"
+
+
+@pytest.mark.logic
+def test_skill_context_get_config_with_file(
+    skill_context: SkillContext, temp_agent_folder: Path
+) -> None:
+    """Test get_config with existing config file."""
+    import tomli_w
+    
+    skill_context._skill_name = "test_skill"
+    
+    # Create config directory and file
+    config_dir = temp_agent_folder / "config"
+    config_dir.mkdir(exist_ok=True)
+    config_file = config_dir / "test_skill.toml"
+    
+    config_data = {
+        "cache": {"ttl_default": 300},
+        "api": {"url": "https://example.com", "timeout": 30},
+        "simple_key": "simple_value",
+    }
+    
+    with open(config_file, "wb") as f:
+        tomli_w.dump(config_data, f)
+    
+    # Test nested keys
+    assert skill_context.get_config("cache.ttl_default") == 300
+    assert skill_context.get_config("api.url") == "https://example.com"
+    assert skill_context.get_config("api.timeout") == 30
+    
+    # Test simple key
+    assert skill_context.get_config("simple_key") == "simple_value"
+    
+    # Test nonexistent key
+    assert skill_context.get_config("nonexistent.key", "default") == "default"
+
+
+@pytest.mark.logic
+def test_skill_context_get_skill_nonexistent(skill_context: SkillContext) -> None:
+    """Test get_skill for nonexistent skill."""
+    result = skill_context.get_skill("nonexistent_skill")
+    assert result is None
+
+
+@pytest.mark.logic
+def test_skill_context_conn_property(skill_context: SkillContext) -> None:
+    """Test conn property returns connection."""
+    conn = skill_context.conn
+    assert conn is not None
+    # Verify it's a working connection
+    cursor = conn.execute("SELECT 1")
+    result = cursor.fetchone()
+    assert result[0] == 1
 
 
 @pytest.mark.logic

@@ -83,3 +83,75 @@ def test_init_skill_schema(temp_agent_folder: Path, tmp_path: Path) -> None:
     assert cur.fetchone() is not None
     
     conn.close()
+
+
+@pytest.mark.logic
+def test_init_skill_schema_nonexistent(temp_agent_folder: Path, tmp_path: Path) -> None:
+    """Test init_skill_schema with nonexistent file."""
+    nonexistent_file = tmp_path / "nonexistent.sql"
+    
+    # Should not raise error
+    init_skill_schema("test_skill", nonexistent_file)
+
+
+@pytest.mark.logic
+def test_get_connection_works(temp_agent_folder: Path) -> None:
+    """Test that get_connection works."""
+    conn = get_connection()
+    
+    # Should be able to execute queries
+    cursor = conn.execute("SELECT 1")
+    assert cursor.fetchone()[0] == 1
+    
+    conn.close()
+
+
+@pytest.mark.logic
+def test_get_connection_creates_db_file(temp_agent_folder: Path) -> None:
+    """Test that get_connection creates the database file."""
+    db_path = get_agent_db_path()
+    
+    # Get connection (creates file if needed)
+    conn = get_connection()
+    
+    # Verify database file exists
+    assert db_path.exists()
+    
+    conn.close()
+
+
+@pytest.mark.logic
+def test_get_connection_thread_safe(temp_agent_folder: Path) -> None:
+    """Test that get_connection can be called with check_same_thread=False."""
+    conn = get_connection(check_same_thread=False)
+    
+    # Should be able to execute queries
+    cursor = conn.execute("SELECT 1")
+    assert cursor.fetchone()[0] == 1
+    
+    conn.close()
+
+
+@pytest.mark.logic
+def test_init_skill_schema_duplicate(temp_agent_folder: Path, tmp_path: Path) -> None:
+    """Test that init_skill_schema is idempotent."""
+    schema_file = tmp_path / "test_schema.sql"
+    schema_file.write_text("""
+        CREATE TABLE IF NOT EXISTS test_table (
+            id INTEGER PRIMARY KEY,
+            value TEXT
+        );
+    """)
+    
+    # Initialize twice
+    init_skill_schema("test_skill", schema_file)
+    init_skill_schema("test_skill", schema_file)
+    
+    # Should still work
+    conn = get_connection()
+    cur = conn.execute("""
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='test_table'
+    """)
+    assert cur.fetchone() is not None
+    conn.close()
