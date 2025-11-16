@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "glorious-linker"
 version = "0.1.0"
 description = "Linker skill for Glorious Agents - semantic cross-references between entities"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Thomas Weholt", email = "thomas@weholt.org"}

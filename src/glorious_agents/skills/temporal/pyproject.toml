@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "glorious-temporal"
 version = "0.1.0"
 description = "Temporal filtering - time-aware queries"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = ["glorious-agents>=0.1.0"]
 
 [project.entry-points."glorious_agents.skills"]
