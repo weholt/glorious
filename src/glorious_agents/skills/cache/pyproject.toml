@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "glorious-cache"
 version = "0.1.0"
 description = "Cache skill for Glorious Agents - short-term ephemeral storage with TTL"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Thomas Weholt", email = "thomas@weholt.org"}

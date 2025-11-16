@@ -5,7 +5,7 @@ description = "Git-backed issue tracking with hash IDs, hierarchical relationshi
 authors = [
     { name = "DotWork Team" },
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 readme = "README.md"
 dependencies = [
     "sqlmodel>=0.0.16",
@@ -57,7 +57,7 @@ build-backend = "hatchling.build"
 
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
@@ -74,7 +74,7 @@ ignore = [
 ]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = false
 warn_return_any = true
 warn_unused_configs = true

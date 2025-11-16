@@ -7,7 +7,7 @@ name = "glorious-migrate"
 version = "0.1.0"
 description = "Migrate skill for Glorious Agents - universal export/import system"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Thomas Weholt", email = "thomas@weholt.org"}

@@ -7,7 +7,7 @@ name = "glorious-automations"
 version = "0.1.0"
 description = "Automations skill for Glorious Agents - declarative event-driven automation engine"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Thomas Weholt", email = "thomas@weholt.org"}
