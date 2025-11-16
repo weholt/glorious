@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.13"]
+        python-version: ["3.12"]
       fail-fast: false
     
     steps:
@@ -42,31 +42,31 @@ jobs:
           python -m venv test-env
           
       - name: Install built package (Unix)
-        if: runner.os != 'Windows'
+        if: ${{ runner.os != 'Windows' }}
         run: |
           test-env/bin/pip install dist/*.whl
 
       - name: Install built package (Windows)
-        if: runner.os == 'Windows'
+        if: ${{ runner.os == 'Windows' }}
         run: |
           test-env\Scripts\pip install dist/*.whl
 
       - name: Test CLI works (Unix)
-        if: runner.os != 'Windows'
+        if: ${{ runner.os != 'Windows' }}
         run: |
           test-env/bin/agent --help
           test-env/bin/agent version
           test-env/bin/agent skills list
 
       - name: Test CLI works (Windows)
-        if: runner.os == 'Windows'
+        if: ${{ runner.os == 'Windows' }}
         run: |
           test-env\Scripts\agent --help
           test-env\Scripts\agent version
           test-env\Scripts\agent skills list
 
       - name: Verify skills folder included
-        if: runner.os == 'Linux'
+        if: ${{ runner.os == 'Linux' }}
         run: |
           python -m zipfile -l dist/*.whl | grep "skills/" | wc -l
           echo "✓ Skills folder verified in package"
@@ -87,7 +87,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
 
       - name: Build package
         run: uv tool run --from build pyproject-build
@@ -129,7 +129,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
 
       - name: Build and install main package
         run: |
@@ -169,7 +169,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
 
       - name: Build package
         run: uv tool run --from build pyproject-build
@@ -219,7 +219,7 @@ jobs:
           echo "Source dist size: $SDIST_SIZE bytes"
           
           # Warn if wheel is over 5MB
-          if [ $WHEEL_SIZE -gt 5242880 ]; then
+          if [ "$WHEEL_SIZE" -gt 5242880 ]; then
             echo "⚠️  Warning: Wheel is larger than 5MB"
           else
             echo "✓ Wheel size is reasonable"
