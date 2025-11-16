@@ -79,14 +79,19 @@ def search(query: str, limit: int = 10) -> list["SearchResult"]:
 
 @app.command()
 def create(
-    title: str = typer.Argument(..., help="Document title"),
+    title: str = typer.Argument(None, help="Document title (optional if using --from-file)"),
     content: str = typer.Option("", "--content", help="Document content"),
     content_file: Path = typer.Option(None, "--content-file", help="Load content from file"),
+    from_file: Path = typer.Option(None, "--from-file", help="Create from file (extracts title from first # heading)"),
     epic_id: str = typer.Option(None, "--epic", help="Link to epic"),
     custom_id: str = typer.Option(None, "--id", help="Custom document ID"),
 ) -> None:
     """Create a new document."""
     assert _ctx is not None
+    
+    # Handle --from-file convenience option
+    if from_file:
+        content_file = from_file
     
     # Load content from file if specified
     if content_file:
@@ -94,6 +99,22 @@ def create(
             console.print(f"[red]Error: File not found: {content_file}[/red]")
             raise typer.Exit(1)
         content = content_file.read_text()
+        
+        # Auto-extract title from first # heading if not provided
+        if not title:
+            for line in content.split('\n'):
+                line = line.strip()
+                if line.startswith('# '):
+                    title = line[2:].strip()
+                    break
+            
+            # Fallback to filename if no title found
+            if not title:
+                title = content_file.stem.replace('-', ' ').replace('_', ' ').title()
+    
+    if not title:
+        console.print("[red]Error: Title is required (provide as argument or use --from-file with # heading)[/red]")
+        raise typer.Exit(1)
     
     if not content:
         console.print("[yellow]Warning: Creating document with empty content[/yellow]")
