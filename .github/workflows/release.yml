@@ -99,9 +99,10 @@ jobs:
           python-version: "3.13"
 
       - name: Build package
-        run: |
-          uv tool run --from build pyproject-build
-          ls -lh dist/
+        run: uv tool run --from build pyproject-build
+      
+      - name: List built packages
+        run: ls -lh dist/
 
       - name: Verify package contents
         run: |
