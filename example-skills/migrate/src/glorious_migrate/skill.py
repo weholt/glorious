@@ -1,5 +1,6 @@
 """Migrate skill - universal export/import system."""
 
+import base64
 import json
 import shutil
 import sqlite3
@@ -44,7 +45,18 @@ def export_table(conn: sqlite3.Connection, table: str) -> list[dict[str, Any]]:
     cursor = conn.execute(f"SELECT * FROM {table}")
     columns = [desc[0] for desc in cursor.description]
     rows = cursor.fetchall()
-    return [dict(zip(columns, row)) for row in rows]
+    
+    result = []
+    for row in rows:
+        row_dict = {}
+        for col, val in zip(columns, row):
+            # Convert bytes to base64 string for JSON serialization
+            if isinstance(val, bytes):
+                row_dict[col] = {"__type__": "bytes", "data": base64.b64encode(val).decode('utf-8')}
+            else:
+                row_dict[col] = val
+        result.append(row_dict)
+    return result
 
 
 def import_table(conn: sqlite3.Connection, table: str, rows: list[dict[str, Any]]) -> int:
@@ -58,7 +70,14 @@ def import_table(conn: sqlite3.Connection, table: str, rows: list[dict[str, Any]
 
     count = 0
     for row in rows:
-        values = [row[col] for col in columns]
+        values = []
+        for col in columns:
+            val = row[col]
+            # Convert base64-encoded bytes back to bytes
+            if isinstance(val, dict) and val.get("__type__") == "bytes":
+                values.append(base64.b64decode(val["data"]))
+            else:
+                values.append(val)
         conn.execute(insert_sql, values)
         count += 1
 
@@ -134,7 +153,17 @@ def export(
     """Export database to JSON files."""
     assert _ctx is not None
 
-    db = Path(db_path) if db_path else Path(_ctx.conn.execute("PRAGMA database_list").fetchone()[2])
+    if db_path:
+        db = Path(db_path)
+    else:
+        # Get DB path from config
+        from glorious_agents.config import config
+        # Check for agent-specific DB first
+        agent_db = Path(".agent/agents/default/agent.db")
+        if agent_db.exists():
+            db = agent_db
+        else:
+            db = config.get_shared_db_path()
     output_dir = Path(output)
 
     try:
@@ -164,7 +193,15 @@ def import_cmd(
     """Import database from JSON files."""
     assert _ctx is not None
 
-    db = Path(db_path) if db_path else Path(_ctx.conn.execute("PRAGMA database_list").fetchone()[2])
+    if db_path:
+        db = Path(db_path)
+    else:
+        from glorious_agents.config import config
+        agent_db = Path(".agent/agents/default/agent.db")
+        if agent_db.exists():
+            db = agent_db
+        else:
+            db = config.get_shared_db_path()
     input_dir = Path(input)
 
     if not input_dir.exists():
@@ -198,7 +235,15 @@ def backup(
     """Create a backup copy of the database."""
     assert _ctx is not None
 
-    db = Path(db_path) if db_path else Path(_ctx.conn.execute("PRAGMA database_list").fetchone()[2])
+    if db_path:
+        db = Path(db_path)
+    else:
+        from glorious_agents.config import config
+        agent_db = Path(".agent/agents/default/agent.db")
+        if agent_db.exists():
+            db = agent_db
+        else:
+            db = config.get_shared_db_path()
     backup_path = Path(output)
 
     try:
@@ -220,7 +265,15 @@ def restore(
     """Restore database from backup."""
     assert _ctx is not None
 
-    db = Path(db_path) if db_path else Path(_ctx.conn.execute("PRAGMA database_list").fetchone()[2])
+    if db_path:
+        db = Path(db_path)
+    else:
+        from glorious_agents.config import config
+        agent_db = Path(".agent/agents/default/agent.db")
+        if agent_db.exists():
+            db = agent_db
+        else:
+            db = config.get_shared_db_path()
     backup_path = Path(backup_file)
 
     if not backup_path.exists():

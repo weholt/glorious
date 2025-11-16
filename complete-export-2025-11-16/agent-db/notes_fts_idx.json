@@ -1,0 +1,50 @@
+[
+  {
+    "segid": 1,
+    "term": {
+      "__type__": "bytes",
+      "data": ""
+    },
+    "pgno": 2
+  },
+  {
+    "segid": 2,
+    "term": {
+      "__type__": "bytes",
+      "data": ""
+    },
+    "pgno": 2
+  },
+  {
+    "segid": 3,
+    "term": {
+      "__type__": "bytes",
+      "data": ""
+    },
+    "pgno": 2
+  },
+  {
+    "segid": 4,
+    "term": {
+      "__type__": "bytes",
+      "data": ""
+    },
+    "pgno": 2
+  },
+  {
+    "segid": 5,
+    "term": {
+      "__type__": "bytes",
+      "data": ""
+    },
+    "pgno": 2
+  },
+  {
+    "segid": 6,
+    "term": {
+      "__type__": "bytes",
+      "data": ""
+    },
+    "pgno": 2
+  }
+]

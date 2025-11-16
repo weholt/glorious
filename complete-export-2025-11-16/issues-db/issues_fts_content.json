@@ -1,0 +1,674 @@
+[
+  {
+    "id": 1,
+    "c0": "issue-00c4d0",
+    "c1": "Event bus lacks event persistence",
+    "c2": "Events are lost if no subscribers active"
+  },
+  {
+    "id": 2,
+    "c0": "issue-0905fa",
+    "c1": "Inconsistent error responses across CLI commands",
+    "c2": "Different commands return errors in different formats"
+  },
+  {
+    "id": 3,
+    "c0": "issue-2d3e68",
+    "c1": "Implement RPC endpoint for skill methods",
+    "c2": "Complete HTTP RPC implementation for skill invocation"
+  },
+  {
+    "id": 4,
+    "c0": "issue-94ae4a",
+    "c1": "skills_cli.py exceeds 1000 lines",
+    "c2": "Large module violates maintainability guidelines"
+  },
+  {
+    "id": 5,
+    "c0": "issue-04bd1f",
+    "c1": "loader.py exceeds 500 lines",
+    "c2": "Core loader module too large with mixed responsibilities"
+  },
+  {
+    "id": 6,
+    "c0": "issue-cedec8",
+    "c1": "No request validation in daemon RPC endpoint",
+    "c2": "call_skill_method lacks parameter validation"
+  },
+  {
+    "id": 7,
+    "c0": "issue-61d0da",
+    "c1": "No authentication on daemon cache endpoints",
+    "c2": "Cache manipulation endpoints lack access control"
+  },
+  {
+    "id": 8,
+    "c0": "issue-2f1480",
+    "c1": "sys.path manipulation in loader.py",
+    "c2": "Direct sys.path modification is fragile and can cause import issues"
+  },
+  {
+    "id": 9,
+    "c0": "issue-5fd36a",
+    "c1": "No skill isolation or sandboxing",
+    "c2": "Skills run in same process with full system access"
+  },
+  {
+    "id": 10,
+    "c0": "issue-7d8e61",
+    "c1": "Database migrations not implemented",
+    "c2": "No versioning or migration system for skill schemas"
+  },
+  {
+    "id": 11,
+    "c0": "issue-190563",
+    "c1": "No authentication for daemon endpoints",
+    "c2": "HTTP endpoints accessible without authentication"
+  },
+  {
+    "id": 12,
+    "c0": "issue-e7b502",
+    "c1": "No rate limiting or throttling",
+    "c2": "Skills can overwhelm system resources"
+  },
+  {
+    "id": 13,
+    "c0": "issue-0b70c2",
+    "c1": "cli.py init() function exceeds 100 lines",
+    "c2": "Large initialization function with mixed concerns"
+  },
+  {
+    "id": 14,
+    "c0": "issue-b4317b",
+    "c1": "SkillContext class approaching complexity threshold",
+    "c2": "SkillContext has 13 methods and 187 lines"
+  },
+  {
+    "id": 15,
+    "c0": "issue-f8870f",
+    "c1": "core/validation.py validate_input() function exceeds 60 lines",
+    "c2": "Large validation function with complex logic"
+  },
+  {
+    "id": 16,
+    "c0": "issue-396521",
+    "c1": "Large function: loader.py discover_local_skills()",
+    "c2": "discover_local_skills function exceeds recommended line count"
+  },
+  {
+    "id": 17,
+    "c0": "issue-f05c65",
+    "c1": "Large function: loader.py discover_entrypoint_skills()",
+    "c2": "discover_entrypoint_skills function is overly complex"
+  },
+  {
+    "id": 18,
+    "c0": "issue-88ed9a",
+    "c1": "Large function: loader.py load_all_skills()",
+    "c2": "load_all_skills function exceeds 80 lines with multiple responsibilities"
+  },
+  {
+    "id": 19,
+    "c0": "issue-8063f4",
+    "c1": "Large function: skills_cli.py describe()",
+    "c2": "describe command exceeds 100 lines with mixed concerns"
+  },
+  {
+    "id": 20,
+    "c0": "issue-c0a257",
+    "c1": "Large function: skills_cli.py export()",
+    "c2": "export command exceeds 90 lines with complex data assembly"
+  },
+  {
+    "id": 21,
+    "c0": "issue-87c1db",
+    "c1": "Large function: skills_cli.py create() and helpers",
+    "c2": "create command with helpers exceeds 200 lines total"
+  },
+  {
+    "id": 22,
+    "c0": "issue-772059",
+    "c1": "Duplicated schema initialization logic",
+    "c2": "Schema initialization code repeated across skill loader"
+  },
+  {
+    "id": 23,
+    "c0": "issue-c2cc57",
+    "c1": "No metrics or observability for skill operations",
+    "c2": "Cannot track skill performance or usage patterns"
+  },
+  {
+    "id": 24,
+    "c0": "issue-13d0f6",
+    "c1": "Event bus lacks event persistence",
+    "c2": "Events are lost if no subscribers active"
+  },
+  {
+    "id": 25,
+    "c0": "issue-143e12",
+    "c1": "Missing skill lifecycle hooks",
+    "c2": "No standard hooks for skill initialization and cleanup"
+  },
+  {
+    "id": 26,
+    "c0": "issue-e369bc",
+    "c1": "Missing rollback capability for failed operations",
+    "c2": "No transaction support for multi-step operations"
+  },
+  {
+    "id": 27,
+    "c0": "issue-237768",
+    "c1": "Inconsistent error responses across CLI commands",
+    "c2": "Different commands return errors in different formats"
+  },
+  {
+    "id": 28,
+    "c0": "issue-240464",
+    "c1": "Add skill marketplace/registry integration",
+    "c2": "Support browsing and installing skills from central registry"
+  },
+  {
+    "id": 29,
+    "c0": "issue-6ed8ca",
+    "c1": "Add skill metrics and usage analytics",
+    "c2": "Track skill usage patterns and performance metrics"
+  },
+  {
+    "id": 30,
+    "c0": "issue-5acdc3",
+    "c1": "Implement RPC endpoint for skill methods",
+    "c2": "Complete HTTP RPC implementation for skill invocation"
+  },
+  {
+    "id": 31,
+    "c0": "issue-9140db",
+    "c1": "Add authentication for daemon endpoints",
+    "c2": "Implement optional token-based authentication"
+  },
+  {
+    "id": 32,
+    "c0": "issue-9d5852",
+    "c1": "Add integration tests for skills",
+    "c2": "Create integration tests with real DB and CLI invocations"
+  },
+  {
+    "id": 33,
+    "c0": "issue-a47217",
+    "c1": "skills_cli.py _reload_single_skill() exceeds 60 lines",
+    "c2": "Reload function has mixed concerns"
+  },
+  {
+    "id": 34,
+    "c0": "issue-edfe1e",
+    "c1": "skills_cli.py check() function exceeds 80 lines",
+    "c2": "Health check function with complex validation logic"
+  },
+  {
+    "id": 35,
+    "c0": "issue-d2a556",
+    "c1": "skills_cli.py skill_config() exceeds 60 lines",
+    "c2": "Config command handles too many operations"
+  },
+  {
+    "id": 36,
+    "c0": "issue-3a475b",
+    "c1": "core/loader.py check_version_constraint() exceeds 60 lines",
+    "c2": "Version checking logic is complex"
+  },
+  {
+    "id": 37,
+    "c0": "issue-fb532d",
+    "c1": "core/context.py get_config() exceeds 50 lines",
+    "c2": "Config retrieval with complex default handling"
+  },
+  {
+    "id": 38,
+    "c0": "issue-e43c42",
+    "c1": "Add comprehensive type hints across codebase",
+    "c2": "Many functions lack return type annotations"
+  },
+  {
+    "id": 39,
+    "c0": "issue-dc5188",
+    "c1": "Implement centralized logging configuration",
+    "c2": "No consistent logging setup across modules"
+  },
+  {
+    "id": 40,
+    "c0": "issue-f71fe8",
+    "c1": "Duplicated validation logic in loader.py",
+    "c2": "Manifest validation code duplicated between local and entrypoint discovery"
+  },
+  {
+    "id": 41,
+    "c0": "issue-fc8f54",
+    "c1": "Magic numbers in context.py cache implementation",
+    "c2": "Hard-coded cache size limit should be configurable"
+  },
+  {
+    "id": 42,
+    "c0": "issue-2b0261",
+    "c1": "Inconsistent error handling patterns",
+    "c2": "Mix of Exception catching styles across modules"
+  },
+  {
+    "id": 43,
+    "c0": "issue-87830b",
+    "c1": "Missing logging configuration",
+    "c2": "No centralized logging setup for consistent formatting"
+  },
+  {
+    "id": 44,
+    "c0": "issue-b8fe5c",
+    "c1": "Direct access to private attributes in daemon.py",
+    "c2": "Daemon exposes event bus internal state"
+  },
+  {
+    "id": 45,
+    "c0": "issue-a1ec6c",
+    "c1": "Type hints missing for Protocol callback",
+    "c2": "EventBus callback type not properly defined"
+  },
+  {
+    "id": 46,
+    "c0": "issue-9572d8",
+    "c1": "Unused imports and dead code potential",
+    "c2": "importlib.util imported but may not be used consistently"
+  },
+  {
+    "id": 47,
+    "c0": "issue-e1212b",
+    "c1": "Consider extracting skill loading logic into separate class",
+    "c2": "load_all_skills() is long and handles multiple concerns"
+  },
+  {
+    "id": 48,
+    "c0": "issue-e40efd",
+    "c1": "Consider adding batch operations API",
+    "c2": "No support for bulk operations on skills or data"
+  },
+  {
+    "id": 49,
+    "c0": "issue-2b6e8e",
+    "c1": "No plugin system for extending core functionality",
+    "c2": "Core framework not extensible via plugins"
+  },
+  {
+    "id": 50,
+    "c0": "issue-7d3dcb",
+    "c1": "Missing export/import functionality",
+    "c2": "No way to export or import skill data"
+  },
+  {
+    "id": 51,
+    "c0": "issue-617058",
+    "c1": "No support for skill aliases or shortcuts",
+    "c2": "Cannot create command aliases for common operations"
+  },
+  {
+    "id": 52,
+    "c0": "issue-20a2c2",
+    "c1": "Limited query capabilities in skills",
+    "c2": "No support for complex queries or filtering"
+  },
+  {
+    "id": 53,
+    "c0": "issue-c48c5f",
+    "c1": "No built-in search functionality",
+    "c2": "No full-text search across skill data"
+  },
+  {
+    "id": 54,
+    "c0": "issue-6f62db",
+    "c1": "Missing development mode with debug features",
+    "c2": "No dedicated development mode for debugging"
+  },
+  {
+    "id": 55,
+    "c0": "issue-555643",
+    "c1": "No automated testing framework for skills",
+    "c2": "Skills lack standardized testing support"
+  },
+  {
+    "id": 56,
+    "c0": "issue-3aa9d7",
+    "c1": "Limited documentation generation",
+    "c2": "No automatic documentation generation from skills"
+  },
+  {
+    "id": 57,
+    "c0": "issue-3f742d",
+    "c1": "No performance profiling tools",
+    "c2": "Cannot profile skill performance or identify bottlenecks"
+  },
+  {
+    "id": 58,
+    "c0": "issue-6e69b6",
+    "c1": "Consider using pathlib.Path consistently",
+    "c2": "Mix of string paths and Path objects across codebase"
+  },
+  {
+    "id": 59,
+    "c0": "issue-e92c46",
+    "c1": "Add docstrings to public functions",
+    "c2": "Many public functions lack comprehensive docstrings"
+  },
+  {
+    "id": 60,
+    "c0": "issue-bdaef2",
+    "c1": "Consider using ruff for linting and formatting",
+    "c2": "No apparent linting/formatting configuration"
+  },
+  {
+    "id": 61,
+    "c0": "issue-16e1c1",
+    "c1": "Add mkdocs documentation site",
+    "c2": "No user-facing documentation site"
+  },
+  {
+    "id": 62,
+    "c0": "issue-6557d3",
+    "c1": "Add security scanning with bandit",
+    "c2": "No security static analysis configured"
+  },
+  {
+    "id": 63,
+    "c0": "issue-4cc8ce",
+    "c1": "Add unit tests for feedback skill",
+    "c2": ""
+  },
+  {
+    "id": 64,
+    "c0": "issue-d44af9",
+    "c1": "Add unit tests for linker skill",
+    "c2": ""
+  },
+  {
+    "id": 65,
+    "c0": "issue-87b434",
+    "c1": "Add unit tests for notes skill",
+    "c2": ""
+  },
+  {
+    "id": 66,
+    "c0": "issue-667fa8",
+    "c1": "Add unit tests for orchestrator skill",
+    "c2": ""
+  },
+  {
+    "id": 67,
+    "c0": "issue-b58f19",
+    "c1": "Add unit tests for planner skill",
+    "c2": ""
+  },
+  {
+    "id": 68,
+    "c0": "issue-e1f92e",
+    "c1": "Add unit tests for prompts skill",
+    "c2": ""
+  },
+  {
+    "id": 69,
+    "c0": "issue-21bb62",
+    "c1": "Add unit tests for sandbox skill",
+    "c2": ""
+  },
+  {
+    "id": 70,
+    "c0": "issue-1ac1e0",
+    "c1": "Add unit tests for telemetry skill",
+    "c2": ""
+  },
+  {
+    "id": 71,
+    "c0": "issue-21a6f4",
+    "c1": "Add unit tests for temporal skill",
+    "c2": ""
+  },
+  {
+    "id": 72,
+    "c0": "issue-727ceb",
+    "c1": "Add unit tests for vacuum skill",
+    "c2": ""
+  },
+  {
+    "id": 73,
+    "c0": "issue-49765f",
+    "c1": "Ensure all skills implement search() method for universal search",
+    "c2": "The universal search functionality exists in core (src/glorious_agents/core/search.py and cli.py), but needs all skills to implement the search() method.\n\n**Current state:**\n- \u2705 Universal search command: `agent search` exists\n- \u2705 SearchResult protocol defined in core/search.py\n- \u2705 Most skills already have search() implemented:\n  - ai, cache, code-atlas, feedback, issues, notes, planner, prompts, temporal, vacuum\n\n**Required work:**\nAudit all skills and ensure each has a search() method that:\n- Returns list[SearchResult] \n- If search is not applicable for that skill, return []\n- Otherwise return relevant results with proper scoring\n\n**Skills to check:**\nRun through all example-skills/* and verify each has search() or explicitly returns []\n\n**Implementation:**\nEach skill.py should have:\n```python\ndef search(query: str, limit: int = 10) -> list[SearchResult]:\n    # If not applicable: return []\n    # Otherwise: return relevant SearchResult objects\n```"
+  },
+  {
+    "id": 74,
+    "c0": "issue-83d755",
+    "c1": "Add 'ai' skill for LLM integration and embeddings",
+    "c2": ""
+  },
+  {
+    "id": 75,
+    "c0": "issue-b4a652",
+    "c1": "Add 'graph' skill for relationship visualization",
+    "c2": ""
+  },
+  {
+    "id": 76,
+    "c0": "issue-6704b8",
+    "c1": "Add 'notify' skill for external notifications",
+    "c2": ""
+  },
+  {
+    "id": 77,
+    "c0": "issue-5dac96",
+    "c1": "Implement 'search' skill - Unified full-text search across all skills",
+    "c2": ""
+  },
+  {
+    "id": 78,
+    "c0": "issue-6e4472",
+    "c1": "Implement 'ai' skill - LLM integration with embeddings and semantic search",
+    "c2": ""
+  },
+  {
+    "id": 79,
+    "c0": "issue-8968a1",
+    "c1": "Implement 'graph' skill - Relationship visualization and dependency graphs",
+    "c2": ""
+  },
+  {
+    "id": 80,
+    "c0": "issue-16016d",
+    "c1": "Implement 'notify' skill - External notifications and webhooks",
+    "c2": ""
+  },
+  {
+    "id": 81,
+    "c0": "issue-e1f2dc",
+    "c1": "Add event publishing to atlas for code violations",
+    "c2": ""
+  },
+  {
+    "id": 82,
+    "c0": "issue-eccccd",
+    "c1": "Add event subscription to issues for auto-creation",
+    "c2": ""
+  },
+  {
+    "id": 83,
+    "c0": "issue-5f5d4e",
+    "c1": "Create 'events' skill for event logging and replay",
+    "c2": ""
+  },
+  {
+    "id": 84,
+    "c0": "issue-a81069",
+    "c1": "Implement 'automations' skill - Declarative event-driven automation engine",
+    "c2": ""
+  },
+  {
+    "id": 85,
+    "c0": "issue-97bc01",
+    "c1": "Implement 'migrate' skill - Universal export/import system",
+    "c2": ""
+  },
+  {
+    "id": 86,
+    "c0": "issue-ce0a0d",
+    "c1": "Implement 'quality' skill - Wrapper for ruff/mypy/pytest",
+    "c2": ""
+  },
+  {
+    "id": 87,
+    "c0": "issue-91d7ff",
+    "c1": "Rename 'atlas' to 'python-atlas' and 'quality' to 'python-quality'",
+    "c2": ""
+  },
+  {
+    "id": 88,
+    "c0": "issue-72d22f",
+    "c1": "Implement 'dotnet-quality' skill - Quality tools for C#/.NET",
+    "c2": ""
+  },
+  {
+    "id": 89,
+    "c0": "issue-6299d5",
+    "c1": "Implement 'js-quality' skill - Quality tools for JavaScript/TypeScript",
+    "c2": ""
+  },
+  {
+    "id": 90,
+    "c0": "issue-0f47f5",
+    "c1": "Implement 'dotnet-atlas' skill - Code analysis for C#/.NET",
+    "c2": ""
+  },
+  {
+    "id": 91,
+    "c0": "issue-cf4b37",
+    "c1": "Implement 'js-atlas' skill - Code analysis for JavaScript/TypeScript",
+    "c2": ""
+  },
+  {
+    "id": 92,
+    "c0": "issue-65b332",
+    "c1": "Add FTS5 full-text search to issues skill",
+    "c2": ""
+  },
+  {
+    "id": 93,
+    "c0": "issue-5f8535",
+    "c1": "Define search protocol for skills - standardized search() method interface",
+    "c2": ""
+  },
+  {
+    "id": 94,
+    "c0": "issue-ed1657",
+    "c1": "Implement universal 'agent search' command that queries all skills",
+    "c2": ""
+  },
+  {
+    "id": 95,
+    "c0": "issue-7641eb",
+    "c1": "Add search() method to all existing skills (notes, issues, planner, etc)",
+    "c2": ""
+  },
+  {
+    "id": 96,
+    "c0": "issue-c89515",
+    "c1": "Enhance 'issues show' to accept multiple issue IDs",
+    "c2": "The `issues show` command should accept multiple issue IDs as arguments.\n\n**Current behavior:**\nMust chain multiple commands: `uv run agent issues show issue-5fd36a && uv run agent issues show issue-e7b502`\n\n**Desired behavior:**\n- Accept multiple issue IDs: `uv run agent issues show issue-5fd36a issue-e7b502 issue-49765f`\n- When `--json` flag is given: return a mapping of issue-ids -> issue-data\n- When `--json` is not given: print issues in sequence with separators\n\n**Benefits:**\n- More efficient - single command invocation\n- Cleaner command chains\n- Better JSON output structure for programmatic use"
+  },
+  {
+    "id": 97,
+    "c0": "issue-0346f5",
+    "c1": "Test 1",
+    "c2": ""
+  },
+  {
+    "id": 98,
+    "c0": "issue-8ef421",
+    "c1": "Test 2",
+    "c2": ""
+  },
+  {
+    "id": 99,
+    "c0": "issue-101643",
+    "c1": "Test FTS",
+    "c2": ""
+  },
+  {
+    "id": 100,
+    "c0": "issue-8a24c0",
+    "c1": "Add FTS5 full-text search to planner skill",
+    "c2": "Add FTS5 full-text search to planner tasks.\n\n**Current state:**\n- No FTS index on planner_queue table\n- Simple tag/project filtering only\n\n**Implementation:**\n- Create planner_queue_fts virtual table indexing issue_id, tags, project_id\n- Add triggers for automatic sync\n- Update search() method to use FTS5\n- Enables queries like: `planner search \"authentication backend\"`\n\n**Benefits:**\n- Fast search across queued tasks\n- Better task discovery\n- Consistent with issues FTS implementation\n\n**Reference:** issue-65b332"
+  },
+  {
+    "id": 101,
+    "c0": "issue-66ad69",
+    "c1": "Add FTS5 full-text search to feedback skill",
+    "c2": "Add FTS5 full-text search to feedback records.\n\n**Current state:**\n- No FTS index on feedback table\n- Basic filtering by action_type and status\n\n**Implementation:**\n- Create feedback_fts virtual table indexing action_id, action_type, reason\n- Add triggers for automatic sync\n- Update search() method to use FTS5\n- Enables queries like: `feedback search \"authentication failed\"`\n\n**Benefits:**\n- Quick lookup of past actions and outcomes\n- Pattern recognition in failures/successes\n- Better debugging capabilities\n\n**Reference:** issue-65b332"
+  },
+  {
+    "id": 102,
+    "c0": "issue-5bd07d",
+    "c1": "Add FTS5 full-text search to prompts skill",
+    "c2": "Add FTS5 full-text search to prompt templates.\n\n**Current state:**\n- No FTS index on prompts table\n- Only name-based lookup\n\n**Implementation:**\n- Create prompts_fts virtual table indexing name, template content\n- Add triggers for automatic sync\n- Update search() method to use FTS5\n- Enables queries like: `prompts search \"code review\"`\n\n**Benefits:**\n- Find prompts by content keywords\n- Better template discovery\n- Useful when you remember the content but not the name\n\n**Reference:** issue-65b332"
+  },
+  {
+    "id": 103,
+    "c0": "issue-10b168",
+    "c1": "Add FTS5 full-text search to automations skill",
+    "c2": "Add FTS5 full-text search to automation definitions.\n\n**Searchable fields:**\n- name, description, trigger_topic, actions\n\n**Benefits:**\n- Find automations by trigger conditions\n- Search by action types\n- Discover relevant automations\n\n**Reference:** issue-65b332"
+  },
+  {
+    "id": 104,
+    "c0": "issue-f9e10b",
+    "c1": "Add FTS5 full-text search to telemetry skill",
+    "c2": "Add FTS5 full-text search to telemetry events.\n\n**Searchable fields:**\n- category, event, skill\n\n**Benefits:**\n- Quick log searching\n- Pattern detection in events\n- Better debugging\n\n**Reference:** issue-65b332"
+  },
+  {
+    "id": 105,
+    "c0": "issue-74489d",
+    "c1": "Comprehensive integration tests for all example skills",
+    "c2": "Create integration tests that validate ALL example skills work correctly according to AGENTIC_WORKFLOW.md. Tests should cover: skill loading, context initialization, database operations, event bus, search functionality, CLI commands, error handling, and inter-skill communication. Follow the workflow phases: Context Gathering, Planning, Execution, Feedback, and Knowledge Management."
+  },
+  {
+    "id": 106,
+    "c0": "issue-5cc5e4",
+    "c1": "Setup integration test infrastructure and fixtures",
+    "c2": "Create pytest fixtures for: isolated test database, skill loading, context setup, cleanup. Create base test class with common assertions. Setup test helpers for CLI invocation, event verification, and database inspection."
+  },
+  {
+    "id": 107,
+    "c0": "issue-b98068",
+    "c1": "Integration tests: Context Gathering phase (atlas, search, notes)",
+    "c2": "Test atlas scan/rank/check/query, universal search across skills, notes add/search/list. Verify code indexing, search results accuracy, note tagging and retrieval."
+  },
+  {
+    "id": 108,
+    "c0": "issue-0bc3aa",
+    "c1": "Integration tests: Planning phase (issues, planner)",
+    "c2": "Test issues create/update/list/ready/dependencies/bulk operations. Test planner add/next/sync/update. Verify issue lifecycle, dependency resolution, priority sorting, and planner queue management."
+  },
+  {
+    "id": 109,
+    "c0": "issue-4d28af",
+    "c1": "Integration tests: Execution phase (cache, prompts, temporal)",
+    "c2": "Test cache set/get/prune/warmup with TTL. Test prompts register/render/list with variables. Test temporal filtering and parsing. Verify TTL expiration, template substitution, and time range queries."
+  },
+  {
+    "id": 110,
+    "c0": "issue-9e3092",
+    "c1": "Integration tests: Feedback phase (feedback, automations, ai)",
+    "c2": "Test feedback record/stats/list. Test automations create/trigger/list. Test ai embedding/query if available. Verify feedback learning, event-driven automation, and AI integration."
+  },
+  {
+    "id": 111,
+    "c0": "issue-927386",
+    "c1": "Integration tests: Knowledge Management phase (vacuum, migrate)",
+    "c2": "Test vacuum run/history for knowledge distillation. Test migrate export/import/backup. Verify data compaction, optimization, and migration integrity."
+  },
+  {
+    "id": 112,
+    "c0": "issue-5f8ca7",
+    "c1": "Integration tests: Cross-skill communication and workflows",
+    "c2": "Test end-to-end workflows: 1) Create issue -> Add to planner -> Update status -> Record feedback. 2) Atlas scan -> Create issues from violations -> Sync to planner. 3) Event bus pub/sub between skills. 4) Universal search across all skills. Verify inter-skill dependencies and event-driven behavior."
+  }
+]

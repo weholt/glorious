@@ -1,0 +1,26 @@
+[
+  {
+    "content": "Implement glorious agents framework",
+    "tags": "project,milestone"
+  },
+  {
+    "content": "Refactor parser module",
+    "tags": "todo,refactor"
+  },
+  {
+    "content": "Testing installable package",
+    "tags": "test,package"
+  },
+  {
+    "content": "Install example skills works great",
+    "tags": "todo"
+  },
+  {
+    "content": "Install example skills works great",
+    "tags": "todo"
+  },
+  {
+    "content": "Install example skills works great",
+    "tags": "todo"
+  }
+]

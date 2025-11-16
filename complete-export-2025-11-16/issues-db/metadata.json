@@ -1,0 +1,18 @@
+{
+  "exported_at": "2025-11-16T02:22:45.723842",
+  "tables": {
+    "issues": 112,
+    "labels": 0,
+    "issue_labels": 129,
+    "comments": 0,
+    "dependencies": 11,
+    "epics": 0,
+    "issues_fts": 112,
+    "issues_fts_data": 9,
+    "issues_fts_idx": 7,
+    "issues_fts_content": 112,
+    "issues_fts_docsize": 112,
+    "issues_fts_config": 1
+  },
+  "total_rows": 605
+}
