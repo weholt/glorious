@@ -1,4 +1,4 @@
-#!/home/thomas/Workspace/glorious/example-skills/issues/.venv/bin/python3
+#!/home/thomas/Workspace/glorious/skills/issues/.venv/bin/python3
 # -*- coding: utf-8 -*-
 import sys
 from issue_tracker.cli.__main__ import main
