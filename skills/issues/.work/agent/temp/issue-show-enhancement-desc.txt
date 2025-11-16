@@ -1,0 +1,66 @@
+**Current State:**
+The `issues show` command's default output only displays 4 fields (ID, Title, Status, Priority), making it impossible to verify issue descriptions without using `--json` flag.
+
+**Code Location:**
+`src/issue_tracker/cli/app.py` lines 571-574
+
+**Current Output:**
+```
+ID: issue-dea95e
+Title: Refactor cli/app.py - file exceeds 3200 lines
+Status: open
+Priority: 0
+```
+
+**Problem:**
+- Description field exists in data but isn't shown
+- Users can't verify that descriptions were properly saved
+- No way to read issue details without JSON output or database query
+
+**Recommended Solutions:**
+
+**Option A: Add description to default output**
+```python
+if not json_output:
+    typer.echo(f"ID: {issue_id}")
+    typer.echo(f"Title: {issue_data['title']}")
+    typer.echo(f"Status: {issue_data['status']}")
+    typer.echo(f"Priority: {issue_data['priority']}")
+    if issue_data.get('description'):
+        typer.echo(f"\nDescription:\n{issue_data['description']}")
+    if issue_data.get('labels'):
+        typer.echo(f"\nLabels: {', '.join(issue_data['labels'])}")
+```
+
+**Option B: Add --verbose flag**
+```python
+verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full details")
+
+# Then in output:
+if not json_output:
+    typer.echo(f"ID: {issue_id}")
+    typer.echo(f"Title: {issue_data['title']}")
+    typer.echo(f"Status: {issue_data['status']}")
+    typer.echo(f"Priority: {issue_data['priority']}")
+    
+    if verbose:
+        if issue_data.get('description'):
+            typer.echo(f"\nDescription:\n{issue_data['description']}")
+        if issue_data.get('labels'):
+            typer.echo(f"\nLabels: {', '.join(issue_data['labels'])}")
+        # ... more fields
+```
+
+**Recommendation:**
+Use Option A (always show description) since description is a core field that users need to see. Reserve --verbose for truly optional metadata like timestamps, etc.
+
+**Additional Improvements:**
+- Add word wrapping for long descriptions (use textwrap module)
+- Show labels, assignee, and epic_id in default output
+- Add created/updated timestamps with relative time ("3 hours ago")
+- Syntax highlighting for markdown in descriptions (optional, using Rich library)
+
+**Benefits:**
+- Better UX - users can see issue details without JSON flag
+- Easier verification that data was saved correctly
+- More useful default output for daily workflow

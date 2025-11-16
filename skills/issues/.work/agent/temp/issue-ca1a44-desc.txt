@@ -1,0 +1,45 @@
+**Current State:**
+The `utc_now()` helper function is duplicated across 5 different entity files, violating the DRY (Don't Repeat Yourself) principle.
+
+**Files with Duplicate Code:**
+1. `src/issue_tracker/domain/entities/issue.py`
+2. `src/issue_tracker/domain/entities/label.py`
+3. `src/issue_tracker/domain/entities/epic.py`
+4. `src/issue_tracker/domain/entities/dependency.py`
+5. `src/issue_tracker/domain/entities/comment.py`
+
+**Problems:**
+- Code duplication makes maintenance harder
+- If a bug is found or improvement needed, must update 5 places
+- Increases risk of inconsistent behavior
+- Violates DRY principle
+
+**Recommended Solutions (choose one):**
+
+**Option A: Create Shared Utility Module**
+```python
+# src/issue_tracker/domain/utils.py
+from datetime import datetime, timezone
+
+def utc_now() -> datetime:
+    """Get current UTC timestamp."""
+    return datetime.now(timezone.utc)
+```
+
+Then import in entities:
+```python
+from issue_tracker.domain.utils import utc_now
+```
+
+**Option B: Use Clock Protocol Pattern**
+Create a Clock protocol in `domain/ports/` and inject it via dependency injection. This is more flexible but adds complexity.
+
+**Recommendation:**
+Use Option A (shared utility) for simplicity. It's a pure utility function with no state or dependencies, so a simple shared module is appropriate.
+
+**Implementation:**
+1. Create `src/issue_tracker/domain/utils.py`
+2. Move `utc_now()` function there
+3. Update all 5 entity files to import from utils
+4. Add tests for the utility function
+5. Remove duplicate definitions

@@ -1,0 +1,43 @@
+**Current State:**
+All CLI commands are defined in a single massive file (cli/app.py), making it extremely difficult to navigate and maintain.
+
+**Problems:**
+- Commands are not grouped by functionality
+- File is too large to understand at a glance
+- Testing individual command groups is complicated
+- Violates modular design principles
+
+**Recommended Structure:**
+
+```
+cli/
+├── app.py          # Main Typer app (thin orchestrator)
+├── commands/
+│   ├── __init__.py
+│   ├── create.py   # create, create-epic
+│   ├── list.py     # list, filter
+│   ├── update.py   # update, edit
+│   ├── delete.py   # delete, remove
+│   ├── show.py     # show, display
+│   ├── stats.py    # stats, analytics
+│   └── graph.py    # graph, tree, dependencies
+├── formatters/
+│   ├── __init__.py
+│   ├── table.py
+│   ├── json.py
+│   └── graph.py
+└── utils.py        # Shared CLI utilities
+```
+
+**Implementation Steps:**
+1. Create commands/ directory
+2. Group related commands into modules
+3. Each module exports a Typer sub-app
+4. Main app.py imports and includes sub-apps
+5. Update tests to match new structure
+
+**Benefits:**
+- Each module focuses on one area of functionality
+- Easier to find and modify specific commands
+- Better testability (can test command groups independently)
+- Reduced cognitive load when working on specific features

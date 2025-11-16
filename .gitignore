@@ -53,9 +53,7 @@ temp/
 # Agent data (default location)
 .agent/
 
-# Skills (use example-skills/ for development)
-skills/
-
 # UV
 .uv/
 uv.lock
+temp
