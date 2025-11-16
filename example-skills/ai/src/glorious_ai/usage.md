@@ -19,11 +19,11 @@ agent ai embed "Some text to embed"
 agent ai embed "Document content" --model text-embedding-ada-002
 ```
 
-### search
+### semantic
 Semantic search using embeddings:
 ```bash
-agent ai search "quantum physics" --top-k 5
-agent ai search "machine learning" --model text-embedding-ada-002
+agent ai semantic "quantum physics" --top-k 5
+agent ai semantic "machine learning" --model text-embedding-ada-002
 ```
 
 ### history
@@ -46,5 +46,14 @@ export ANTHROPIC_API_KEY="your-key-here"
 All commands support `--json` flag for programmatic use:
 ```bash
 agent ai complete "Hello" --json
-agent ai search "test" --json
+agent ai semantic "test" --json
+agent ai history --json
+```
+
+## Universal Search
+
+The AI skill integrates with universal search:
+```bash
+# Search across all skills (includes AI completions)
+agent search "LLM completion"
 ```

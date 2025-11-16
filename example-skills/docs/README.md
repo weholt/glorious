@@ -5,6 +5,7 @@ Structured documentation management for Glorious Agents.
 ## Features
 
 - **Document Storage**: Store long-form documentation in database
+- **Frontmatter Support**: Automatic extraction of metadata from YAML frontmatter
 - **Epic Linking**: Link documents to epics for organization
 - **Version History**: Full version tracking with rollback capability
 - **Full-Text Search**: Fast search across all documents
@@ -35,7 +36,50 @@ uv run agent docs create "Database Plan" \
   --content-file docs/DATABASE_CONSOLIDATION.md \
   --epic epic-database \
   --id doc-database
+
+# With frontmatter (auto-extracts metadata)
+uv run agent docs create --from-file my-doc.md
 ```
+
+### Frontmatter Support
+
+The docs skill automatically extracts metadata from YAML frontmatter in markdown files:
+
+```markdown
+---
+title: My Document Title
+epic: epic-testing
+doc_id: doc-custom-id
+tags: [test, documentation]
+---
+
+# My Document Title
+
+Your markdown content here...
+```
+
+**Supported frontmatter fields:**
+- `title` / `Title`: Document title (overrides CLI argument)
+- `epic` / `Epic` / `epic_id`: Epic to link to
+- `id` / `doc_id`: Custom document ID
+- `tags` / `Tags`: Tags (for future use)
+
+**Usage:**
+```bash
+# Create with frontmatter (extracts all metadata automatically)
+uv run agent docs create --from-file my-doc.md
+
+# Update with frontmatter (updates title and epic from frontmatter)
+uv run agent docs update doc-123 --content-file my-doc.md
+
+# Override frontmatter with CLI arguments
+uv run agent docs create --from-file my-doc.md --epic epic-override --id doc-override
+```
+
+**Fallback behavior:**
+- If no frontmatter: extracts title from first `# heading`
+- If no heading: uses filename as title
+- If frontmatter parsing fails: shows warning and continues with plain content
 
 ### View Documents
 

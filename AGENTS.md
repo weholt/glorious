@@ -11,3 +11,5 @@ See [AGENTIC_WORKFLOW.md](./AGENTIC_WORKFLOW.md) for proper agentic workflow tip
 ### Notes and Documentation
 
 - For temporary notes during development, use `uv run agent notes`, do NOT create markdown files unless asked to.
+
+See [AGENT-TOOLS.md](./AGENT-TOOLS.md) for available tools and skills.

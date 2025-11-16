@@ -42,7 +42,9 @@ class EmbeddingInput(SkillInput):
 
 
 @validate_input
-def complete(prompt: str, model: str = "gpt-4", provider: str = "openai", max_tokens: int = 1000) -> dict[str, Any]:
+def complete(
+    prompt: str, model: str = "gpt-4", provider: str = "openai", max_tokens: int = 1000
+) -> dict[str, Any]:
     """
     Generate LLM completion.
 
@@ -82,7 +84,9 @@ def complete(prompt: str, model: str = "gpt-4", provider: str = "openai", max_to
             from anthropic import Anthropic
 
             client = Anthropic(api_key=api_key)
-            response = client.messages.create(model=model, max_tokens=max_tokens, messages=[{"role": "user", "content": prompt}])
+            response = client.messages.create(
+                model=model, max_tokens=max_tokens, messages=[{"role": "user", "content": prompt}]
+            )
             result = {
                 "response": response.content[0].text,
                 "model": model,
@@ -130,7 +134,8 @@ def embed(content: str, model: str = "text-embedding-ada-002") -> list[float]:
 
         embedding_blob = pickle.dumps(embedding)
         _ctx.conn.execute(
-            "INSERT INTO ai_embeddings (content, embedding, model) VALUES (?, ?, ?)", (content, embedding_blob, model)
+            "INSERT INTO ai_embeddings (content, embedding, model) VALUES (?, ?, ?)",
+            (content, embedding_blob, model),
         )
         _ctx.conn.commit()
 
@@ -139,7 +144,58 @@ def embed(content: str, model: str = "text-embedding-ada-002") -> list[float]:
         raise ValueError("OpenAI library not installed")
 
 
-def semantic_search(query: str, model: str = "text-embedding-ada-002", top_k: int = 5) -> list[dict[str, Any]]:
+def search(query: str, limit: int = 10) -> list["SearchResult"]:
+    """Universal search API for AI completions and embeddings.
+
+    Searches completion prompts and responses using simple text matching.
+
+    Args:
+        query: Search query string
+        limit: Maximum number of results
+
+    Returns:
+        List of SearchResult objects
+    """
+    from glorious_agents.core.search import SearchResult
+
+    if _ctx is None:
+        return []
+
+    # Search completions
+    cursor = _ctx.conn.execute(
+        """
+        SELECT id, prompt, response, model, provider, tokens_used
+        FROM ai_completions
+        WHERE prompt LIKE ? OR response LIKE ?
+        ORDER BY created_at DESC
+        LIMIT ?
+        """,
+        (f"%{query}%", f"%{query}%", limit),
+    )
+
+    results = []
+    for row in cursor.fetchall():
+        completion_id, prompt, response, model, provider, tokens = row
+        # Simple relevance scoring based on position
+        score = 0.8 if query.lower() in prompt.lower() else 0.6
+
+        results.append(
+            SearchResult(
+                skill="ai",
+                id=f"completion-{completion_id}",
+                type="completion",
+                content=f"{prompt[:100]}...\n\n{response[:200]}...",
+                metadata={"model": model, "provider": provider, "tokens": tokens},
+                score=score,
+            )
+        )
+
+    return results
+
+
+def semantic_search(
+    query: str, model: str = "text-embedding-ada-002", top_k: int = 5
+) -> list[dict[str, Any]]:
     """
     Perform semantic search using embeddings.
 
@@ -156,7 +212,9 @@ def semantic_search(query: str, model: str = "text-embedding-ada-002", top_k: in
     query_embedding = embed(query, model)
     query_vec = np.array(query_embedding, dtype=np.float32)
 
-    rows = _ctx.conn.execute("SELECT id, content, embedding FROM ai_embeddings WHERE model = ?", (model,)).fetchall()
+    rows = _ctx.conn.execute(
+        "SELECT id, content, embedding FROM ai_embeddings WHERE model = ?", (model,)
+    ).fetchall()
 
     if not rows:
         return []
@@ -165,14 +223,16 @@ def semantic_search(query: str, model: str = "text-embedding-ada-002", top_k: in
     for row_id, content, embedding_blob in rows:
         embedding = pickle.loads(embedding_blob)
         doc_vec = np.array(embedding, dtype=np.float32)
-        similarity = np.dot(query_vec, doc_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(doc_vec))
+        similarity = np.dot(query_vec, doc_vec) / (
+            np.linalg.norm(query_vec) * np.linalg.norm(doc_vec)
+        )
         similarities.append({"id": row_id, "content": content, "similarity": float(similarity)})
 
     similarities.sort(key=lambda x: x["similarity"], reverse=True)
     return similarities[:top_k]
 
 
-@app.command()
+@app.command(name="complete")
 def complete_cmd(
     prompt: str = typer.Argument(..., help="Prompt text"),
     model: str = typer.Option("gpt-4", "--model", "-m", help="Model name"),
@@ -187,13 +247,15 @@ def complete_cmd(
             console.print(json.dumps(result))
         else:
             console.print(f"[bold green]Response:[/bold green]\n{result['response']}")
-            console.print(f"\n[dim]Model: {result['model']} | Tokens: {result['tokens_used']}[/dim]")
+            console.print(
+                f"\n[dim]Model: {result['model']} | Tokens: {result['tokens_used']}[/dim]"
+            )
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
 
 
-@app.command()
+@app.command(name="embed")
 def embed_cmd(
     content: str = typer.Argument(..., help="Content to embed"),
     model: str = typer.Option("text-embedding-ada-002", "--model", "-m", help="Model name"),
@@ -213,8 +275,8 @@ def embed_cmd(
         raise typer.Exit(1)
 
 
-@app.command()
-def search(
+@app.command(name="semantic")
+def semantic_search_cmd(
     query: str = typer.Argument(..., help="Search query"),
     model: str = typer.Option("text-embedding-ada-002", "--model", "-m", help="Model name"),
     top_k: int = typer.Option(5, "--top-k", "-k", help="Number of results"),
@@ -236,7 +298,11 @@ def search(
             table.add_column("Similarity", style="green")
 
             for result in results:
-                content_preview = result["content"][:80] + "..." if len(result["content"]) > 80 else result["content"]
+                content_preview = (
+                    result["content"][:80] + "..."
+                    if len(result["content"]) > 80
+                    else result["content"]
+                )
                 table.add_row(str(result["id"]), content_preview, f"{result['similarity']:.4f}")
 
             console.print(table)
