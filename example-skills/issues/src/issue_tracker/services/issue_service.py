@@ -453,5 +453,60 @@ class IssueService:
 
         return updated, failed
 
+    def set_epic(self, issue_id: str, epic_id: str) -> Issue | None:
+        """Set the epic for an issue.
+        
+        Args:
+            issue_id: ID of the issue
+            epic_id: ID of the epic to assign
+            
+        Returns:
+            Updated issue or None if not found
+        """
+        with self.uow:
+            issue = self.uow.issues.get(issue_id)
+            if not issue:
+                return None
+            
+            issue.epic_id = epic_id
+            issue.updated_at = self.clock.now()
+            self.uow.issues.save(issue)
+            self.uow.commit()
+            return issue
+    
+    def clear_epic(self, issue_id: str) -> Issue | None:
+        """Clear the epic from an issue.
+        
+        Args:
+            issue_id: ID of the issue
+            
+        Returns:
+            Updated issue or None if not found
+        """
+        with self.uow:
+            issue = self.uow.issues.get(issue_id)
+            if not issue:
+                return None
+            
+            issue.epic_id = None
+            issue.updated_at = self.clock.now()
+            self.uow.issues.save(issue)
+            self.uow.commit()
+            return issue
+    
+    def get_epic_issues(self, epic_id: str) -> list[Issue]:
+        """Get all issues in an epic.
+        
+        Args:
+            epic_id: ID of the epic
+            
+        Returns:
+            List of issues in the epic
+        """
+        with self.uow:
+            # Get all issues with this epic_id
+            all_issues = self.uow.issues.list()
+            return [issue for issue in all_issues if issue.epic_id == epic_id]
+
 
 __all__ = ["IssueService"]
