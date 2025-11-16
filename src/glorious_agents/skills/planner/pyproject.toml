@@ -9,7 +9,7 @@ description = "Planner skill for Glorious Agents - action queue management and t
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
-    {name = "Glorious Agents Team"}
+    {name = "Thomas Weholt", email = "thomas@weholt.org"}
 ]
 dependencies = [
     "glorious-agents>=0.1.0",

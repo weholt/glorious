@@ -1,69 +1,322 @@
-# Glorious Agents
+<div align="center">
 
-A modular, skill-based agent framework with shared SQLite database, event-driven architecture, and multi-agent support.
+# 🌟 Glorious Agents 🌟
 
-## Features
+### *A Modular, Skill-Based Agent Framework for AI-Powered Workflows*
 
-- **Modular Skills**: Discoverable skills from local folders and pip/uv entry points
-- **Multi-Agent Support**: Manage multiple agent identities with isolated databases
-- **Shared Database**: One SQLite DB per agent; all skills share it with WAL mode for better concurrency
+[![PyPI version](https://badge.fury.io/py/glorious-agents.svg)](https://badge.fury.io/py/glorious-agents)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![CI](https://github.com/weholt/glorious-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/weholt/glorious-agents/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/weholt/glorious-agents/branch/main/graph/badge.svg)](https://codecov.io/gh/weholt/glorious-agents)
+
+---
+
+**Glorious Agents** is a powerful, extensible framework for building AI agents with modular skills, shared state, and event-driven architecture. Design complex workflows, manage multiple agent identities, and extend functionality with plug-and-play skills.
+
+**Built for [uv](https://github.com/astral-sh/uv)** - the blazingly fast Python package manager 🚀
+
+[Features](#-key-features) • [Quick Start](#-quick-start) • [Skills](#-skills-ecosystem) • [Documentation](#-documentation) • [Contributing](#-contributing)
+
+---
+
+</div>
+
+## 🎯 Key Features
+
+### 🧩 Modular Architecture
+- **Plug-and-Play Skills**: Discover and load skills from local folders, pip packages, or entry points
+- **17 Built-in Skills**: Issues, notes, planner, code-atlas, automations, and more
+- **Skill Dependencies**: Automatic dependency resolution with topological sorting
+- **Hot Reloading**: Reload skills without restarting (development mode)
+
+### 🤖 Multi-Agent Support
+- **Multiple Identities**: Create and manage different agent personas
+- **Isolated Databases**: Each agent has its own SQLite database
+- **Context Switching**: Easily switch between agents
+- **Role-Based**: Assign roles and projects to agents
+
+### 💾 Shared Database
+- **SQLite with WAL**: One database per agent, shared across all skills
+- **Auto-Init Schemas**: Skills define SQL schemas that initialize automatically
+- **Type-Safe**: Full SQLAlchemy/SQLModel support
+- **Migrations**: Built-in migration support for schema evolution
+
+### 📡 Event-Driven
 - **Event Bus**: In-process pub/sub for loose coupling between skills
-- **Dependency Resolution**: Skills can depend on other skills with topological sorting
-- **CLI & Daemon**: Typer-based CLI and optional FastAPI daemon for RPC
-- **Auto-init Schemas**: Skills define their own SQL schemas that initialize automatically
-- **Type-Safe**: Full type hints and mypy strict mode
-- **Quality Gates**: Built-in testing, linting, type checking, and security scanning
+- **Skill Communication**: Skills can react to events from other skills
+- **Async Support**: Event handlers can be synchronous or asynchronous
+- **Event History**: Optional event logging and replay
 
-## Quick Start
+### 🛠️ Developer Experience
+- **CLI & Daemon**: Rich CLI interface + optional FastAPI daemon for RPC
+- **Type-Safe**: Full type hints with mypy strict mode
+- **Quality Gates**: Built-in testing, linting, and security scanning
+- **Auto-Documentation**: Skills self-document their commands and features
+- **Hot Reloading**: Fast development cycle with auto-reload
+
+### 🔒 Production Ready
+- **Tested**: Comprehensive test suite with 75%+ coverage
+- **Type-Checked**: mypy strict mode ensures type safety
+- **Linted**: ruff for fast, consistent code formatting
+- **Secure**: Regular security scanning with bandit
+- **CI/CD**: GitHub Actions for automated testing and deployment
+
+## 💡 What is Glorious Agents?
+
+Glorious Agents is a **modular framework** for building AI-powered agents that can:
+- **Think**: Use AI skills to analyze, plan, and make decisions
+- **Remember**: Store and recall information using a shared database
+- **Act**: Execute tasks using specialized skills (notes, issues, code analysis, automation)
+- **Communicate**: Skills talk to each other via events for complex workflows
+- **Adapt**: Add new skills without modifying core framework
+
+### Core Concepts
+
+#### 🧩 Skills
+Skills are **self-contained Python packages** that add functionality to your agent. Each skill:
+- Has its own commands (via CLI)
+- Can define database schemas
+- Can publish and subscribe to events
+- Can depend on other skills
+- Self-documents its capabilities
+
+**Example:** The `issues` skill provides task tracking, the `notes` skill handles note-taking, and `code-atlas` analyzes codebases.
+
+#### 🤖 Agents
+Agents are **identities** with their own:
+- Name and role (e.g., "Dev Agent", "Research Assistant")
+- Isolated database (all skills share this database)
+- Configuration and state
+- Project context
+
+**Example:** You might have a "Backend Dev" agent for coding tasks and a "Documentation" agent for writing docs.
+
+#### 📡 Events
+Skills communicate via an **event bus**:
+- Skills publish events (e.g., "note_created", "issue_updated")
+- Other skills subscribe and react
+- Enables loosely coupled workflows
+- Supports async handlers
+
+**Example:** When you create a note with `#create-issue` tag, the notes skill publishes an event, and the issues skill creates an issue automatically.
+
+#### 💾 Shared Database
+All skills share one **SQLite database** per agent:
+- WAL mode for better concurrency
+- Automatic schema initialization
+- Migration support
+- Type-safe with SQLModel
+
+## 🚀 Quick Start
 
 ### Installation
 
-```bash
-# Install uv if not already installed
-python -m pip install -U uv
+**Glorious Agents is designed for [uv](https://github.com/astral-sh/uv)** - the blazingly fast Python package manager.
 
-# Clone and install
-git clone <repo-url>
-cd glorious
-uv sync
-uv run pre-commit install
+#### Recommended: Install as a uv Tool (Global CLI)
+```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install glorious-agents with all skills
+uv tool install glorious-agents[all-skills]
+
+# Use from anywhere
+uvx agent --help
+uvx agent version
 ```
+
+#### Alternative: Install in a Project
+```bash
+# Create a new project
+uv init my-agent-project
+cd my-agent-project
+
+# Add glorious-agents to your project
+uv add glorious-agents[all-skills]
+
+# Use with uv run
+uv run agent --help
+```
+
+#### For Development
+```bash
+# Clone and install
+git clone https://github.com/weholt/glorious-agents.git
+cd glorious-agents
+
+# Sync dependencies
+uv sync
+
+# Run from source
+uv run agent --help
+```
+
+> **Note:** While you can use `uv pip install`, the recommended approach is `uv tool install` for global CLI tools or `uv add` for project dependencies.
 
 ### Basic Usage
 
 ```bash
 # Register an agent identity
-agent identity register --name "Dev Agent" --role "Development" --project-id myproject
+uvx agent identity register --name "Dev Agent" --role "Development" --project-id myproject
 
 # Switch to the agent
-agent identity use dev-agent
+uvx agent identity use dev-agent
 
 # Check current agent
-agent identity whoami
+uvx agent identity whoami
 
 # List all agents
-agent identity list
+uvx agent identity list
 
 # List available skills
-agent skills list
+uvx agent skills list
 
 # Describe a skill in detail
-agent skills describe <skill-name>
+uvx agent skills describe issues
 
-# Export skills metadata
-agent skills export --format json > skills.json
-agent skills export --format md > SKILLS.md
+# Use skills (examples)
+uvx agent notes add "My first note" --tags important
+uvx agent notes list
+uvx agent notes search "first"
 
-# Use skills (examples with installed skills)
-agent notes add "My first note" --tags important
-agent notes list
-agent notes search "first"
-
-agent issues create "Fix bug" --priority high --tags bug
-agent issues list
+uvx agent issues create "Fix bug" --priority high --tags bug
+uvx agent issues list
 
 # Start the daemon for RPC access
-agent daemon --host 127.0.0.1 --port 8765
+uvx agent daemon --host 127.0.0.1 --port 8765
+```
+
+### Why uv?
+
+- **Blazingly Fast**: 10-100x faster than pip
+- **Reliable**: Reproducible installs with lockfiles
+- **Modern**: Built for Python 3.7+
+- **Compatible**: Drop-in replacement for pip/poetry/pipenv
+- **Tool Management**: Global tools isolated from project environments
+
+Learn more at [astral.sh/uv](https://github.com/astral-sh/uv)
+
+## 🎨 Skills Ecosystem
+
+Glorious Agents comes with **17 built-in skills** that provide a complete toolkit for AI agents:
+
+### 📝 Knowledge Management
+
+#### **issues** - Task & Issue Tracking
+- ✓ 30+ commands for complete workflow management
+- ✓ Dependencies, epics, comments, and labels
+- ✓ Full-text search with templates
+- ✓ Bulk operations and automation
+
+#### **notes** - Note-Taking System
+- ✓ Tagged notes with full-text search
+- ✓ Auto-create issues from notes
+- ✓ Export/import functionality
+
+#### **code-atlas** - Codebase Intelligence
+- ✓ Scan and analyze codebase structure
+- ✓ AI-powered code Q&A
+- ✓ Refactoring priorities
+- ✓ Quality metrics
+
+### 🤖 Workflow & Automation
+
+#### **planner** - Task Queue Management
+- ✓ Smart task prioritization
+- ✓ Dependency resolution
+- ✓ "Next task" suggestions
+
+#### **automations** - Workflow Automation
+- ✓ Trigger-based workflows
+- ✓ Multi-step automation
+- ✓ Integration templates
+
+#### **orchestrator** - Intent Routing
+- ✓ Natural language to skill routing
+- ✓ Pattern matching
+- ✓ Context management
+
+### 💾 Storage & Utilities
+
+#### **cache** - Ephemeral Storage
+- ✓ TTL-based key-value store
+- ✓ Fast temporary data storage
+
+#### **linker** - Cross-References
+- ✓ Semantic links between entities
+- ✓ Graph traversal
+- ✓ Relationship management
+
+#### **feedback** - Outcome Tracking
+- ✓ Success/failure tracking
+- ✓ Learning from results
+- ✓ Performance analytics
+
+### 🎯 AI & Intelligence
+
+#### **prompts** - Prompt Management
+- ✓ Template storage and versioning
+- ✓ Variable substitution
+- ✓ Categorization
+
+#### **ai** - AI Integration
+- ✓ LLM connections
+- ✓ Chat and embeddings
+- ✓ Conversation history
+
+### 📊 Monitoring & Analysis
+
+#### **telemetry** - Action Logging
+- ✓ Comprehensive action tracking
+- ✓ Performance metrics
+- ✓ Audit trails
+
+#### **temporal** - Time Operations
+- ✓ Date parsing and filtering
+- ✓ Time-aware queries
+- ✓ Scheduled operations
+
+#### **vacuum** - Data Optimization
+- ✓ Knowledge summarization
+- ✓ Archive management
+- ✓ Storage optimization
+
+### 🛠️ Development Tools
+
+#### **sandbox** - Isolated Execution
+- ✓ Docker-based code execution
+- ✓ Resource management
+- ✓ Safe testing
+
+#### **docs** - Documentation
+- ✓ Auto-generation
+- ✓ Documentation search
+- ✓ Validation
+
+#### **migrate** - Data Migration
+- ✓ Schema evolution
+- ✓ Data transformations
+- ✓ Rollback support
+
+---
+
+### Installing Skills
+
+```bash
+# Install as global tool with all skills
+uv tool install glorious-agents[all-skills]
+
+# Or install specific skills only
+uv tool install glorious-agents[notes,issues,planner]
+
+# For project-based installation
+uv add glorious-agents[all-skills]
+
+# Or specific skills
+uv add glorious-agents[notes,issues,planner]
 ```
 
 ## Architecture
@@ -577,8 +830,8 @@ Built with:
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/glorious/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/glorious/discussions)
+- **Issues**: [GitHub Issues](https://github.com/weholt/glorious-agents/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/weholt/glorious-agents/discussions)
 - **Documentation**: [docs/](docs/)
 
 ---
@@ -594,14 +847,20 @@ Glorious Agents has a modular skill system. Skills are located in `src/glorious_
 Install skills using optional dependencies:
 
 ```bash
-# Install specific skills
-uv pip install -e ".[notes,planner,issues]"
+# As a global tool with specific skills
+uv tool install glorious-agents[notes,planner,issues]
 
-# Install all skills
+# As a global tool with all skills
+uv tool install glorious-agents[all-skills]
+
+# In a project with specific skills
+uv add glorious-agents[notes,planner,issues]
+
+# In a project with all skills  
+uv add glorious-agents[all-skills]
+
+# For development from source
 uv pip install -e ".[all-skills]"
-
-# Using uv add for tools
-uv tool install glorious-agents[planner,issues]
 ```
 
 Available skill extras: `ai`, `automations`, `cache`, `code-atlas`, `docs`, `feedback`, `issues`, `linker`, `migrate`, `notes`, `orchestrator`, `planner`, `prompts`, `sandbox`, `telemetry`, `temporal`, `vacuum`, `all-skills`

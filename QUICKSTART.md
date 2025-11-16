@@ -2,12 +2,42 @@
 
 ## Installation
 
-```powershell
-# Navigate to project
-cd c:\dev\playground\glorious
+### Recommended: Install as Global Tool
+
+```bash
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install glorious-agents with all skills
+uv tool install glorious-agents[all-skills]
+
+# Use from anywhere!
+uvx agent --help
+```
+
+### Alternative: Install in Project
+
+```bash
+# Create a new project
+uv init my-agent-project
+cd my-agent-project
+
+# Add glorious-agents
+uv add glorious-agents[all-skills]
+
+# Use with uv run
+uvx agent --help
+```
+
+### Development from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/weholt/glorious-agents.git
+cd glorious-agents
 
 # Install dependencies (includes dev tools)
-uv sync --extra dev
+uv sync --all-extras
 
 # Install pre-commit hooks
 uv run pre-commit install
@@ -17,83 +47,83 @@ uv run pre-commit install
 
 ### 1. Verify Installation
 
-```powershell
+```bash
 # Check version
-uv run agent version
+uvx agent version
 # Output: Glorious Agents v0.1.0
 
 # List loaded skills
-uv run agent skills list
-# Output: Shows notes and issues skills
+uvx agent skills list
+# Output: Shows available skills
 ```
 
 ### 2. Create an Agent Identity
 
-```powershell
+```bash
 # Register an agent
-uv run agent identity register --name "developer" --role "Software Developer" --project-id "myproject"
+uvx agent identity register --name "developer" --role "Software Developer" --project-id "myproject"
 
 # Switch to the agent
-uv run agent identity use developer
+uvx agent identity use developer
 
 # Check current agent
-uv run agent identity whoami
+uvx agent identity whoami
 
 # List all agents
-uv run agent identity list
+uvx agent identity list
 ```
 
 ### 3. Use the Notes Skill
 
 ```powershell
 # Add a note
-uv run agent notes add "Implement feature X" --tags "feature,todo"
+uvx agent notes add "Implement feature X" --tags "feature,todo"
 
 # List recent notes
-uv run agent notes list
+uvx agent notes list
 
 # Search notes
-uv run agent notes search "feature"
+uvx agent notes search "feature"
 
 # Get specific note
-uv run agent notes get 1
+uvx agent notes get 1
 
 # Delete a note
-uv run agent notes delete 1
+uvx agent notes delete 1
 ```
 
 ### 4. Use the Issues Skill
 
 ```powershell
 # Create an issue manually
-uv run agent issues create "Fix bug in parser" --description "Details here" --priority high
+uvx agent issues create "Fix bug in parser" --description "Details here" --priority high
 
 # List open issues
-uv run agent issues list
+uvx agent issues list
 
 # List closed issues
-uv run agent issues list --status closed
+uvx agent issues list --status closed
 
 # Get issue details
-uv run agent issues get 1
+uvx agent issues get 1
 
 # Update an issue
-uv run agent issues update 1 --status in_progress --priority high
+uvx agent issues update 1 --status in_progress --priority high
 
 # Close an issue
-uv run agent issues close 1
+uvx agent issues close 1
 ```
 
 ### 5. Test Event Integration
 
 ```powershell
 # Add a note with "todo" tag - this will auto-create an issue
-uv run agent notes add "Refactor authentication module" --tags "todo,refactor"
+uvx agent notes add "Refactor authentication module" --tags "todo,refactor"
 # Output: Auto-created issue from note #X
 #         Note X added successfully!
 
 # Verify the issue was created
-uv run agent issues list
+uvx agent issues list
 # You'll see an issue titled "Follow-up for note #X"
 ```
 
@@ -138,7 +168,7 @@ uv run pre-commit run --all-files
 
 ```powershell
 # Create skill directory structure
-uv run agent skills create my_notes_parser
+uvx agent skills create my_notes_parser
 
 # This creates:
 # skills/my_notes_parser/
@@ -215,23 +245,23 @@ Edit `skills/my_notes_parser/skill.json`:
 ### 4. Reload Skills
 
 ```powershell
-uv run agent skills reload
+uvx agent skills reload
 
 # Verify it loaded
-uv run agent skills list
+uvx agent skills list
 
 # Test the command
-uv run agent my_notes_parser hello --name "Developer"
+uvx agent my_notes_parser hello --name "Developer"
 ```
 
 ## Running the Daemon
 
 ```powershell
 # Start daemon on default port
-uv run agent daemon
+uvx agent daemon
 
 # Or specify host and port
-uv run agent daemon --host 127.0.0.1 --port 8765
+uvx agent daemon --host 127.0.0.1 --port 8765
 
 # In another terminal, test the API
 curl http://127.0.0.1:8765/skills
@@ -270,7 +300,7 @@ ls skills
 ls skills/*/skill.json
 
 # Check for syntax errors in skill.py files
-uv run agent skills describe notes
+uvx agent skills describe notes
 ```
 
 ### Issue: Database errors
@@ -280,7 +310,7 @@ uv run agent skills describe notes
 Remove-Item -Force .agent/agents/default/agent.db
 
 # Reinitialize
-uv run agent skills reload
+uvx agent skills reload
 ```
 
 ### Issue: Import errors
@@ -292,10 +322,10 @@ uv sync --extra dev
 
 ## Next Steps
 
-1. **Explore Skills**: Run `uv run agent skills describe notes` to see skill details
-2. **Create Your Own**: Use `uv run agent skills create` to build custom skills
+1. **Explore Skills**: Run `uvx agent skills describe notes` to see skill details
+2. **Create Your Own**: Use `uvx agent skills create` to build custom skills
 3. **Integrate Events**: Subscribe to topics for reactive workflows
-4. **Deploy Daemon**: Run `uv run agent daemon` for API access
+4. **Deploy Daemon**: Run `uvx agent daemon` for API access
 5. **Add Tests**: Write unit tests for your skills in `tests/unit/`
 
 ## Resources

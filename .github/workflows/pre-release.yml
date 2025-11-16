@@ -1,0 +1,226 @@
+name: Pre-Release Testing
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    name: Build and Test Package
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.13"]
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build package
+        run: |
+          uv tool run --from build pyproject-build
+          ls -lh dist/
+
+      - name: Create test environment
+        run: |
+          python -m venv test-env
+          
+      - name: Install built package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          test-env/bin/pip install dist/*.whl
+
+      - name: Install built package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          test-env\Scripts\pip install dist/*.whl
+
+      - name: Test CLI works (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          test-env/bin/agent --help
+          test-env/bin/agent version
+          test-env/bin/agent skills list
+
+      - name: Test CLI works (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          test-env\Scripts\agent --help
+          test-env\Scripts\agent version
+          test-env\Scripts\agent skills list
+
+      - name: Verify skills folder included
+        if: runner.os == 'Linux'
+        run: |
+          python -m zipfile -l dist/*.whl | grep "skills/" | wc -l
+          echo "✓ Skills folder verified in package"
+
+  fresh-install:
+    name: Fresh Install Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Build package
+        run: uv tool run --from build pyproject-build
+
+      - name: Create completely fresh environment
+        run: |
+          python -m venv /tmp/fresh-install
+          /tmp/fresh-install/bin/pip install --upgrade pip
+
+      - name: Install package in fresh environment
+        run: |
+          /tmp/fresh-install/bin/pip install dist/*.whl
+
+      - name: Test basic functionality
+        run: |
+          /tmp/fresh-install/bin/agent --help
+          /tmp/fresh-install/bin/agent version
+          /tmp/fresh-install/bin/agent init --help
+          echo "✓ Fresh install successful"
+
+      - name: Test skill discovery
+        run: |
+          /tmp/fresh-install/bin/agent skills list
+          echo "✓ Skill discovery works"
+
+  skill-installation:
+    name: Test Skill Installation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Build and install main package
+        run: |
+          uv tool run --from build pyproject-build
+          python -m venv /tmp/skill-test
+          /tmp/skill-test/bin/pip install dist/*.whl
+
+      - name: Find skills path
+        run: |
+          SKILLS_PATH=$(/tmp/skill-test/bin/python -c "import glorious_agents; import os; print(os.path.join(os.path.dirname(glorious_agents.__file__), 'skills'))")
+          echo "SKILLS_PATH=$SKILLS_PATH" >> $GITHUB_ENV
+          echo "Skills path: $SKILLS_PATH"
+
+      - name: Install a skill from bundled source
+        run: |
+          /tmp/skill-test/bin/pip install -e ${{ env.SKILLS_PATH }}/notes
+
+      - name: Verify skill loads
+        run: |
+          /tmp/skill-test/bin/agent skills list | grep notes
+          /tmp/skill-test/bin/agent notes --help
+          echo "✓ Skill installation successful"
+
+  package-metadata:
+    name: Verify Package Metadata
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Build package
+        run: uv tool run --from build pyproject-build
+
+      - name: Extract and verify metadata
+        run: |
+          unzip -q dist/*.whl glorious_agents-*.dist-info/METADATA -d /tmp/
+          echo "=== Package Metadata ==="
+          cat /tmp/glorious_agents-*.dist-info/METADATA | head -30
+          
+          # Verify author
+          grep "Thomas Weholt" /tmp/glorious_agents-*.dist-info/METADATA || exit 1
+          
+          # Verify URLs
+          grep "github.com/weholt/glorious-agents" /tmp/glorious_agents-*.dist-info/METADATA || exit 1
+          
+          # Verify license
+          grep "MIT" /tmp/glorious_agents-*.dist-info/METADATA || exit 1
+          
+          echo "✓ All metadata verified"
+
+  size-check:
+    name: Package Size Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Build package
+        run: uv tool run --from build pyproject-build
+
+      - name: Check package sizes
+        run: |
+          echo "=== Package Sizes ==="
+          ls -lh dist/
+          
+          WHEEL_SIZE=$(stat -f%z dist/*.whl 2>/dev/null || stat -c%s dist/*.whl)
+          SDIST_SIZE=$(stat -f%z dist/*.tar.gz 2>/dev/null || stat -c%s dist/*.tar.gz)
+          
+          echo "Wheel size: $WHEEL_SIZE bytes"
+          echo "Source dist size: $SDIST_SIZE bytes"
+          
+          # Warn if wheel is over 5MB
+          if [ $WHEEL_SIZE -gt 5242880 ]; then
+            echo "⚠️  Warning: Wheel is larger than 5MB"
+          else
+            echo "✓ Wheel size is reasonable"
+          fi

@@ -67,65 +67,58 @@ def version() -> None:
 
 
 def _generate_skill_documentation(skill, registry) -> list[str]:
-    """Generate markdown documentation lines for a single skill."""
-    from glorious_agents.core.db import get_connection
-
+    """Generate markdown documentation lines for a single skill.
+    
+    Documentation is primarily sourced from the skill's usage.md file.
+    If usage.md doesn't exist, falls back to auto-generated command list.
+    """
     manifest = registry.get_manifest(skill.name)
     if not manifest:
         return []
 
     content = []
     
-    # Skill header
+    # Skill header with basic info
     content.append(f"## {manifest.name}")
     content.append("")
-    content.append(f"**Version**: {manifest.version}")
-    content.append("")
-    content.append(f"**Description**: {manifest.description}")
-    content.append("")
-
-    # Dependencies
-    if manifest.requires:
-        content.append(f"**Requires**: {', '.join(manifest.requires)}")
-        content.append("")
-
-    # Commands
-    app_obj = registry.get_app(skill.name)
-    if app_obj and hasattr(app_obj, "registered_commands"):
-        content.append("**Commands**:")
-        content.append("")
-        for cmd in app_obj.registered_commands:
-            cmd_name = cmd.name or cmd.callback.__name__
-            cmd_help = cmd.help or cmd.callback.__doc__ or "No description"
-            cmd_help_line = cmd_help.split("\n")[0].strip()
-            content.append(f"- `{cmd_name}`: {cmd_help_line}")
-        content.append("")
-
-    # Database info
-    if manifest.requires_db:
-        try:
-            conn = get_connection()
-            skill_table_prefix = skill.name.replace("-", "_")
-            cur = conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?",
-                (f"{skill_table_prefix}%",),
-            )
-            tables = [row[0] for row in cur.fetchall()]
-            if tables:
-                content.append(f"**Database Tables**: {', '.join(tables)}")
-                content.append("")
-        except Exception:
-            pass
-
-    # Documentation
+    
+    # Primary documentation: usage.md (external_doc)
+    usage_content = None
     if manifest.external_doc and manifest.path:
         usage_path = Path(manifest.path) / manifest.external_doc
         if usage_path.exists():
-            content.append("**Usage Documentation**:")
+            usage_content = usage_path.read_text().strip()
+    
+    if usage_content:
+        # Use the usage.md content as the primary documentation
+        content.append(usage_content)
+        content.append("")
+    else:
+        # Fallback: Auto-generate basic documentation
+        content.append(f"**Version**: {manifest.version}")
+        content.append("")
+        content.append(f"**Description**: {manifest.description}")
+        content.append("")
+        
+        # Dependencies
+        if manifest.requires:
+            content.append(f"**Requires**: {', '.join(manifest.requires)}")
             content.append("")
-            content.append("```")
-            content.append(usage_path.read_text().strip())
-            content.append("```")
+        
+        # Auto-generate command list
+        app_obj = registry.get_app(skill.name)
+        if app_obj and hasattr(app_obj, "registered_commands"):
+            content.append("**Commands**:")
+            content.append("")
+            
+            for cmd in app_obj.registered_commands:
+                cmd_name = cmd.name or cmd.callback.__name__
+                cmd_help = cmd.help or cmd.callback.__doc__ or "No description"
+                cmd_help_line = cmd_help.split("\n")[0].strip()
+                content.append(f"- `{cmd_name}`: {cmd_help_line}")
+            
+            content.append("")
+            content.append("*Note: This skill is missing usage.md documentation. Please create one.*")
             content.append("")
 
     content.append("---")
@@ -135,8 +128,17 @@ def _generate_skill_documentation(skill, registry) -> list[str]:
 
 
 def _generate_agent_tools_md(skills, registry) -> None:
-    """Generate AGENT-TOOLS.md documentation file."""
-    agent_tools_path = Path.cwd() / "AGENT-TOOLS.md"
+    """Generate AGENT-TOOLS.md documentation file in the same directory as AGENTS.md."""
+    # Find AGENTS.md location (default to current directory)
+    agents_md_path = Path.cwd() / "AGENTS.md"
+    
+    # Use the same directory as AGENTS.md
+    if agents_md_path.exists():
+        target_dir = agents_md_path.parent
+    else:
+        target_dir = Path.cwd()
+    
+    agent_tools_path = target_dir / "AGENT-TOOLS.md"
     console.print(f"[blue]Generating {agent_tools_path}...[/blue]")
 
     content = ["# Agent Tools", ""]
