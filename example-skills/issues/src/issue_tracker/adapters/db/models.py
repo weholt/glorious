@@ -112,6 +112,7 @@ class EpicModel(SQLModel, table=True):
     project_id: str = Field(index=True, max_length=50)
     status: str = Field(max_length=20, index=True)
     progress: int = Field(default=0)  # 0-100
+    parent_epic_id: str | None = Field(default=None, max_length=50, index=True)
     start_date: datetime | None = None
     target_date: datetime | None = None
     completed_date: datetime | None = None

@@ -195,3 +195,92 @@ def list_all(
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
+
+
+@app.command(name="tree")
+def tree(
+    epic_id: str | None = typer.Argument(None, help="Epic ID to show tree for (shows all if not specified)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Show epic hierarchy tree.
+    
+    Displays epics and sub-epics in a tree structure with their issues.
+    
+    Examples:
+        issues epics tree
+        issues epics tree epic-testing
+        issues epics tree epic-testing --json
+    """
+    from issue_tracker.cli.app import get_issue_service
+    
+    try:
+        service = get_issue_service()
+        all_issues = service.list_issues()
+        
+        def build_epic_tree(parent_id: str | None = None, indent: int = 0) -> list[dict]:
+            """Recursively build epic tree."""
+            tree_data = []
+            prefix = "  " * indent
+            connector = "└── " if indent > 0 else ""
+            
+            for issue in all_issues:
+                # Normalize None and "" to None for comparison
+                issue_parent = issue.epic_id if issue.epic_id else None
+                expected_parent = parent_id if parent_id else None
+                
+                if issue.type.value == "epic" and issue_parent == expected_parent:
+                    # This is an epic at this level
+                    epic_issues = [i for i in all_issues if i.epic_id == issue.id and i.type.value != "epic"]
+                    issue_count = len(epic_issues)
+                    
+                    epic_data = {
+                        "id": issue.id,
+                        "title": issue.title,
+                        "issue_count": issue_count,
+                        "children": []
+                    }
+                    
+                    if not json_output:
+                        typer.echo(f"{prefix}{connector}{issue.id}: {issue.title} ({issue_count} issues)")
+                    
+                    # Recursively add child epics
+                    children = build_epic_tree(issue.id, indent + 1)
+                    epic_data["children"] = children
+                    
+                    tree_data.append(epic_data)
+            
+            return tree_data
+        
+        if epic_id:
+            # Show tree starting from specific epic
+            epic = service.get_issue(epic_id)
+            if not epic or epic.type.value != "epic":
+                typer.echo(f"Error: {epic_id} is not an epic", err=True)
+                raise typer.Exit(1)
+            
+            epic_issues = [i for i in all_issues if i.epic_id == epic_id and i.type.value != "epic"]
+            
+            if not json_output:
+                typer.echo(f"{epic_id}: {epic.title} ({len(epic_issues)} issues)")
+            
+            tree_data = build_epic_tree(epic_id, 1)
+            
+            if json_output:
+                typer.echo(json.dumps({
+                    "id": epic_id,
+                    "title": epic.title,
+                    "issue_count": len(epic_issues),
+                    "children": tree_data
+                }))
+        else:
+            # Show all top-level epics
+            tree_data = build_epic_tree(None, 0)
+            
+            if json_output:
+                typer.echo(json.dumps(tree_data))
+            elif not tree_data:
+                typer.echo("No epics found")
+    
+    except Exception as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)

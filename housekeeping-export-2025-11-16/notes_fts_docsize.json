@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "sz": {
+      "__type__": "bytes",
+      "data": "BAI="
+    }
+  },
+  {
+    "id": 2,
+    "sz": {
+      "__type__": "bytes",
+      "data": "AwI="
+    }
+  },
+  {
+    "id": 3,
+    "sz": {
+      "__type__": "bytes",
+      "data": "AwI="
+    }
+  },
+  {
+    "id": 4,
+    "sz": {
+      "__type__": "bytes",
+      "data": "BQE="
+    }
+  },
+  {
+    "id": 5,
+    "sz": {
+      "__type__": "bytes",
+      "data": "BQE="
+    }
+  },
+  {
+    "id": 6,
+    "sz": {
+      "__type__": "bytes",
+      "data": "BQE="
+    }
+  }
+]

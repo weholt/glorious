@@ -494,11 +494,12 @@ class IssueService:
             self.uow.commit()
             return issue
     
-    def get_epic_issues(self, epic_id: str) -> list[Issue]:
+    def get_epic_issues(self, epic_id: str, include_children: bool = False) -> list[Issue]:
         """Get all issues in an epic.
         
         Args:
             epic_id: ID of the epic
+            include_children: If True, include issues from child epics
             
         Returns:
             List of issues in the epic
@@ -506,7 +507,29 @@ class IssueService:
         with self.uow:
             # Get all issues with this epic_id
             all_issues = self.uow.issues.list()
-            return [issue for issue in all_issues if issue.epic_id == epic_id]
+            epic_issues = [issue for issue in all_issues if issue.epic_id == epic_id]
+            
+            if include_children:
+                # Find all child epics and their issues recursively
+                child_epics = self._get_child_epics(epic_id, all_issues)
+                for child_epic_id in child_epics:
+                    child_issues = [issue for issue in all_issues if issue.epic_id == child_epic_id]
+                    epic_issues.extend(child_issues)
+            
+            return epic_issues
+    
+    def _get_child_epics(self, parent_epic_id: str, all_issues: list[Issue]) -> list[str]:
+        """Recursively get all child epic IDs."""
+        child_epic_ids = []
+        
+        # Find direct children
+        for issue in all_issues:
+            if issue.type == IssueType.EPIC and issue.epic_id == parent_epic_id:
+                child_epic_ids.append(issue.id)
+                # Recursively get their children
+                child_epic_ids.extend(self._get_child_epics(issue.id, all_issues))
+        
+        return child_epic_ids
 
 
 __all__ = ["IssueService"]

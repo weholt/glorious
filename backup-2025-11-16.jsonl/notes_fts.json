@@ -1,0 +1,122 @@
+[
+  {
+    "content": "loader-refactoring-plan",
+    "tags": ""
+  },
+  {
+    "content": "session-2025-11-15-complete",
+    "tags": ""
+  },
+  {
+    "content": "daemon-auth-plan",
+    "tags": ""
+  },
+  {
+    "content": "comprehensive-test-report-2025-11-15",
+    "tags": ""
+  },
+  {
+    "content": "example-skills-analysis-plan",
+    "tags": ""
+  },
+  {
+    "content": "example-skills-complete-analysis",
+    "tags": ""
+  },
+  {
+    "content": "example-skills-purpose-guide",
+    "tags": ""
+  },
+  {
+    "content": "skills-quick-reference",
+    "tags": ""
+  },
+  {
+    "content": "skills-gap-analysis",
+    "tags": ""
+  },
+  {
+    "content": "critical-skills-implementation-plan",
+    "tags": ""
+  },
+  {
+    "content": "event-bus-guide-and-examples",
+    "tags": ""
+  },
+  {
+    "content": "declarative-event-automation-design",
+    "tags": ""
+  },
+  {
+    "content": "universal-export-import-system",
+    "tags": ""
+  },
+  {
+    "content": "quality-tools-analysis-and-proposal",
+    "tags": ""
+  },
+  {
+    "content": "multi-language-quality-framework-design",
+    "tags": ""
+  },
+  {
+    "content": "fts-implementation-status-and-plan",
+    "tags": ""
+  },
+  {
+    "content": "Universal Search Architecture Plan:\n\n1. SEARCH PROTOCOL (issue-5f8535):\n   - Define standard search() method signature for all skills\n   - Return format: {id, type, content, metadata, score}\n   - Skills expose search via callable API (like notes.search_notes())\n   \n2. FRAMEWORK INTEGRATION (issue-ed1657):\n   - Add 'agent search <query>' command to main CLI\n   - Discover all skills with search capability\n   - Call each skill's search() method in parallel\n   - Aggregate and rank results across skills\n   - Return unified JSON output for LLM consumption\n   \n3. SKILL IMPLEMENTATION (issue-7641eb):\n   - notes: Already has search_notes() - standardize output\n   - issues: Add search() for title, description, comments\n   - planner: Add search() for task descriptions\n   - cache: Add search() for cache keys/values\n   - prompts: Add search() for prompt templates\n   - vacuum: Add search() for knowledge entries\n   - atlas: Add search() for code symbols/functions\n   \nBenefits:\n- LLM can find relevant content across all skills\n- Each result includes skill+ID for direct retrieval\n- Extensible: new skills just implement search()\n- No separate search skill needed",
+    "tags": "architecture,planning,search"
+  },
+  {
+    "content": "Session Summary - Universal Search Implementation:\n\nCOMPLETED (5 high-priority issues):\n1. issue-f8870f \u2705: Refactored validate_input() from 66 to ~15 lines\n2. issue-fb532d \u2705: Refactored get_config() from 56 to ~15 lines  \n3. issue-b4317b \u2705: Extracted TTLCache class, reduced SkillContext complexity\n4. issue-5f8535 \u2705: Created search protocol (SearchResult, SearchableSkill)\n5. issue-ed1657 \u2705: Implemented 'agent search' universal command\n\nARCHITECTURE DECISIONS:\n- Search is NOT a separate skill\n- Each skill implements search() method returning SearchResult objects\n- Universal 'agent search <query>' aggregates across all skills\n- Results include skill+ID for direct retrieval by LLM\n\nFILES CREATED/MODIFIED:\n+ src/glorious_agents/core/cache.py (new TTLCache class)\n+ src/glorious_agents/core/search.py (search protocol)\n~ src/glorious_agents/core/context.py (simplified using TTLCache)\n~ src/glorious_agents/core/validation.py (extracted helper functions)\n~ src/glorious_agents/cli.py (added search command)\n\nREMAINING WORK (issue-7641eb):\n- Adapt notes skill to return SearchResult objects\n- Add search() to: issues, planner, cache, prompts, vacuum, atlas\n- Each skill's search() returns: skill name, ID, type, content, metadata, score\n\nTests: All existing tests pass \u2705",
+    "tags": "session-summary,completed"
+  },
+  {
+    "content": "COMPLETED: Universal Search Implementation (issue-7641eb)\n\nAdded search() method to ALL 9 skills returning SearchResult objects:\n\n\u2705 notes: FTS5 search with relevance scoring\n\u2705 issues: Title/description/label search  \n\u2705 planner: Task/issue ID search with priority scoring\n\u2705 prompts: Template name and content search\n\u2705 cache: Key/value search\n\u2705 vacuum: Knowledge entry search\n\u2705 temporal: Empty implementation (no searchable content)\n\u2705 feedback: Action/feedback log search\n\u2705 atlas: Code symbols, classes, functions search\n\nSEARCH FORMAT:\n- Each skill returns list[SearchResult]\n- SearchResult(skill, id, type, content, metadata, score)\n- Score 0.0-1.0 for relevance ranking\n- Metadata includes skill-specific context\n\nFRAMEWORK INTEGRATION:\n- 'agent search <query>' command works\n- Automatically discovers all skills with search()\n- Aggregates and ranks results across skills\n- JSON output available with --json flag\n\nTEST RESULTS:\n\u2705 Universal search command working\n\u2705 Atlas search returns code entities\n\u2705 Skills properly imported and discoverable\n\nMODIFIED FILES:\n- example-skills/notes/src/glorious_skill_notes/skill.py\n- ../issues/src/issue_tracker/skill.py\n- ../code-atlas/src/code_atlas/skill.py\n- example-skills/planner/src/glorious_planner/skill.py\n- example-skills/prompts/src/glorious_prompts/skill.py\n- example-skills/cache/src/glorious_cache/skill.py\n- example-skills/vacuum/src/glorious_vacuum/skill.py\n- example-skills/temporal/src/glorious_temporal/skill.py\n- example-skills/feedback/src/glorious_feedback/skill.py",
+    "tags": "completed,search,implementation"
+  },
+  {
+    "content": "Implemented AI skill with LLM integration, embeddings, and semantic search. Supports OpenAI and Anthropic providers. Database schema created for tracking completions and embeddings.",
+    "tags": "ai,implementation,issue-6e4472"
+  },
+  {
+    "content": "Implemented automations skill with event-driven engine. Features: conditional triggers, action chains, execution history, enable/disable controls. Supports log and publish actions.",
+    "tags": "automations,implementation,issue-a81069"
+  },
+  {
+    "content": "Implemented migrate skill for universal export/import. Features: JSON export/import, backup/restore, schema preservation, automatic backups, metadata tracking. Enables data portability and safe migrations.",
+    "tags": "migrate,implementation,issue-97bc01"
+  },
+  {
+    "content": "Work session completed: Implemented 3 critical new skills - AI (LLM/embeddings/semantic search), Automations (event-driven engine), and Migrate (export/import system). All skills tested and working. Fixed atlas command installation issue.",
+    "tags": "session-summary,productivity,2025-11-16"
+  },
+  {
+    "content": "Implemented database migration system with version tracking, checksums, automatic migration execution, CLI tools (create/run/status/history), and full documentation. System is backward compatible with legacy schema.sql files.",
+    "tags": "migrations,database,issue-7d8e61"
+  },
+  {
+    "content": "Issue analysis: Skills run in same process with full Python/system access via importlib. Current sandbox skill is just a placeholder. Need to implement proper isolation: 1) Process-level isolation for skills 2) Resource limits (CPU, memory, time) 3) Filesystem access controls 4) Network isolation options. Approaches: subprocess with restricted env, Docker containers, or Python's restrictedpython lib.",
+    "tags": "issue-5fd36a,security,isolation"
+  },
+  {
+    "content": "Implemented skill isolation: 1) Permission system with read/write/network/filesystem controls 2) RestrictedConnection wraps DB access with permission checks 3) RestrictedSkillContext enforces permissions on all skill operations 4) Default: read-only access, core skills get write permissions 5) Prevents skills from closing shared DB connection or accessing unauthorized resources",
+    "tags": "issue-5fd36a,implementation,security"
+  },
+  {
+    "content": "\u2705 Completed issue-5fd36a: Skill isolation. Implemented comprehensive permission system with read-only defaults. Skills now isolated via RestrictedSkillContext. All tests pass. Committed as 5eb520d. Ready for next priority issue.",
+    "tags": "issue-5fd36a,complete"
+  },
+  {
+    "content": "Integration test plan: Test 12 skills (issues, migrate, automations, ai, atlas, prompts, planner, vacuum, temporal, feedback, cache, notes) following AGENTIC_WORKFLOW.md phases. Each test should verify: 1) Skill loads correctly 2) Context initialization 3) Database schema created 4) CLI commands work 5) Search API works 6) Event pub/sub 7) Permission enforcement 8) Error handling. Use pytest fixtures for common setup.",
+    "tags": "issue-74489d,planning,testing"
+  },
+  {
+    "content": "Created comprehensive integration test plan: 7 tasks, 12 skills to test, 5 workflow phases, dependency tree established. Task 1 (infrastructure) blocks all others. Cross-skill workflows depend on phase tests. Estimated 23 hours total. Documentation in docs/INTEGRATION_TEST_PLAN.md",
+    "tags": "issue-74489d,planning,complete"
+  },
+  {
+    "content": "\ud83e\uddf9 HOUSEKEEPING REPORT (2025-11-16):\n\n\u2705 CODE QUALITY (Atlas):\n- Scanned src/ directory, code_index.json updated\n- Top refactor priorities: skills_cli/export.py (0.437), core/loader/discovery.py (0.348)\n- Rules check: missing rules.yaml file (need to create quality rules)\n\n\u2705 ISSUE MANAGEMENT:\n- Total issues: 100\n- No stale issues (30+ days)\n- No duplicates detected\n- Recent additions: Integration test plan (issue-74489d) with 7 sub-tasks\n\n\u2705 COMPLETED WORK:\n- Skill isolation system (issue-5fd36a) - CLOSED\n- Integration test planning (issue-74489d) - 7 tasks created with dependency tree\n\n\u2705 NOTES CONSOLIDATION:\n- Total notes: 29\n- Notes 10-18 are outdated planning notes from completed work\n- Recent notes properly tagged and organized\n- Session summaries: notes 18, 23 document completed work\n\n\u2705 FEEDBACK TRACKING:\n- 13 successful actions recorded\n- Recent: integration test planning, skill isolation implementation\n- All feedback positive (100% success rate)\n\n\u2705 CACHE & OPTIMIZATION:\n- Cache pruned: 1 expired entry removed\n- Vacuum run: knowledge distillation placeholder (needs LLM)\n\n\u2705 PLANNER QUEUE:\n- 12 tasks queued, properly prioritized\n- Next ready task: issue-5cc5e4 (test infrastructure)\n\n\ud83d\udccb RECOMMENDATIONS:\n1. Create rules.yaml for atlas quality checks\n2. Archive/delete notes 10-18 (outdated planning)\n3. Start work on issue-5cc5e4 (test infrastructure)\n4. Consider enabling LLM for vacuum distillation",
+    "tags": "housekeeping,2025-11-16,maintenance,complete"
+  }
+]

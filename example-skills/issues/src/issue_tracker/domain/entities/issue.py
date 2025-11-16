@@ -103,8 +103,8 @@ class Issue:
             except (ValueError, TypeError):
                 raise InvariantViolationError(f"Invalid priority: {self.priority}. Must be 0-4")
 
-        if self.type == IssueType.EPIC and self.epic_id is not None:
-            raise InvariantViolationError("Epic issues cannot have parent epic", self.id)
+        # Allow epics to have parent epics for hierarchical organization
+        # Removed validation: Epic issues can now have parent epics
 
         if self.assignee is not None and not self.assignee.strip():
             raise InvariantViolationError("Assignee cannot be empty string", self.id)

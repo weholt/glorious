@@ -25,6 +25,7 @@ class Epic:
         title: Epic title
         description: Optional epic description
         status: Epic status
+        parent_epic_id: Parent epic for hierarchical organization
         created_at: Creation timestamp
         updated_at: Last modification timestamp
         closed_at: Closure timestamp (if applicable)
@@ -34,6 +35,7 @@ class Epic:
     title: str
     description: str | None = None
     status: EpicStatus = EpicStatus.OPEN
+    parent_epic_id: str | None = None
     created_at: datetime = field(default_factory=utcnow_naive)
     updated_at: datetime = field(default_factory=utcnow_naive)
     closed_at: datetime | None = None
