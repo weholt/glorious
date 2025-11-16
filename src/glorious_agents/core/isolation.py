@@ -199,7 +199,7 @@ class PermissionRegistry:
         core_skills_write = [
             "issues", "notes", "planner", "feedback", "cache",
             "prompts", "temporal", "vacuum", "atlas", "automations",
-            "ai", "sandbox", "telemetry", "linker", "migrate"
+            "ai", "sandbox", "telemetry", "linker", "migrate", "docs"
         ]
         
         for skill in core_skills_write:
