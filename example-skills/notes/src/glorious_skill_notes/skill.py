@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.table import Table
 
 from glorious_agents.core.context import TOPIC_NOTE_CREATED, SkillContext
+from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
 app = typer.Typer(help="Notes management")
@@ -69,7 +70,7 @@ def add_note(content: str, tags: str = "") -> int:
 @validate_input
 def search_notes(query: str) -> list[dict[str, Any]]:
     """
-    Search notes using FTS5 (callable API).
+    Search notes using FTS5 (callable API) - legacy format.
 
     Args:
         query: Search query (1-1,000 chars).
@@ -99,6 +100,46 @@ def search_notes(query: str) -> list[dict[str, Any]]:
             "tags": row[2],
             "created_at": row[3],
         })
+
+    return results
+
+
+def search(query: str, limit: int = 10) -> list[SearchResult]:
+    """
+    Universal search API - returns SearchResult objects.
+
+    Args:
+        query: Search query string.
+        limit: Maximum number of results.
+
+    Returns:
+        List of SearchResult objects for universal search.
+    """
+    if _ctx is None:
+        raise RuntimeError("Context not initialized")
+
+    cur = _ctx.conn.execute("""
+        SELECT n.id, n.content, n.tags, n.created_at, rank
+        FROM notes n
+        JOIN notes_fts fts ON n.id = fts.rowid
+        WHERE notes_fts MATCH ?
+        ORDER BY rank
+        LIMIT ?
+    """, (query, limit))
+
+    results = []
+    for row in cur:
+        # Convert FTS5 rank to 0-1 score (rank is negative, higher absolute value = better match)
+        score = min(1.0, abs(row[4]) / 10.0) if row[4] else 0.5
+        
+        results.append(SearchResult(
+            skill="notes",
+            id=row[0],
+            type="note",
+            content=row[1],
+            metadata={"tags": row[2], "created_at": row[3]},
+            score=score
+        ))
 
     return results
 

@@ -1,0 +1,43 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "0.9.8"
+
+    - name: Set up Python 3.13
+      run: uv python install 3.13
+
+    - name: Install dependencies
+      run: uv sync
+
+    - name: Run tests with coverage
+      run: uv run pytest tests/ --cov=src/issue_tracker --cov-report=xml --cov-report=term --cov-fail-under=70 --timeout=5
+
+    - name: Coverage badge
+      uses: tj-actions/coverage-badge-py@v2
+      with:
+        output: coverage.svg
+
+    - name: Verify coverage meets minimum
+      run: |
+        COVERAGE=$(uv run coverage report --precision=2 | grep TOTAL | awk '{print $4}' | sed 's/%//')
+        echo "Coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+          echo "Error: Coverage $COVERAGE% is below minimum 70%"
+          exit 1
+        fi
+        echo "✓ Coverage meets minimum requirement (70%)"

@@ -55,3 +55,19 @@ def history() -> None:
     console.print("[cyan]Vacuum History:[/cyan]")
     for row in cur:
         console.print(f"  #{row[0]} - {row[1]} | Processed: {row[2]}, Modified: {row[3]} [{row[5]}]")
+
+
+def search(query: str, limit: int = 10) -> list[SearchResult]:
+    """Universal search API for vacuum knowledge entries."""
+    from glorious_agents.core.search import SearchResult
+    if _ctx is None:
+        return []
+    query_lower = query.lower()
+    cur = _ctx.conn.execute("""
+        SELECT id, title, summary FROM vacuum_knowledge
+        WHERE LOWER(title) LIKE ? OR LOWER(summary) LIKE ?
+        LIMIT ?
+    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
+    return [SearchResult(skill="vacuum", id=row[0], type="knowledge", 
+                        content=f"{row[1]}: {row[2][:80]}", metadata={}, score=0.7)
+           for row in cur]

@@ -277,3 +277,31 @@ def delete(key: str) -> None:
         console.print(f"[green]Cache entry '{key}' deleted[/green]")
     else:
         console.print(f"[yellow]Cache key '{key}' not found[/yellow]")
+
+
+def search(query: str, limit: int = 10) -> list[SearchResult]:
+    """Universal search API for cache entries."""
+    from glorious_agents.core.search import SearchResult
+    if _ctx is None:
+        return []
+    
+    query_lower = query.lower()
+    cur = _ctx.conn.execute("""
+        SELECT key, value, expires_at
+        FROM cache_entries
+        WHERE LOWER(key) LIKE ? OR LOWER(value) LIKE ?
+        ORDER BY created_at DESC
+        LIMIT ?
+    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
+    
+    results = []
+    for row in cur:
+        results.append(SearchResult(
+            skill="cache",
+            id=row[0],
+            type="cache_entry",
+            content=f"{row[0]}: {row[1][:50]}...",
+            metadata={"expires_at": row[2]},
+            score=0.7
+        ))
+    return results

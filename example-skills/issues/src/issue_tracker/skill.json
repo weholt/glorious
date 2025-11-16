@@ -1,0 +1,20 @@
+{
+  "name": "issues",
+  "version": "0.1.0",
+  "description": "Git-backed issue tracking with hierarchical relationships",
+  "requires": [],
+  "schema_file": null,
+  "requires_db": true,
+  "internal_doc": "instructions.md",
+  "external_doc": null,
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "db_path": {
+        "type": "string",
+        "default": ".issues/issues.db",
+        "description": "Path to SQLite database"
+      }
+    }
+  }
+}

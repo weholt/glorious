@@ -1,0 +1,10 @@
+{
+  "name": "atlas",
+  "version": "0.1.0",
+  "description": "Python codebase structure and metrics analyzer",
+  "requires": [],
+  "schema_file": null,
+  "requires_db": false,
+  "internal_doc": "instructions.md",
+  "external_doc": null
+}

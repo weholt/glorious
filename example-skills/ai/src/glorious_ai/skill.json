@@ -1,0 +1,11 @@
+{
+  "name": "ai",
+  "version": "0.1.0",
+  "description": "LLM integration with embeddings and semantic search",
+  "entry_point": "ai.skill:app",
+  "schema_file": "schema.sql",
+  "requires": [],
+  "requires_db": true,
+  "internal_doc": "instructions.md",
+  "external_doc": "usage.md"
+}

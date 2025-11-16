@@ -21,6 +21,68 @@ def init_context(ctx: SkillContext) -> None:
     _ctx = ctx
 
 
+def search(query: str, limit: int = 10) -> list["SearchResult"]:
+    """Universal search API for links.
+    
+    Searches links by entity types and IDs.
+    
+    Args:
+        query: Search query string
+        limit: Maximum number of results
+        
+    Returns:
+        List of SearchResult objects
+    """
+    from glorious_agents.core.search import SearchResult
+    
+    if _ctx is None:
+        return []
+    
+    rows = _ctx.conn.execute(
+        "SELECT id, kind, a_type, a_id, b_type, b_id, weight, created_at FROM links"
+    ).fetchall()
+    
+    results = []
+    query_lower = query.lower()
+    
+    for link_id, kind, a_type, a_id, b_type, b_id, weight, created_at in rows:
+        score = 0.0
+        matched = False
+        
+        if query_lower in kind.lower():
+            score += 0.7
+            matched = True
+        
+        if query_lower in a_type.lower() or query_lower in a_id.lower():
+            score += 0.5
+            matched = True
+        
+        if query_lower in b_type.lower() or query_lower in b_id.lower():
+            score += 0.5
+            matched = True
+        
+        if matched:
+            score = min(1.0, score)
+            
+            results.append(SearchResult(
+                skill="linker",
+                id=link_id,
+                type="link",
+                content=f"{kind}: {a_type}:{a_id} → {b_type}:{b_id}",
+                metadata={
+                    "kind": kind,
+                    "source": f"{a_type}:{a_id}",
+                    "target": f"{b_type}:{b_id}",
+                    "weight": weight,
+                    "created_at": created_at,
+                },
+                score=score
+            ))
+    
+    results.sort(key=lambda r: r.score, reverse=True)
+    return results[:limit]
+
+
 class AddLinkInput(SkillInput):
     """Input validation for adding links."""
 

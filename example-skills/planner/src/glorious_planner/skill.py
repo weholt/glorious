@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
 app = typer.Typer(help="Task planning and queue management")
@@ -214,3 +215,53 @@ def delete(task_id: int) -> None:
         console.print(f"[green]Task {task_id} deleted[/green]")
     else:
         console.print(f"[yellow]Task {task_id} not found[/yellow]")
+
+
+def search(query: str, limit: int = 10) -> list[SearchResult]:
+    """Universal search API for planner tasks.
+    
+    Searches through issue IDs and project IDs in queued tasks.
+    
+    Args:
+        query: Search query string
+        limit: Maximum number of results
+        
+    Returns:
+        List of SearchResult objects
+    """
+    if _ctx is None:
+        return []
+    
+    query_lower = query.lower()
+    cur = _ctx.conn.execute("""
+        SELECT id, issue_id, status, priority, project_id, important
+        FROM planner_queue
+        WHERE LOWER(issue_id) LIKE ? OR LOWER(project_id) LIKE ?
+        ORDER BY priority DESC, id
+        LIMIT ?
+    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
+    
+    results = []
+    for row in cur:
+        # Calculate score based on priority and important flag
+        score = 0.5 + (row[3] / 200.0)  # priority normalized
+        if row[5]:  # important flag
+            score += 0.3
+        score = min(1.0, max(0.0, score))
+        
+        results.append(SearchResult(
+            skill="planner",
+            id=row[0],
+            type="task",
+            content=f"Task #{row[0]}: {row[1]}",
+            metadata={
+                "issue_id": row[1],
+                "status": row[2],
+                "priority": row[3],
+                "project_id": row[4],
+                "important": bool(row[5]),
+            },
+            score=score
+        ))
+    
+    return results

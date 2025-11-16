@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
+from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
 app = typer.Typer(help="Prompt template management")
@@ -147,3 +148,48 @@ def delete(name: str) -> None:
         console.print(f"[green]Deleted {cur.rowcount} version(s) of prompt '{name}'[/green]")
     else:
         console.print(f"[yellow]Prompt '{name}' not found[/yellow]")
+
+
+def search(query: str, limit: int = 10) -> list[SearchResult]:
+    """Universal search API for prompt templates.
+    
+    Searches through prompt names and templates.
+    
+    Args:
+        query: Search query string
+        limit: Maximum number of results
+        
+    Returns:
+        List of SearchResult objects
+    """
+    if _ctx is None:
+        return []
+    
+    query_lower = query.lower()
+    cur = _ctx.conn.execute("""
+        SELECT id, name, version, template, created_at
+        FROM prompts
+        WHERE LOWER(name) LIKE ? OR LOWER(template) LIKE ?
+        ORDER BY created_at DESC
+        LIMIT ?
+    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
+    
+    results = []
+    for row in cur:
+        # Score based on name match (higher) vs template match (lower)
+        score = 0.9 if query_lower in row[1].lower() else 0.6
+        
+        results.append(SearchResult(
+            skill="prompts",
+            id=f"{row[1]}_v{row[2]}",
+            type="prompt",
+            content=f"{row[1]} (v{row[2]}): {row[3][:100]}...",
+            metadata={
+                "name": row[1],
+                "version": row[2],
+                "created_at": row[4],
+            },
+            score=score
+        ))
+    
+    return results

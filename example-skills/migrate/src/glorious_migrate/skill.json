@@ -1,0 +1,11 @@
+{
+  "name": "migrate",
+  "version": "0.1.0",
+  "description": "Universal export/import system for data portability",
+  "entry_point": "migrate.skill:app",
+  "schema_file": null,
+  "requires": [],
+  "requires_db": false,
+  "internal_doc": "instructions.md",
+  "external_doc": "usage.md"
+}

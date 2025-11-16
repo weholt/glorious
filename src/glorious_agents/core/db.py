@@ -81,24 +81,33 @@ def init_skill_schema(skill_name: str, schema_path: Path) -> None:
     if not schema_path.exists():
         return
 
-    conn = get_connection()
-    try:
-        # Read and execute schema
-        schema_sql = schema_path.read_text()
-        conn.executescript(schema_sql)
-        conn.commit()
+    # Check if skill has migrations directory
+    migrations_dir = schema_path.parent / "migrations"
+    if migrations_dir.exists():
+        # Use migration system
+        from glorious_agents.core.migrations import run_migrations
 
-        # Track that schema was applied (using a metadata table)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS _skill_schemas (
-                skill_name TEXT PRIMARY KEY,
-                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.execute("INSERT OR IGNORE INTO _skill_schemas (skill_name) VALUES (?)", (skill_name,))
-        conn.commit()
-    finally:
-        conn.close()
+        run_migrations(skill_name, migrations_dir)
+    else:
+        # Legacy: execute schema.sql directly
+        conn = get_connection()
+        try:
+            # Read and execute schema
+            schema_sql = schema_path.read_text()
+            conn.executescript(schema_sql)
+            conn.commit()
+
+            # Track that schema was applied (using a metadata table)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS _skill_schemas (
+                    skill_name TEXT PRIMARY KEY,
+                    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.execute("INSERT OR IGNORE INTO _skill_schemas (skill_name) VALUES (?)", (skill_name,))
+            conn.commit()
+        finally:
+            conn.close()
 
 
 def get_master_db_path() -> Path:

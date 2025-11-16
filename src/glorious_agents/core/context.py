@@ -3,21 +3,13 @@
 import logging
 import sqlite3
 import threading
-import time
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import Any, Protocol
 
+from glorious_agents.core.cache import TTLCache
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class CacheEntry:
-    """Cache entry with value and expiration."""
-
-    value: Any
-    expires_at: float | None  # Unix timestamp, None means no expiration
 
 
 class EventBus:
@@ -75,9 +67,7 @@ class SkillContext:
         self._conn = conn
         self._event_bus = event_bus
         self._skills: dict[str, SkillApp] = {}
-        self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
-        self._cache_max_size = cache_max_size
-        self._cache_lock = threading.Lock()
+        self._cache = TTLCache(max_size=cache_max_size)
 
     @property
     def conn(self) -> sqlite3.Connection:
@@ -101,102 +91,59 @@ class SkillContext:
         return self._skills.get(name)
 
     def cache_get(self, key: str) -> Any:
-        """Get a value from the process-local cache.
-
-        Returns None if the key doesn't exist or has expired.
-
-        Args:
-            key: Cache key.
-
-        Returns:
-            Cached value or None if not found/expired.
-        """
-        with self._cache_lock:
-            entry = self._cache.get(key)
-            if entry is None:
-                return None
-
-            # Check expiration
-            if entry.expires_at is not None and time.time() > entry.expires_at:
-                # Expired, remove it
-                del self._cache[key]
-                return None
-
-            # Move to end (LRU tracking)
-            self._cache.move_to_end(key)
-            return entry.value
+        """Get a value from the process-local cache."""
+        return self._cache.get(key)
 
     def cache_set(self, key: str, value: Any, ttl: int | None = None) -> None:
-        """Set a value in the process-local cache.
-
-        Args:
-            key: Cache key.
-            value: Value to cache.
-            ttl: Time-to-live in seconds. None means no expiration.
-        """
-        with self._cache_lock:
-            expires_at = time.time() + ttl if ttl is not None else None
-            entry = CacheEntry(value=value, expires_at=expires_at)
-
-            # Add or update entry
-            if key in self._cache:
-                del self._cache[key]  # Remove to update position
-            self._cache[key] = entry
-
-            # Enforce size limit (LRU eviction)
-            while len(self._cache) > self._cache_max_size:
-                # Remove oldest (first) item
-                self._cache.popitem(last=False)
+        """Set a value in the process-local cache."""
+        self._cache.set(key, value, ttl)
 
     def cache_has(self, key: str) -> bool:
-        """Check if a key exists in cache and is not expired.
-
-        Args:
-            key: Cache key.
-
-        Returns:
-            True if key exists and is valid, False otherwise.
-        """
-        return self.cache_get(key) is not None
+        """Check if a key exists in cache and is not expired."""
+        return self._cache.has(key)
 
     def cache_delete(self, key: str) -> bool:
-        """Delete a key from the cache.
-
-        Args:
-            key: Cache key to delete.
-
-        Returns:
-            True if key was found and deleted, False otherwise.
-        """
-        with self._cache_lock:
-            if key in self._cache:
-                del self._cache[key]
-                return True
-            return False
+        """Delete a key from the cache."""
+        return self._cache.delete(key)
 
     def cache_clear(self) -> None:
         """Clear all entries from the process-local cache."""
-        with self._cache_lock:
-            self._cache.clear()
+        self._cache.clear()
 
     def cache_prune_expired(self) -> int:
-        """Remove expired entries from the cache.
+        """Remove expired entries from the cache."""
+        return self._cache.prune_expired()
 
-        Returns:
-            Number of entries removed.
-        """
-        with self._cache_lock:
-            now = time.time()
-            expired_keys = [
-                key
-                for key, entry in self._cache.items()
-                if entry.expires_at is not None and now > entry.expires_at
-            ]
+    def _load_skill_config(self, skill_name: str, config_key: str) -> None:
+        """Load skill configuration from TOML file."""
+        from pathlib import Path
+        from glorious_agents.config import config
+        
+        config_dir = Path(config.AGENT_FOLDER) / "config"
+        config_file = config_dir / f"{skill_name}.toml"
+        
+        if config_file.exists():
+            try:
+                import tomllib
+                with open(config_file, "rb") as f:
+                    skill_config = tomllib.load(f)
+                setattr(self, config_key, skill_config)
+            except Exception as e:
+                logger.error(f"Error loading config for {skill_name}: {e}")
+                setattr(self, config_key, {})
+        else:
+            setattr(self, config_key, {})
 
-            for key in expired_keys:
-                del self._cache[key]
-
-            return len(expired_keys)
+    def _get_nested_value(self, data: dict[str, Any], key: str, default: Any) -> Any:
+        """Get nested dictionary value using dot notation."""
+        parts = key.split(".")
+        value = data
+        for part in parts:
+            if isinstance(value, dict) and part in value:
+                value = value[part]
+            else:
+                return default
+        return value
 
     def get_config(self, key: str, default: Any = None) -> Any:
         """Get configuration value for current skill.
@@ -211,49 +158,16 @@ class SkillContext:
         Returns:
             Configuration value or default.
         """
-        from glorious_agents.config import config
-
-        # Determine skill name from caller context
-        # For now, we'll require the skill to be registered
-        # In a real implementation, we'd extract this from the call stack
         skill_name = getattr(self, "_skill_name", None)
         if not skill_name:
             return default
 
-        # Load config file if not already loaded
         config_key = f"_config_{skill_name}"
         if not hasattr(self, config_key):
-            from pathlib import Path
+            self._load_skill_config(skill_name, config_key)
 
-            config_dir = Path(config.AGENT_FOLDER) / "config"
-            config_file = config_dir / f"{skill_name}.toml"
-            if config_file.exists():
-                try:
-                    import tomllib
-
-                    with open(config_file, "rb") as f:
-                        skill_config = tomllib.load(f)
-                    setattr(self, config_key, skill_config)
-                except Exception as e:
-                    import logging
-
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Error loading config for {skill_name}: {e}")
-                    setattr(self, config_key, {})
-            else:
-                setattr(self, config_key, {})
-
-        # Get nested config value
         skill_config = getattr(self, config_key, {})
-        parts = key.split(".")
-        value = skill_config
-        for part in parts:
-            if isinstance(value, dict) and part in value:
-                value = value[part]
-            else:
-                return default
-
-        return value
+        return self._get_nested_value(skill_config, key, default)
 
 
 # Canonical event topics

@@ -231,6 +231,84 @@ def daemon(
     run_daemon(host, port)
 
 
+@app.command()
+def search(
+    query: str = typer.Argument(..., help="Search query"),
+    limit: int = typer.Option(20, "--limit", "-l", help="Maximum results to return"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON")
+) -> None:
+    """Search across all skills for relevant content.
+    
+    Queries all skills that support search and returns unified results.
+    Each result includes the skill name and item ID for direct retrieval.
+    
+    Example:
+        $ agent search "memory leak"
+        $ agent search "todo" --limit 10
+        $ agent search "bug" --json
+    """
+    import json
+    from glorious_agents.core.runtime import get_ctx
+    from glorious_agents.core.search import SearchResult
+    
+    ctx = get_ctx()
+    all_results: list[SearchResult] = []
+    
+    # Get registry and search each skill
+    registry = get_registry()
+    for manifest in registry.list_all():
+        skill_app = registry.get_app(manifest.name)
+        if not skill_app:
+            continue
+            
+        # Check if skill module has search function
+        try:
+            import importlib
+            module_path = manifest.entry_point.split(":")[0]
+            module = importlib.import_module(module_path)
+            
+            if hasattr(module, "search") and callable(module.search):
+                try:
+                    results = module.search(query, limit=limit)
+                    if results:
+                        all_results.extend(results)
+                except Exception as e:
+                    logger.debug(f"Skill {manifest.name} search failed: {e}")
+        except Exception:
+            continue
+    
+    # Sort by score
+    all_results.sort(key=lambda r: r.score, reverse=True)
+    all_results = all_results[:limit]
+    
+    if json_output:
+        console.print(json.dumps([r.to_dict() for r in all_results], indent=2))
+    else:
+        if not all_results:
+            console.print("[yellow]No results found.[/yellow]")
+            return
+            
+        from rich.table import Table
+        table = Table(title=f"Search Results for '{query}'")
+        table.add_column("Skill", style="cyan")
+        table.add_column("ID", style="dim")
+        table.add_column("Type", style="yellow")
+        table.add_column("Content", style="white")
+        table.add_column("Score", style="green")
+        
+        for result in all_results:
+            content = result.content[:80] + "..." if len(result.content) > 80 else result.content
+            table.add_row(
+                result.skill,
+                str(result.id),
+                result.type,
+                content,
+                f"{result.score:.2f}"
+            )
+        
+        console.print(table)
+
+
 def main() -> None:
     """Main entry point for the Glorious Agents CLI.
 

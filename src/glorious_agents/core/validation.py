@@ -70,6 +70,33 @@ class SkillInput(BaseModel):
     model_config = {"extra": "forbid", "str_strip_whitespace": True}
 
 
+def _bind_arguments(func: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Bind function arguments and apply defaults."""
+    sig = inspect.signature(func)
+    try:
+        bound = sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        return dict(bound.arguments)
+    except TypeError as e:
+        raise ValidationException([{"loc": ("arguments",), "msg": str(e)}]) from e
+
+
+def _validate_parameter(param_name: str, value: Any, param_type: Any) -> Any:
+    """Validate a single parameter against its type hint."""
+    if not (param_type and isinstance(param_type, type) and issubclass(param_type, BaseModel)):
+        return value
+    
+    try:
+        if isinstance(value, param_type):
+            return value
+        elif isinstance(value, dict):
+            return param_type(**value)
+        else:
+            return param_type(value)
+    except ValidationError as e:
+        raise ValidationException(e.errors()) from e
+
+
 def validate_input[F: Callable[..., Any]](func: F) -> F:
     """Decorator that validates function inputs against Pydantic models.
 
@@ -100,40 +127,12 @@ def validate_input[F: Callable[..., Any]](func: F) -> F:
 
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        # Get function signature and type hints
-        sig = inspect.signature(func)
         type_hints = get_type_hints(func)
-
-        # Build bound arguments
-        try:
-            bound = sig.bind(*args, **kwargs)
-            bound.apply_defaults()
-        except TypeError as e:
-            raise ValidationException([{"loc": ("arguments",), "msg": str(e)}]) from e
-
-        # Validate each argument against its type hint
-        validated_kwargs = {}
-        for param_name, value in bound.arguments.items():
-            param_type = type_hints.get(param_name)
-
-            # If parameter is a Pydantic model, validate it
-            if param_type and isinstance(param_type, type) and issubclass(param_type, BaseModel):
-                try:
-                    # If value is already the model type, re-validate
-                    if isinstance(value, param_type):
-                        validated_kwargs[param_name] = value
-                    # If value is dict, construct and validate
-                    elif isinstance(value, dict):
-                        validated_kwargs[param_name] = param_type(**value)
-                    # Otherwise try to construct from value
-                    else:
-                        validated_kwargs[param_name] = param_type(value)
-                except ValidationError as e:
-                    raise ValidationException(e.errors()) from e
-            else:
-                validated_kwargs[param_name] = value
-
-        # Call function with validated arguments
+        bound_args = _bind_arguments(func, args, kwargs)
+        validated_kwargs = {
+            name: _validate_parameter(name, value, type_hints.get(name))
+            for name, value in bound_args.items()
+        }
         return func(**validated_kwargs)
 
     return cast(F, wrapper)

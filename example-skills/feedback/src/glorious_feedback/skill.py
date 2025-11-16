@@ -127,3 +127,19 @@ def stats(group_by: str = "status", limit: int = 10) -> None:
         table.add_row(row[0], str(row[1]))
 
     console.print(table)
+
+
+def search(query: str, limit: int = 10) -> list[SearchResult]:
+    """Universal search API for feedback entries."""
+    from glorious_agents.core.search import SearchResult
+    if _ctx is None:
+        return []
+    query_lower = query.lower()
+    cur = _ctx.conn.execute("""
+        SELECT id, action, feedback FROM feedback_log
+        WHERE LOWER(action) LIKE ? OR LOWER(feedback) LIKE ?
+        LIMIT ?
+    """, (f"%{query_lower}%", f"%{query_lower}%", limit))
+    return [SearchResult(skill="feedback", id=row[0], type="feedback",
+                        content=f"{row[1]}: {row[2][:80]}", metadata={}, score=0.6)
+           for row in cur]

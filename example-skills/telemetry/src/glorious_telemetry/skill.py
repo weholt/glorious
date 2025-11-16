@@ -22,6 +22,71 @@ def init_context(ctx: SkillContext) -> None:
     _ctx = ctx
 
 
+def search(query: str, limit: int = 10) -> list["SearchResult"]:
+    """Universal search API for telemetry events.
+    
+    Searches telemetry events by category, event description, and skill.
+    
+    Args:
+        query: Search query string
+        limit: Maximum number of results
+        
+    Returns:
+        List of SearchResult objects
+    """
+    from glorious_agents.core.search import SearchResult
+    
+    if _ctx is None:
+        return []
+    
+    rows = _ctx.conn.execute(
+        "SELECT id, timestamp, category, event, skill, duration_ms, status FROM events"
+    ).fetchall()
+    
+    results = []
+    query_lower = query.lower()
+    
+    for event_id, timestamp, category, event, skill, duration_ms, status in rows:
+        score = 0.0
+        matched = False
+        
+        if query_lower in category.lower():
+            score += 0.7
+            matched = True
+        
+        if query_lower in event.lower():
+            score += 0.8
+            matched = True
+        
+        if skill and query_lower in skill.lower():
+            score += 0.5
+            matched = True
+        
+        if query_lower in status.lower():
+            score += 0.3
+            matched = True
+        
+        if matched:
+            score = min(1.0, score)
+            
+            results.append(SearchResult(
+                skill="telemetry",
+                id=event_id,
+                type="event",
+                content=f"{category}: {event}",
+                metadata={
+                    "timestamp": timestamp,
+                    "skill": skill or "",
+                    "duration_ms": duration_ms,
+                    "status": status,
+                },
+                score=score
+            ))
+    
+    results.sort(key=lambda r: r.score, reverse=True)
+    return results[:limit]
+
+
 class LogEventInput(SkillInput):
     """Input validation for logging events."""
 

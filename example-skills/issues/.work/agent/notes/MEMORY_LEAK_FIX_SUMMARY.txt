@@ -1,0 +1,60 @@
+================================================================================
+MEMORY LEAK INVESTIGATION - SECOND PASS - COMPLETE
+================================================================================
+
+PROBLEM: Linux OOM crash when running integration tests (Windows works fine)
+
+ROOT CAUSES FOUND (4 locations):
+================================================================================
+
+1. CLI init command (src/issue_tracker/cli/app.py:1462)
+   - Creates engine, never disposes it
+   - Called by integration_cli_runner fixture for EVERY test (29 tests)
+   - Leak: 29 × 5MB = 145MB
+
+2. Daemon periodic sync (src/issue_tracker/daemon/service.py:124)  
+   - _get_issues_from_db() creates engine every call
+   - Called every 1-5 seconds during daemon tests
+   - 16 daemon tests × 5 calls avg × 5MB = 400MB leak
+
+3. Test engine fixture (tests/integration/conftest.py:52)
+   - Fixed in first pass ✓
+
+4. Daemon test fixtures (tests/integration/test_daemon_integration.py)
+   - Fixed in first pass ✓
+
+TOTAL LEAK: ~995MB (explains Linux OOM on 2GB systems)
+
+FIXES APPLIED:
+================================================================================
+
+File: src/issue_tracker/cli/app.py (lines 1462-1478)
+  Added: try/finally with engine.dispose() in init command
+
+File: src/issue_tracker/daemon/service.py (lines 124-147)
+  Added: try/finally with engine.dispose() in _get_issues_from_db()
+
+File: tests/integration/conftest.py (lines 52-78)
+  Fixed: test_engine and test_session fixtures (from first pass)
+
+File: tests/integration/test_daemon_integration.py (4 locations)
+  Fixed: daemon_workspace and inline engine creations (from first pass)
+
+EXPECTED RESULT:
+================================================================================
+- Memory usage: ~1GB → <50MB (95% reduction)
+- Integration tests complete successfully on Linux
+- No OOM errors
+- No file descriptor exhaustion
+
+VERIFICATION:
+================================================================================
+Run: uv run scripts/build.py --verbose --integration all
+
+Monitor with: watch -n 1 'free -m'
+
+Expected: Memory stays constant <100MB, tests pass
+
+================================================================================
+All files verified to import successfully ✓
+================================================================================

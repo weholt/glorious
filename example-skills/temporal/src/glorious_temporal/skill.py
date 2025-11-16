@@ -55,3 +55,11 @@ def examples() -> None:
     console.print("  --until 2025-11-14  Before date")
     console.print("  --updated-within 3d Updated in last 3 days")
     console.print("\n[dim]These flags can be added to most skill commands[/dim]")
+
+
+def search(query: str, limit: int = 10) -> list[SearchResult]:
+    """Universal search API for temporal filters."""
+    from glorious_agents.core.search import SearchResult
+    if _ctx is None:
+        return []
+    return []  # Temporal has no searchable content

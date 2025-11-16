@@ -10,9 +10,11 @@ from glorious_agents.skills_cli.list_describe import (
     doctor,
     list_skills,
 )
+from glorious_agents.skills_cli.migrate import app as migrate_app
 from glorious_agents.skills_cli.reload import reload_skills
 
 app = typer.Typer(help="Manage skills")
+app.add_typer(migrate_app, name="migrate")
 
 
 @app.command()
