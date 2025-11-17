@@ -57,3 +57,4 @@ temp/
 .uv/
 uv.lock
 temp
+.secrets
