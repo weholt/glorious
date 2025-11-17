@@ -53,15 +53,6 @@ jobs:
           uv run bandit -r src -f json -o bandit-report.json || echo '{"results": []}' > bandit-report.json
         continue-on-error: true
 
-      - name: Upload security report
-        uses: actions/upload-artifact@v4
-        if: failure() || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-        with:
-          name: security-report-${{ github.run_id }}
-          path: bandit-report.json
-          if-no-files-found: warn
-          retention-days: 7
-
   test:
     name: Tests
     runs-on: ${{ matrix.os }}
