@@ -1,5 +1,7 @@
 """Prompts skill - template management and versioning."""
 
+from __future__ import annotations
+
 import json
 
 import typer

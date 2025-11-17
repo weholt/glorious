@@ -20,24 +20,24 @@ def test_get_agent_folder(temp_agent_folder: Path) -> None:
 
 @pytest.mark.logic
 def test_get_agent_db_path_default(temp_agent_folder: Path) -> None:
-    """Test default agent DB path."""
+    """Test unified DB path."""
     db_path = get_agent_db_path()
-    assert db_path.parent.name == "default"
-    assert db_path.name == "agent.db"
+    assert db_path.parent == temp_agent_folder
+    assert db_path.name == "glorious.db"
     # Path created on first connection, not on path retrieval
     assert db_path.parent.exists()
 
 
 @pytest.mark.logic
 def test_get_agent_db_path_custom(temp_agent_folder: Path) -> None:
-    """Test custom agent DB path."""
-    # Create active agent file
+    """Test unified DB path returns same path regardless of agent."""
+    # Even with active agent file, should use unified DB
     active_file = temp_agent_folder / "active_agent"
     active_file.write_text("test-agent")
 
     db_path = get_agent_db_path()
-    assert db_path.parent.name == "test-agent"
-    assert db_path.name == "agent.db"
+    assert db_path.parent == temp_agent_folder
+    assert db_path.name == "glorious.db"
 
 
 @pytest.mark.logic

@@ -25,7 +25,7 @@ def init_context(ctx: SkillContext) -> None:
     """Initialize skill context."""
     global _ctx
     _ctx = ctx
-    
+
     # Run migrations
     migrations_dir = Path(__file__).parent / "migrations"
     if migrations_dir.exists():
@@ -37,7 +37,9 @@ class AddNoteInput(SkillInput):
 
     content: str = Field(..., min_length=1, max_length=100000, description="Note content")
     tags: str = Field("", max_length=500, description="Comma-separated tags")
-    importance: int = Field(0, ge=0, le=2, description="Importance level (0=normal, 1=important, 2=critical)")
+    importance: int = Field(
+        0, ge=0, le=2, description="Importance level (0=normal, 1=important, 2=critical)"
+    )
 
 
 class SearchNotesInput(SkillInput):
@@ -66,19 +68,16 @@ def add_note(content: str, tags: str = "", importance: int = 0) -> int:
         raise RuntimeError("Context not initialized")
 
     cur = _ctx.conn.execute(
-        "INSERT INTO notes(content, tags, importance) VALUES(?, ?, ?)",
-        (content, tags, importance)
+        "INSERT INTO notes(content, tags, importance) VALUES(?, ?, ?)", (content, tags, importance)
     )
     _ctx.conn.commit()
     note_id = cur.lastrowid
 
     # Publish event
-    _ctx.publish(TOPIC_NOTE_CREATED, {
-        "id": note_id,
-        "tags": tags,
-        "content": content,
-        "importance": importance
-    })
+    _ctx.publish(
+        TOPIC_NOTE_CREATED,
+        {"id": note_id, "tags": tags, "content": content, "importance": importance},
+    )
 
     return note_id
 
@@ -156,7 +155,7 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
     for row in cur:
         # Convert FTS5 rank to 0-1 score (rank is negative, higher absolute value = better match)
         base_score = min(1.0, abs(row[5]) / 10.0) if row[5] else 0.5
-        
+
         # Boost score based on importance (critical=+0.3, important=+0.15)
         importance = row[4]
         importance_boost = importance * 0.15
@@ -168,11 +167,7 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
                 id=row[0],
                 type="note",
                 content=row[1],
-                metadata={
-                    "tags": row[2],
-                    "created_at": row[3],
-                    "importance": importance
-                },
+                metadata={"tags": row[2], "created_at": row[3], "importance": importance},
                 score=score,
             )
         )
@@ -195,15 +190,15 @@ def add(
             importance = 2
         elif important:
             importance = 1
-            
+
         note_id = add_note(content, tags, importance)
-        
+
         importance_str = ""
         if importance == 2:
             importance_str = " [red bold]⚠ CRITICAL[/red bold]"
         elif importance == 1:
             importance_str = " [yellow bold]★ IMPORTANT[/yellow bold]"
-            
+
         console.print(f"[green]Note {note_id} added successfully!{importance_str}[/green]")
     except ValidationException as e:
         console.print(f"[red]{e.message}[/red]")
@@ -212,7 +207,9 @@ def add(
 @app.command()
 def list(
     limit: int = 10,
-    important_only: bool = typer.Option(False, "--important", "-i", help="Show only important notes"),
+    important_only: bool = typer.Option(
+        False, "--important", "-i", help="Show only important notes"
+    ),
     critical_only: bool = typer.Option(False, "--critical", "-c", help="Show only critical notes"),
 ) -> None:
     """List recent notes."""
@@ -223,12 +220,12 @@ def list(
     # Build query based on filters
     query = "SELECT id, content, tags, created_at, importance FROM notes"
     params: tuple = ()
-    
+
     if critical_only:
         query += " WHERE importance = 2"
     elif important_only:
         query += " WHERE importance >= 1"
-    
+
     query += " ORDER BY importance DESC, created_at DESC LIMIT ?"
     params = (limit,)
 
@@ -239,7 +236,7 @@ def list(
         title = "Critical Notes"
     elif important_only:
         title = "Important Notes"
-        
+
     table = Table(title=title)
     table.add_column("ID", style="cyan")
     table.add_column("!", style="bold", width=3)  # Importance indicator
@@ -250,7 +247,7 @@ def list(
     for row in cur:
         content = row[1][:50] + "..." if len(row[1]) > 50 else row[1]
         importance = row[4] if len(row) > 4 else 0
-        
+
         # Importance indicator
         if importance == 2:
             indicator = "[red]⚠[/red]"
@@ -258,7 +255,7 @@ def list(
             indicator = "[yellow]★[/yellow]"
         else:
             indicator = ""
-            
+
         table.add_row(str(row[0]), indicator, content, row[2] or "-", row[3])
 
     console.print(table)
@@ -268,13 +265,15 @@ def list(
 def search(
     query: str,
     json_output: bool = typer.Option(False, "--json", help="Output complete notes as JSON"),
-    important_only: bool = typer.Option(False, "--important", "-i", help="Show only important notes"),
+    important_only: bool = typer.Option(
+        False, "--important", "-i", help="Show only important notes"
+    ),
     critical_only: bool = typer.Option(False, "--critical", "-c", help="Show only critical notes"),
 ) -> None:
     """Search notes using full-text search."""
     try:
         results = search_notes(query)
-        
+
         # Filter by importance if requested
         if critical_only:
             results = [r for r in results if r.get("importance", 0) == 2]
@@ -302,14 +301,14 @@ def search(
                     note["content"][:50] + "..." if len(note["content"]) > 50 else note["content"]
                 )
                 importance = note.get("importance", 0)
-                
+
                 if importance == 2:
                     indicator = "[red]⚠[/red]"
                 elif importance == 1:
                     indicator = "[yellow]★[/yellow]"
                 else:
                     indicator = ""
-                
+
                 table.add_row(str(note["id"]), indicator, content, note["tags"] or "-")
 
             console.print(table)
@@ -380,10 +379,10 @@ def mark(
 
     _ctx.conn.execute(
         "UPDATE notes SET importance = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        (importance, note_id)
+        (importance, note_id),
     )
     _ctx.conn.commit()
-    
+
     console.print(f"[green]Note {note_id} marked as {label}[/green]")
 
 

@@ -51,7 +51,8 @@ def temp_agent_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Create a temporary agent folder and set environment variable."""
     agent_folder = tmp_path / ".agent"
     agent_folder.mkdir()
-    monkeypatch.setenv("GLORIOUS_AGENT_FOLDER", str(agent_folder))
+    # Use GLORIOUS_DATA_FOLDER which is what config actually reads
+    monkeypatch.setenv("GLORIOUS_DATA_FOLDER", str(agent_folder))
 
     # Reload config to pick up new environment variable
     import glorious_agents.config as config_module
