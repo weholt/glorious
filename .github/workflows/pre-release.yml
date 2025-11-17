@@ -70,6 +70,8 @@ jobs:
       - name: Initialize agent (Windows)
         if: ${{ runner.os == 'Windows' }}
         shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
         run: |
           test-env/Scripts/agent init
 
@@ -83,6 +85,8 @@ jobs:
       - name: Test CLI works (Windows)
         if: ${{ runner.os == 'Windows' }}
         shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
         run: |
           test-env/Scripts/agent --help
           test-env/Scripts/agent version
