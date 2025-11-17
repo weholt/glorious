@@ -30,6 +30,9 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Initiate environment
+        run: uv venv
+
       - name: Install dependencies
         run: uv pip install .[dev]
 
@@ -76,6 +79,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Initiate environment
+        run: uv venv
+
       - name: Install dependencies
         run: uv pip install .[dev]
 
@@ -104,6 +110,9 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
+
+      - name: Initiate environment
+        run: uv venv
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -135,6 +144,9 @@ jobs:
           version: "latest"
           enable-cache: true
 
+      - name: Initiate environment
+        run: uv venv
+        
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -158,6 +170,9 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
+
+      - name: Initiate environment
+        run: uv venv
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -208,3 +223,4 @@ jobs:
             exit 1
           fi
           echo "✅ All CI checks passed!"
+
