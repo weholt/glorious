@@ -77,13 +77,13 @@ jobs:
         run: uv pip install .[dev]
 
       - name: Check formatting
-        run: ruff format --check .
+        run: uv run ruff format --check .
 
       - name: Run linter
-        run: ruff check .
+        run: uv run ruff check .
 
       - name: Type checking
-        run: mypy src
+        run: uv run mypy src
 
   build:
     name: Build Distribution
