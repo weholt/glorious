@@ -37,16 +37,16 @@ jobs:
         run: uv pip install .[dev]
 
       - name: Check formatting
-        run: ruff format --check .
+        run: uv run ruff format --check .
 
       - name: Run linter
-        run: ruff check .
+        run: uv run ruff check .
 
       - name: Type checking
-        run: mypy src
+        run: uv run mypy src
 
       - name: Security scan
-        run: bandit -r src -f json -o bandit-report.json || true
+        run: uv run bandit -r src -f json -o bandit-report.json || true
 
       - name: Upload security report
         uses: actions/upload-artifact@v4
@@ -223,5 +223,6 @@ jobs:
             exit 1
           fi
           echo "✅ All CI checks passed!"
+
 
 
