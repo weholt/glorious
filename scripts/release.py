@@ -28,19 +28,19 @@ def get_current_version() -> str:
     if not pyproject.exists():
         print("❌ pyproject.toml not found")
         sys.exit(1)
-    
+
     content = pyproject.read_text()
     match = re.search(r'version = "([^"]+)"', content)
     if not match:
         print("❌ Could not find version in pyproject.toml")
         sys.exit(1)
-    
+
     return match.group(1)
 
 
 def validate_version(version: str) -> bool:
     """Validate semantic version format."""
-    pattern = r'^\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?$'
+    pattern = r"^\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?$"
     return bool(re.match(pattern, version))
 
 
@@ -54,7 +54,7 @@ def run_tests() -> bool:
 def run_quality_checks() -> bool:
     """Run code quality checks."""
     print("\n🔍 Running quality checks...")
-    
+
     # Format check
     print("  • Checking code formatting...")
     result = run_command(["uv", "run", "ruff", "format", "--check", "."], check=False)
@@ -62,7 +62,7 @@ def run_quality_checks() -> bool:
         print("    ❌ Format check failed")
         return False
     print("    ✓ Format check passed")
-    
+
     # Linting
     print("  • Running linter...")
     result = run_command(["uv", "run", "ruff", "check", "."], check=False)
@@ -70,7 +70,7 @@ def run_quality_checks() -> bool:
         print("    ❌ Linting failed")
         return False
     print("    ✓ Linting passed")
-    
+
     # Type checking
     print("  • Running type checker...")
     result = run_command(["uv", "run", "mypy", "src"], check=False)
@@ -78,91 +78,82 @@ def run_quality_checks() -> bool:
         print("    ❌ Type checking failed")
         return False
     print("    ✓ Type checking passed")
-    
+
     return True
 
 
 def build_package() -> bool:
     """Build the distribution packages."""
     print("\n📦 Building package...")
-    
+
     # Clean previous builds
     for path in Path("dist").glob("*"):
         path.unlink()
-    
-    result = run_command(
-        ["uv", "tool", "run", "--from", "build", "pyproject-build"],
-        check=False
-    )
-    
+
+    result = run_command(["uv", "tool", "run", "--from", "build", "pyproject-build"], check=False)
+
     if result.returncode != 0:
         print("❌ Build failed")
         return False
-    
+
     # List built files
     print("\n  Built files:")
     for file in Path("dist").glob("*"):
         size = file.stat().st_size / 1024
         print(f"    • {file.name} ({size:.1f} KB)")
-    
+
     return True
 
 
 def verify_package() -> bool:
     """Verify the built package."""
     print("\n✅ Verifying package...")
-    
+
     # Check wheel contents
     wheel_files = list(Path("dist").glob("*.whl"))
     if not wheel_files:
         print("❌ No wheel file found")
         return False
-    
+
     wheel = wheel_files[0]
-    result = run_command(
-        ["python3", "-m", "zipfile", "-l", str(wheel)],
-        check=False
-    )
-    
+    result = run_command(["python3", "-m", "zipfile", "-l", str(wheel)], check=False)
+
     if "skills/" not in result.stdout:
         print("❌ Skills folder not found in package!")
         return False
-    
+
     print("  ✓ Skills folder included in package")
-    
+
     # Count skills
     skill_count = result.stdout.count("skill.json")
     print(f"  ✓ {skill_count} skills found in package")
-    
+
     return True
 
 
 def create_git_tag(version: str, dry_run: bool = False) -> bool:
     """Create a git tag for the release."""
     print(f"\n🏷️  Creating git tag v{version}...")
-    
+
     tag = f"v{version}"
-    
+
     # Check if tag already exists
     result = run_command(["git", "tag", "-l", tag], check=False)
     if result.stdout.strip():
         print(f"❌ Tag {tag} already exists")
         return False
-    
+
     if dry_run:
         print(f"  [DRY RUN] Would create tag: {tag}")
         return True
-    
+
     # Create tag
-    result = run_command(
-        ["git", "tag", "-a", tag, "-m", f"Release {version}"],
-        check=False
-    )
-    
+    result = run_command(["git", "tag", "-a", tag, "-m", f"Release {version}"], check=False)
+
     if result.returncode != 0:
         print(f"❌ Failed to create tag: {result.stderr}")
         return False
-    
+
     print(f"  ✓ Created tag {tag}")
     return True
 
@@ -172,10 +163,10 @@ def print_next_steps(version: str, dry_run: bool = False):
     print("\n" + "=" * 70)
     print("✅ Release preparation complete!")
     print("=" * 70)
-    
+
     if dry_run:
         print("\n⚠️  DRY RUN MODE - No changes were made")
-    
+
     print(f"\n📝 Next steps to publish v{version}:\n")
     print("1. Push the tag to GitHub:")
     print(f"   git push origin v{version}\n")
@@ -197,54 +188,43 @@ def main():
     """Main release workflow."""
     parser = argparse.ArgumentParser(
         description="Release automation for Glorious Agents",
-        epilog="Tip: Use scripts/bump_version.py to bump version before releasing"
+        epilog="Tip: Use scripts/bump_version.py to bump version before releasing",
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Run without making changes")
+    parser.add_argument(
+        "--skip-tests", action="store_true", help="Skip running tests (not recommended)"
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Run without making changes"
-    )
-    parser.add_argument(
-        "--skip-tests",
-        action="store_true",
-        help="Skip running tests (not recommended)"
-    )
-    parser.add_argument(
-        "--skip-quality",
-        action="store_true",
-        help="Skip quality checks (not recommended)"
+        "--skip-quality", action="store_true", help="Skip quality checks (not recommended)"
     )
     parser.add_argument(
         "--bump",
         choices=["major", "minor", "patch"],
-        help="Automatically bump version before release"
+        help="Automatically bump version before release",
     )
-    
+
     args = parser.parse_args()
-    
+
     print("🚀 Starting release process for Glorious Agents\n")
-    
+
     # Bump version if requested
     if args.bump:
         print(f"🔢 Bumping {args.bump} version...\n")
         bump_script = Path(__file__).parent / "bump_version.py"
-        result = run_command(
-            ["python3", str(bump_script), args.bump],
-            check=False
-        )
+        result = run_command(["python3", str(bump_script), args.bump], check=False)
         if result.returncode != 0:
             print("❌ Version bump failed!")
             sys.exit(1)
         print("\n")
-    
+
     # Get version
     version = get_current_version()
     print(f"📌 Current version: {version}")
-    
+
     if not validate_version(version):
         print("❌ Invalid version format. Use semver: X.Y.Z")
         sys.exit(1)
-    
+
     # Run tests
     if not args.skip_tests:
         if not run_tests():
@@ -253,7 +233,7 @@ def main():
         print("✓ Tests passed")
     else:
         print("⚠️  Skipping tests")
-    
+
     # Run quality checks
     if not args.skip_quality:
         if not run_quality_checks():
@@ -262,24 +242,24 @@ def main():
         print("✓ Quality checks passed")
     else:
         print("⚠️  Skipping quality checks")
-    
+
     # Build package
     if not build_package():
         print("\n❌ Build failed!")
         sys.exit(1)
     print("✓ Package built")
-    
+
     # Verify package
     if not verify_package():
         print("\n❌ Package verification failed!")
         sys.exit(1)
     print("✓ Package verified")
-    
+
     # Create git tag
     if not create_git_tag(version, dry_run=args.dry_run):
         print("\n❌ Failed to create git tag")
         sys.exit(1)
-    
+
     # Print next steps
     print_next_steps(version, dry_run=args.dry_run)
 

@@ -119,7 +119,7 @@ class TestSearchAllSkills:
         """Test searching across multiple skills."""
         ctx = MockContext()
         results = search_all_skills(ctx, "test query")
-        
+
         # Should get results from both skills, sorted by score
         assert len(results) == 3
         assert results[0].skill == "tasks"
@@ -133,7 +133,7 @@ class TestSearchAllSkills:
         """Test limiting results per skill."""
         ctx = MockContext()
         results = search_all_skills(ctx, "test", limit_per_skill=1)
-        
+
         # Should get max 1 result per skill
         assert len(results) == 2  # One from notes, one from tasks
 
@@ -141,7 +141,7 @@ class TestSearchAllSkills:
         """Test total result limit."""
         ctx = MockContext()
         results = search_all_skills(ctx, "test", total_limit=2)
-        
+
         # Should get max 2 total results
         assert len(results) == 2
 
@@ -150,7 +150,7 @@ class TestSearchAllSkills:
         ctx = MockContext()
         # Should not raise exception despite failing skill
         results = search_all_skills(ctx, "test")
-        
+
         # Should still get results from working skills
         assert len(results) == 3
         assert all(r.skill != "failing" for r in results)
@@ -159,16 +159,17 @@ class TestSearchAllSkills:
         """Test that non-searchable attributes are skipped."""
         ctx = MockContext()
         results = search_all_skills(ctx, "test")
-        
+
         # Should only get results from searchable skills
         assert all(hasattr(getattr(ctx, r.skill), "search") for r in results)
 
     def test_search_empty_context(self):
         """Test searching with empty context."""
+
         class EmptyContext:
             pass
-        
+
         ctx = EmptyContext()
         results = search_all_skills(ctx, "test")
-        
+
         assert results == []
