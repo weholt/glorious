@@ -120,7 +120,6 @@ class TestDiscoverLocalSkills:
             assert "skill1" in skills
             assert "skill2" in skills
 
-
     def test_discover_skill_with_requires_dict(self):
         """Test discovering a skill with requires as dict."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -267,7 +266,10 @@ class TestDiscoverEntrypointSkills:
 
             with (
                 patch("glorious_agents.core.loader.discovery.entry_points", return_value=[mock_ep]),
-                patch("glorious_agents.core.loader.discovery.importlib.import_module", return_value=mock_module),
+                patch(
+                    "glorious_agents.core.loader.discovery.importlib.import_module",
+                    return_value=mock_module,
+                ),
             ):
                 skills = discover_entrypoint_skills()
 
@@ -276,8 +278,6 @@ class TestDiscoverEntrypointSkills:
                 assert skills["test_skill"]["description"] == "From manifest"
                 # Entry point value should be preserved
                 assert skills["test_skill"]["entry_point"] == "test_module.skill:app"
-
-
 
     def test_discover_entrypoint_skills_validation_error(self):
         """Test discovering entry point skill with validation errors."""
@@ -290,7 +290,10 @@ class TestDiscoverEntrypointSkills:
         # Create mock entry point that will fail validation
         with (
             patch("glorious_agents.core.loader.discovery.entry_points", return_value=[mock_ep]),
-            patch("glorious_agents.core.loader.discovery.SkillManifest", side_effect=ValueError("Invalid")),
+            patch(
+                "glorious_agents.core.loader.discovery.SkillManifest",
+                side_effect=ValueError("Invalid"),
+            ),
         ):
             skills = discover_entrypoint_skills()
 
@@ -313,17 +316,16 @@ class TestDiscoverEntrypointSkills:
             manifest = {
                 "version": "1.0.0",
                 "description": "Test",
-                "config_schema": {
-                    "properties": {
-                        "api_key": {"type": "string"}
-                    }
-                },
+                "config_schema": {"properties": {"api_key": {"type": "string"}}},
             }
             (module_dir / "skill.json").write_text(json.dumps(manifest))
 
             with (
                 patch("glorious_agents.core.loader.discovery.entry_points", return_value=[mock_ep]),
-                patch("glorious_agents.core.loader.discovery.importlib.import_module", return_value=mock_module),
+                patch(
+                    "glorious_agents.core.loader.discovery.importlib.import_module",
+                    return_value=mock_module,
+                ),
             ):
                 skills = discover_entrypoint_skills()
 

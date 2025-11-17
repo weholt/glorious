@@ -333,7 +333,8 @@ def test_migrate_legacy_databases_master_db(temp_data_folder: Path, capsys) -> N
     cur = conn.execute("SELECT code FROM core_agents WHERE code='test1'")
     assert cur.fetchone() is not None
     conn.close()
-    assert "Migrated" in captured.out and "agents from master.db" in captured.out
+    assert "Migrated" in captured.out
+    assert "agents from master.db" in captured.out
 
 
 @pytest.mark.logic
@@ -354,9 +355,6 @@ def test_migrate_legacy_databases_error_handling(temp_data_folder: Path, capsys)
 
     # Should handle error gracefully
     assert "Warning" in captured.out or "Could not migrate" in captured.out
-
-
-
 
 
 @pytest.mark.logic

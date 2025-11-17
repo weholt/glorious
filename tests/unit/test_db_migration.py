@@ -14,7 +14,9 @@ from glorious_agents.core.db_migration import (
 
 
 @pytest.mark.logic
-def test_migrate_from_legacy_no_legacy_databases(temp_data_folder: Path, tmp_path: Path, capsys) -> None:
+def test_migrate_from_legacy_no_legacy_databases(
+    temp_data_folder: Path, tmp_path: Path, capsys
+) -> None:
     """Test migration when no legacy databases exist."""
     # Mock Path.home() to return a path with no legacy databases
     with patch("glorious_agents.core.db_migration.Path.home", return_value=tmp_path / "empty"):
@@ -61,10 +63,9 @@ def test_migrate_from_legacy_agent_db(temp_data_folder: Path, tmp_path: Path, ca
 @pytest.mark.logic
 def test_migrate_from_legacy_master_db(temp_data_folder: Path, tmp_path: Path, capsys) -> None:
     """Test migration of legacy master.db."""
-    from glorious_agents.core.db import get_agent_db_path, get_connection
+    from glorious_agents.core.db import get_connection
 
     # Ensure unified db exists first
-    unified_db_path = get_agent_db_path()
     conn = get_connection()
     conn.close()
 
@@ -170,7 +171,10 @@ def test_migrate_from_legacy_master_db_error(
     captured = capsys.readouterr()
     # Should complete without crashing - the error is caught and logged
     # Since no agent.db exists and master.db has wrong schema, it should say no databases found
-    assert "legacy master database" in captured.out.lower() or "no legacy databases" in captured.out.lower()
+    assert (
+        "legacy master database" in captured.out.lower()
+        or "no legacy databases" in captured.out.lower()
+    )
 
 
 @pytest.mark.logic
@@ -261,9 +265,7 @@ def test_migrate_from_legacy_multiple_agents(
         ("agent3", "Agent Three", "role3", "proj3"),
     ]
     for agent in agents:
-        conn.execute(
-            "INSERT INTO agents (code, name, role, project_id) VALUES (?, ?, ?, ?)", agent
-        )
+        conn.execute("INSERT INTO agents (code, name, role, project_id) VALUES (?, ?, ?, ?)", agent)
     conn.commit()
     conn.close()
 
