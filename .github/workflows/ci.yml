@@ -168,7 +168,7 @@ jobs:
         run: uv run agent init
 
       - name: Run integration tests
-        run: uv run pytest -m integration --verbose
+        run: uv run pytest -m integration --verbose --no-cov
 
   pre-commit:
     name: Pre-commit Hooks
