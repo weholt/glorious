@@ -111,13 +111,13 @@ jobs:
         with:
           version: "latest"
 
-      - name: Initiate environment
-        run: uv venv
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Initiate environment
+        run: uv venv
 
       - name: Build package
         run: uv build
@@ -144,13 +144,13 @@ jobs:
           version: "latest"
           enable-cache: true
 
-      - name: Initiate environment
-        run: uv venv
-        
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Initiate environment
+        run: uv venv
 
       - name: Install dependencies
         run: uv pip install .[dev]
@@ -171,19 +171,19 @@ jobs:
         with:
           version: "latest"
 
-      - name: Initiate environment
-        run: uv venv
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Initiate environment
+        run: uv venv
+
       - name: Install dependencies
         run: uv pip install .[dev]
 
       - name: Run pre-commit
-        run: pre-commit run --all-files --show-diff-on-failure
+        run: uv run pre-commit run --all-files --show-diff-on-failure
 
   docs:
     name: Documentation
