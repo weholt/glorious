@@ -73,9 +73,23 @@ def init_skill_schema(skill_name: str, schema_path: Path) -> None:
     # Check if skill has migrations directory
     migrations_dir = schema_path.parent / "migrations"
     if migrations_dir.exists():
-        # Use migration system
-        from glorious_agents.core.migrations import run_migrations
+        # Use migration system: first apply base schema, then migrations
+        from glorious_agents.core.migrations import get_current_version, init_migrations_table, run_migrations
 
+        # Initialize migrations table first
+        init_migrations_table()
+        
+        # Only apply base schema if no migrations have been run yet
+        if get_current_version(skill_name) == 0:
+            conn = get_connection()
+            try:
+                schema_sql = schema_path.read_text()
+                conn.executescript(schema_sql)
+                conn.commit()
+            finally:
+                conn.close()
+
+        # Then apply any pending migrations
         run_migrations(skill_name, migrations_dir)
     else:
         # Legacy: execute schema.sql directly

@@ -18,7 +18,8 @@ app = typer.Typer(
     help="Glorious Agents - Modular skill-based agent framework",
     no_args_is_help=True,
 )
-console = Console()
+# Use legacy_windows=False to avoid cp1252 encoding issues on Windows
+console = Console(legacy_windows=False)
 
 
 def init_app() -> None:
@@ -156,7 +157,7 @@ def _generate_agent_tools_md(skills: Any, registry: Any) -> None:
         content.extend(_generate_skill_documentation(skill, registry))
 
     agent_tools_path.write_text("\n".join(content))
-    console.print(f"[green]✓ Generated {agent_tools_path} with {len(skills)} skills[/green]")
+    console.print(f"[green]Generated {agent_tools_path} with {len(skills)} skills[/green]")
 
 
 def _update_agents_md() -> None:

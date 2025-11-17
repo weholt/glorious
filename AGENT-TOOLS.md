@@ -10,27 +10,70 @@ This document describes all available skills/tools in this agent workspace.
 
 ## Overview
 
-The notes skill allows you to store and search persistent text notes.
+The notes skill allows you to store and search persistent text notes with importance levels for prioritization.
+
+## Importance Levels
+
+Notes can be marked with three importance levels:
+- **Normal** (default): Regular notes
+- **Important** (★): Important topics that need attention
+- **Critical** (⚠): Critical information that must not be missed
 
 ## Commands
 
 ### Add a Note
 
 ```powershell
+# Add a normal note
 uv run agent notes add "Your note content here" --tags "tag1,tag2"
+
+# Add an important note
+uv run agent notes add "Key architectural decision" --important
+
+# Add a critical note
+uv run agent notes add "Security vulnerability found" --critical
 ```
 
 ### List Recent Notes
 
 ```powershell
+# List all recent notes
 uv run agent notes list
+
+# List only important notes (important + critical)
+uv run agent notes list --important
+
+# List only critical notes
+uv run agent notes list --critical
+
+# Limit number of results
 uv run agent notes list --limit 20
 ```
 
 ### Search Notes
 
 ```powershell
+# Search all notes
 uv run agent notes search "search query"
+
+# Search only important notes
+uv run agent notes search "query" --important
+
+# Search only critical notes
+uv run agent notes search "query" --critical
+```
+
+### Update Note Importance
+
+```powershell
+# Mark a note as important
+uv run agent notes mark 123 --important
+
+# Mark a note as critical
+uv run agent notes mark 123 --critical
+
+# Mark a note as normal (remove importance)
+uv run agent notes mark 123 --normal
 ```
 
 ### Get a Specific Note
@@ -48,21 +91,48 @@ uv run agent notes delete 123
 ## Examples
 
 ```powershell
-# Add a note
-uv run agent notes add "Remember to refactor the parser" --tags "todo,refactor"
+# Add a critical security note
+uv run agent notes add "SQL injection vulnerability in user input" --critical --tags "security,urgent"
 
-# Search for refactor notes
-uv run agent notes search "refactor"
+# Add an important architecture decision
+uv run agent notes add "Decided to use event-driven architecture" --important --tags "architecture,decision"
 
-# List recent notes
-uv run agent notes list
+# Search for security-related important notes
+uv run agent notes search "security" --important
+
+# List all critical notes
+uv run agent notes list --critical
+
+# Upgrade a note to critical
+uv run agent notes mark 42 --critical
 ```
 
 ## Tips
 
-- Use tags to organize notes
+- Use **critical** for information that must be addressed immediately (security issues, blockers)
+- Use **important** for key decisions, learnings, and topics that need attention
+- Important/critical notes appear first in search results and listings
+- Use tags to organize notes by category
 - Full-text search supports SQLite FTS5 query syntax
 - Notes are stored in the agent's shared database
+- Universal search automatically prioritizes important notes
+
+---
+
+## sandbox
+
+**Version**: 0.1.0
+
+**Description**: Docker-based isolated execution
+
+**Commands**:
+
+- `run`: Run code in isolated Docker container.
+- `list`: List sandbox containers.
+- `logs`: Get logs from a sandbox.
+- `cleanup`: Clean up stopped containers.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
 
 ---
 
@@ -109,5 +179,455 @@ uv run agent notes list
 - `bulk-label-remove`: Remove labels from multiple issues (by IDs or filters).
 
 *Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## vacuum
+
+**Version**: 0.1.0
+
+**Description**: Knowledge distillation and optimization
+
+**Commands**:
+
+- `run`: Run vacuum operation.
+- `history`: Show vacuum operation history.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## docs
+
+**Version**: 0.1.0
+
+**Description**: Structured documentation management with epic linking
+
+**Commands**:
+
+- `create`: Create a new document.
+- `get`: Get a document by ID.
+- `update`: Update a document.
+- `list`: List all documents.
+- `search_docs`: Search documents by content.
+- `export_doc`: Export document to markdown file.
+- `versions`: List document version history.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## temporal
+
+**Version**: 0.1.0
+
+**Description**: Time-aware filtering across skills
+
+**Commands**:
+
+- `parse`: Parse time specification.
+- `filter_since`: Show filter query for --since flag.
+- `examples`: Show temporal filter examples.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## cache
+
+**Version**: 0.1.0
+
+**Description**: Short-term ephemeral storage with TTL support
+
+**Commands**:
+
+- `set`: Set a cache entry with optional TTL.
+- `get`: Get a cache entry.
+- `list`: List all cache entries.
+- `prune`: Remove expired or all cache entries.
+- `warmup`: Warmup cache with project-specific data.
+- `delete`: Delete a cache entry.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## prompts
+
+**Version**: 0.1.0
+
+**Description**: Prompt template management and versioning
+
+**Commands**:
+
+- `register`: Register a new prompt template.
+- `list`: List all prompt templates.
+- `render`: Render a prompt template with variables.
+- `delete`: Delete all versions of a prompt.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## planner
+
+**Version**: 0.1.0
+
+**Description**: Action queue management with priorities and state machine
+
+**Commands**:
+
+- `add`: Add a task to the queue.
+- `next`: Get the next task to work on.
+- `update`: Update task status.
+- `list`: List tasks in the queue.
+- `sync`: Sync tasks from issue tracker.
+- `delete`: Delete a task from the queue.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## migrate
+
+# Migrate Skill Usage
+
+Export, import, backup and restore databases for portability and safety.
+
+## Commands
+
+### export
+Export database to JSON files:
+```bash
+agent migrate export ./export-dir
+agent migrate export ./export-dir --db /path/to/custom.db
+```
+
+Creates directory with:
+- `schema.sql` - Table schemas
+- `{table}.json` - Table data
+- `metadata.json` - Export info
+
+### import
+Import database from JSON files:
+```bash
+agent migrate import ./export-dir
+agent migrate import ./export-dir --db /path/to/custom.db
+agent migrate import ./export-dir --no-backup  # Skip backup
+```
+
+Automatically backs up existing database before import.
+
+### backup
+Create database backup:
+```bash
+agent migrate backup ./backup.db
+agent migrate backup ./backup.db --db /path/to/custom.db
+```
+
+### restore
+Restore from backup:
+```bash
+agent migrate restore ./backup.db
+agent migrate restore ./backup.db --db /path/to/custom.db
+```
+
+Automatically backs up current database before restore.
+
+### info
+Show database or export information:
+```bash
+agent migrate info ./export-dir
+agent migrate info /path/to/database.db
+```
+
+## Use Cases
+
+### Regular Backups
+```bash
+# Daily backup
+agent migrate backup ./backups/daily-$(date +%Y%m%d).db
+```
+
+### Migration Between Environments
+```bash
+# Export from dev
+agent migrate export ./migration --db ~/.glorious/dev.db
+
+# Import to prod
+agent migrate import ./migration --db ~/.glorious/prod.db
+```
+
+### Data Sharing
+```bash
+# Export specific tables
+agent migrate export ./shared-data
+
+# Edit JSON files as needed
+
+# Import elsewhere
+agent migrate import ./shared-data
+```
+
+## JSON Format
+
+Each table is exported as:
+```json
+[
+  {"id": 1, "name": "value", ...},
+  {"id": 2, "name": "value", ...}
+]
+```
+
+Easy to edit, version control, and inspect.
+
+---
+
+## feedback
+
+**Version**: 0.1.0
+
+**Description**: Action outcome tracking and learning
+
+**Commands**:
+
+- `record`: Record action feedback.
+- `list`: List recent feedback.
+- `stats`: Show feedback statistics.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## automations
+
+# Automations Skill Usage
+
+Create declarative event-driven automations that respond to system events.
+
+## Commands
+
+### create
+Create a new automation:
+```bash
+agent automations create "Log notes" "note.created" '[{"type":"log","message":"Note created"}]'
+agent automations create "Alert" "issue.created" '[{"type":"publish","topic":"alert","data":{}}]' --condition 'data.get("priority") == 1'
+```
+
+### create-from-file
+Create from YAML/JSON file:
+```bash
+agent automations create-from-file automation.yaml
+```
+
+Example YAML:
+```yaml
+name: "Log new issues"
+description: "Log when issues are created"
+trigger_topic: "issue.created"
+trigger_condition: 'data.get("priority") == 1'
+actions:
+  - type: log
+    message: "High priority issue created!"
+  - type: publish
+    topic: "notifications.high"
+    data: {}
+```
+
+### list
+List all automations:
+```bash
+agent automations list
+agent automations list --enabled
+agent automations list --json
+```
+
+### show
+Show automation details:
+```bash
+agent automations show auto-abc123
+agent automations show auto-abc123 --json
+```
+
+### enable/disable
+Control automation state:
+```bash
+agent automations enable auto-abc123
+agent automations disable auto-abc123
+```
+
+### delete
+Remove automation:
+```bash
+agent automations delete auto-abc123
+```
+
+### executions
+View execution history:
+```bash
+agent automations executions
+agent automations executions --automation auto-abc123
+agent automations executions --limit 50
+```
+
+## Action Types
+
+### log
+Print a message:
+```json
+{"type": "log", "message": "Your message here"}
+```
+
+### publish
+Publish an event:
+```json
+{"type": "publish", "topic": "event.topic", "data": {"key": "value"}}
+```
+
+## Conditions
+
+Use Python expressions to filter events:
+```python
+data.get("priority") == 1
+data.get("status") == "critical"
+data.get("count", 0) > 10
+```
+
+The `data` variable contains the event payload.
+
+---
+
+## atlas
+
+**Version**: 0.1.0
+
+**Description**: Python codebase structure and metrics analyzer
+
+**Commands**:
+
+- `scan`: Scan a Python codebase and generate structure index.
+- `rank`: Rank files by refactor priority.
+- `check`: Check code against quality rules.
+- `agent`: Query codebase for agent integration (outputs JSON).
+- `watch`: Watch directory for Python file changes and update index.
+- `watch-status`: Check watch daemon status and show recent activity.
+- `stop-watch`: Stop the watch daemon.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## linker
+
+**Version**: 0.1.0
+
+**Description**: Semantic cross-references between issues, notes, and files
+
+**Commands**:
+
+- `add`: Add a link between two entities.
+- `list`: List all links.
+- `context`: Get context bundle for an entity.
+- `rebuild`: Rebuild links by discovering them from existing data.
+- `delete`: Delete a link.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## telemetry
+
+**Version**: 0.1.0
+
+**Description**: Agent action logging and observability
+
+**Commands**:
+
+- `log`: Log a telemetry event.
+- `stats`: Show event statistics.
+- `list`: List recent events.
+- `export`: Export telemetry data.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## orchestrator
+
+**Version**: 0.1.0
+
+**Description**: Intent routing and multi-tool workflows
+
+**Commands**:
+
+- `run`: Execute a workflow from natural language intent.
+- `list`: List workflow history.
+- `status`: Check workflow status.
+
+*Note: This skill is missing usage.md documentation. Please create one.*
+
+---
+
+## ai
+
+# AI Skill Usage
+
+Generate LLM completions, create embeddings, and perform semantic search.
+
+## Commands
+
+### complete
+Generate LLM completion from a prompt:
+```bash
+agent ai complete "Explain quantum computing"
+agent ai complete "Write a poem" --model gpt-4 --provider openai
+agent ai complete "Analyze this code" --max-tokens 2000
+```
+
+### embed
+Generate embeddings for content:
+```bash
+agent ai embed "Some text to embed"
+agent ai embed "Document content" --model text-embedding-ada-002
+```
+
+### semantic
+Semantic search using embeddings:
+```bash
+agent ai semantic "quantum physics" --top-k 5
+agent ai semantic "machine learning" --model text-embedding-ada-002
+```
+
+### history
+View completion history:
+```bash
+agent ai history --limit 20
+agent ai history --json
+```
+
+## Environment Setup
+
+Set API keys:
+```bash
+export OPENAI_API_KEY="your-key-here"
+export ANTHROPIC_API_KEY="your-key-here"
+```
+
+## JSON Output
+
+All commands support `--json` flag for programmatic use:
+```bash
+agent ai complete "Hello" --json
+agent ai semantic "test" --json
+agent ai history --json
+```
+
+## Universal Search
+
+The AI skill integrates with universal search:
+```bash
+# Search across all skills (includes AI completions)
+agent search "LLM completion"
+```
 
 ---
