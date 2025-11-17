@@ -40,7 +40,7 @@ def skill_context(temp_db: sqlite3.Connection, event_bus: EventBus) -> SkillCont
 
 
 @pytest.fixture(autouse=True)
-def reset_runtime() -> Generator[None]:
+def _reset_runtime() -> Generator[None]:
     """Reset runtime context between tests."""
     yield
     reset_ctx()
