@@ -111,9 +111,9 @@ class TestSkillRegistry:
             origin="local",
         )
         app = object()
-        
+
         self.registry.add(manifest, app)
-        
+
         assert self.registry.get_manifest("test") == manifest
         assert self.registry.get_app("test") == app
 
@@ -141,10 +141,10 @@ class TestSkillRegistry:
             entry_point="test2:app",
             origin="entrypoint",
         )
-        
+
         self.registry.add(manifest1, object())
         self.registry.add(manifest2, object())
-        
+
         all_manifests = self.registry.list_all()
         assert len(all_manifests) == 2
         assert manifest1 in all_manifests
@@ -160,9 +160,9 @@ class TestSkillRegistry:
             origin="local",
         )
         self.registry.add(manifest, object())
-        
+
         self.registry.clear()
-        
+
         assert self.registry.list_all() == []
         assert self.registry.get_manifest("test") is None
         assert self.registry.get_app("test") is None
@@ -171,5 +171,5 @@ class TestSkillRegistry:
         """Test that get_registry returns a singleton."""
         registry1 = get_registry()
         registry2 = get_registry()
-        
+
         assert registry1 is registry2

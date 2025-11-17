@@ -33,7 +33,7 @@ class TestDiscoverLocalSkills:
             skills_dir = Path(tmpdir)
             skill_dir = skills_dir / "test_skill"
             skill_dir.mkdir()
-            
+
             skills = discover_local_skills(skills_dir)
             assert skills == {}
 
@@ -43,7 +43,7 @@ class TestDiscoverLocalSkills:
             skills_dir = Path(tmpdir)
             skill_dir = skills_dir / "test_skill"
             skill_dir.mkdir()
-            
+
             manifest = {
                 "name": "test_skill",
                 "version": "1.0.0",
@@ -51,9 +51,9 @@ class TestDiscoverLocalSkills:
                 "entry_point": "test_skill.skill:app",
             }
             (skill_dir / "skill.json").write_text(json.dumps(manifest))
-            
+
             skills = discover_local_skills(skills_dir)
-            
+
             assert "test_skill" in skills
             assert skills["test_skill"]["name"] == "test_skill"
             assert skills["test_skill"]["_origin"] == "local"
@@ -64,9 +64,9 @@ class TestDiscoverLocalSkills:
             skills_dir = Path(tmpdir)
             skill_dir = skills_dir / "bad_skill"
             skill_dir.mkdir()
-            
+
             (skill_dir / "skill.json").write_text("not json")
-            
+
             skills = discover_local_skills(skills_dir)
             assert skills == {}
 
@@ -76,13 +76,13 @@ class TestDiscoverLocalSkills:
             skills_dir = Path(tmpdir)
             skill_dir = skills_dir / "incomplete_skill"
             skill_dir.mkdir()
-            
+
             manifest = {
                 "name": "incomplete_skill",
                 # Missing version, description, entry_point
             }
             (skill_dir / "skill.json").write_text(json.dumps(manifest))
-            
+
             skills = discover_local_skills(skills_dir)
             assert skills == {}
 
@@ -90,10 +90,10 @@ class TestDiscoverLocalSkills:
         """Test that files in skills directory are ignored."""
         with tempfile.TemporaryDirectory() as tmpdir:
             skills_dir = Path(tmpdir)
-            
+
             # Create a file (not a directory)
             (skills_dir / "not_a_skill.txt").write_text("test")
-            
+
             skills = discover_local_skills(skills_dir)
             assert skills == {}
 
@@ -101,7 +101,7 @@ class TestDiscoverLocalSkills:
         """Test discovering multiple skills."""
         with tempfile.TemporaryDirectory() as tmpdir:
             skills_dir = Path(tmpdir)
-            
+
             for i in range(3):
                 skill_dir = skills_dir / f"skill{i}"
                 skill_dir.mkdir()
@@ -112,9 +112,9 @@ class TestDiscoverLocalSkills:
                     "entry_point": f"skill{i}.skill:app",
                 }
                 (skill_dir / "skill.json").write_text(json.dumps(manifest))
-            
+
             skills = discover_local_skills(skills_dir)
-            
+
             assert len(skills) == 3
             assert "skill0" in skills
             assert "skill1" in skills
@@ -132,10 +132,10 @@ class TestDiscoverEntrypointSkills:
         """Test discovering entry point skills with default group."""
         # This will discover any installed entry points
         skills = discover_entrypoint_skills()
-        
+
         # Should return a dict (may be empty if no skills installed)
         assert isinstance(skills, dict)
-        
+
         # If skills are found, they should have required fields
         for skill_name, manifest in skills.items():
             assert "name" in manifest

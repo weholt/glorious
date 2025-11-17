@@ -34,7 +34,7 @@ def test_get_agent_db_path_custom(temp_agent_folder: Path) -> None:
     # Create active agent file
     active_file = temp_agent_folder / "active_agent"
     active_file.write_text("test-agent")
-    
+
     db_path = get_agent_db_path()
     assert db_path.parent.name == "test-agent"
     assert db_path.name == "agent.db"
@@ -44,12 +44,12 @@ def test_get_agent_db_path_custom(temp_agent_folder: Path) -> None:
 def test_get_connection_wal_mode(temp_agent_folder: Path) -> None:
     """Test that connection uses WAL mode."""
     conn = get_connection()
-    
+
     # Check journal mode
     cur = conn.execute("PRAGMA journal_mode;")
     mode = cur.fetchone()[0]
     assert mode.upper() == "WAL"
-    
+
     conn.close()
 
 
@@ -64,9 +64,9 @@ def test_init_skill_schema(temp_agent_folder: Path, tmp_path: Path) -> None:
             value TEXT
         );
     """)
-    
+
     init_skill_schema("test_skill", schema_file)
-    
+
     # Verify table exists
     conn = get_connection()
     cur = conn.execute("""
@@ -74,14 +74,14 @@ def test_init_skill_schema(temp_agent_folder: Path, tmp_path: Path) -> None:
         WHERE type='table' AND name='test_table'
     """)
     assert cur.fetchone() is not None
-    
+
     # Verify metadata table
     cur = conn.execute("""
         SELECT skill_name FROM _skill_schemas
         WHERE skill_name='test_skill'
     """)
     assert cur.fetchone() is not None
-    
+
     conn.close()
 
 
@@ -89,7 +89,7 @@ def test_init_skill_schema(temp_agent_folder: Path, tmp_path: Path) -> None:
 def test_init_skill_schema_nonexistent(temp_agent_folder: Path, tmp_path: Path) -> None:
     """Test init_skill_schema with nonexistent file."""
     nonexistent_file = tmp_path / "nonexistent.sql"
-    
+
     # Should not raise error
     init_skill_schema("test_skill", nonexistent_file)
 
@@ -98,11 +98,11 @@ def test_init_skill_schema_nonexistent(temp_agent_folder: Path, tmp_path: Path) 
 def test_get_connection_works(temp_agent_folder: Path) -> None:
     """Test that get_connection works."""
     conn = get_connection()
-    
+
     # Should be able to execute queries
     cursor = conn.execute("SELECT 1")
     assert cursor.fetchone()[0] == 1
-    
+
     conn.close()
 
 
@@ -110,13 +110,13 @@ def test_get_connection_works(temp_agent_folder: Path) -> None:
 def test_get_connection_creates_db_file(temp_agent_folder: Path) -> None:
     """Test that get_connection creates the database file."""
     db_path = get_agent_db_path()
-    
+
     # Get connection (creates file if needed)
     conn = get_connection()
-    
+
     # Verify database file exists
     assert db_path.exists()
-    
+
     conn.close()
 
 
@@ -124,11 +124,11 @@ def test_get_connection_creates_db_file(temp_agent_folder: Path) -> None:
 def test_get_connection_thread_safe(temp_agent_folder: Path) -> None:
     """Test that get_connection can be called with check_same_thread=False."""
     conn = get_connection(check_same_thread=False)
-    
+
     # Should be able to execute queries
     cursor = conn.execute("SELECT 1")
     assert cursor.fetchone()[0] == 1
-    
+
     conn.close()
 
 
@@ -142,11 +142,11 @@ def test_init_skill_schema_duplicate(temp_agent_folder: Path, tmp_path: Path) ->
             value TEXT
         );
     """)
-    
+
     # Initialize twice
     init_skill_schema("test_skill", schema_file)
     init_skill_schema("test_skill", schema_file)
-    
+
     # Should still work
     conn = get_connection()
     cur = conn.execute("""

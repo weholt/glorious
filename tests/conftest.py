@@ -17,12 +17,12 @@ def temp_db() -> Generator[sqlite3.Connection, None, None]:
     """Create a temporary database for testing."""
     fd, db_path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
-    
+
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys=ON;")
-    
+
     yield conn
-    
+
     conn.close()
     Path(db_path).unlink(missing_ok=True)
 
@@ -52,13 +52,15 @@ def temp_agent_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     agent_folder = tmp_path / ".agent"
     agent_folder.mkdir()
     monkeypatch.setenv("GLORIOUS_AGENT_FOLDER", str(agent_folder))
-    
+
     # Reload config to pick up new environment variable
     import glorious_agents.config as config_module
+
     config_module.config = config_module.Config()
-    
+
     # Also update the imported reference in db module
     import glorious_agents.core.db as db_module
+
     db_module.config = config_module.config
-    
+
     return agent_folder

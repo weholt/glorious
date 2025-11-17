@@ -18,7 +18,7 @@ class TestInitSchemas:
                 # No schema_file
             }
         }
-        
+
         # Should not raise error
         init_schemas(["skill1"], skills_data)
 
@@ -32,7 +32,7 @@ class TestInitSchemas:
                 # No _path
             }
         }
-        
+
         # Should log warning and skip
         init_schemas(["skill1"], skills_data)
 
@@ -41,7 +41,7 @@ class TestInitSchemas:
         with tempfile.TemporaryDirectory() as tmpdir:
             skill_path = Path(tmpdir) / "skill1"
             skill_path.mkdir()
-            
+
             skills_data = {
                 "skill1": {
                     "name": "skill1",
@@ -50,7 +50,7 @@ class TestInitSchemas:
                     "_path": skill_path,
                 }
             }
-            
+
             # Should log debug and skip
             init_schemas(["skill1"], skills_data)
 
@@ -59,10 +59,10 @@ class TestInitSchemas:
         with tempfile.TemporaryDirectory() as tmpdir:
             skill_path = Path(tmpdir) / "skill1"
             skill_path.mkdir()
-            
+
             schema_file = skill_path / "schema.sql"
             schema_file.write_text("CREATE TABLE test (id INTEGER PRIMARY KEY);")
-            
+
             skills_data = {
                 "skill1": {
                     "name": "skill1",
@@ -71,7 +71,7 @@ class TestInitSchemas:
                     "_path": skill_path,
                 }
             }
-            
+
             # Should execute without error
             init_schemas(["skill1"], skills_data)
 
@@ -79,11 +79,11 @@ class TestInitSchemas:
         """Test init_schemas with multiple skills."""
         with tempfile.TemporaryDirectory() as tmpdir:
             skills_data = {}
-            
+
             for i in range(3):
                 skill_path = Path(tmpdir) / f"skill{i}"
                 skill_path.mkdir()
-                
+
                 if i == 0:
                     # First skill has schema
                     schema_file = skill_path / "schema.sql"
@@ -99,6 +99,6 @@ class TestInitSchemas:
                         "name": f"skill{i}",
                         "_path": skill_path,
                     }
-            
+
             # Should handle mixed scenarios
             init_schemas(["skill0", "skill1", "skill2"], skills_data)

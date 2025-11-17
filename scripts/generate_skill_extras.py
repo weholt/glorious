@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate pyproject.toml extras for skills."""
+
 from pathlib import Path
 
 skills_dir = Path("src/glorious_agents/skills")

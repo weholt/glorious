@@ -89,7 +89,9 @@ class BuildRunner:
     def sync_dependencies(self) -> bool:
         """Sync project dependencies."""
         self.print_step("Syncing Dependencies")
-        success, output, error = self.run_command(["uv", "sync", "--all-extras"], "Sync dependencies")
+        success, output, error = self.run_command(
+            ["uv", "sync", "--all-extras"], "Sync dependencies"
+        )
         self.print_result(success, "Dependency Sync", output, error)
         return success
 
@@ -109,12 +111,12 @@ class BuildRunner:
             cmd.extend(["--check", str(src_path)])
 
         success_format, output_format, error_format = self.run_command(cmd, "ruff format")
-        
+
         check_cmd = ["uv", "run", "ruff", "check"]
         if self.fix:
             check_cmd.append("--fix")
         check_cmd.append(str(src_path))
-        
+
         success_check, output_check, error_check = self.run_command(check_cmd, "ruff check")
 
         self.print_result(success_format, "ruff format", output_format, error_format)
@@ -150,8 +152,7 @@ class BuildRunner:
             return False
 
         success, output, error = self.run_command(
-            ["uv", "run", "mypy", str(src_path)], 
-            f"mypy {src_path}"
+            ["uv", "run", "mypy", str(src_path)], f"mypy {src_path}"
         )
 
         self.print_result(success, f"mypy {src_path}", output, error)
@@ -210,6 +211,7 @@ class BuildRunner:
             coverage_xml = self.project_root / "coverage.xml"
             if coverage_xml.exists():
                 import xml.etree.ElementTree as ET
+
                 try:
                     tree = ET.parse(coverage_xml)
                     root = tree.getroot()
