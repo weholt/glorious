@@ -42,6 +42,9 @@ jobs:
       - name: Install dependencies
         run: uv pip install .[dev]
 
+      - name: Initialize agent
+        run: uv run agent init
+
       - name: Run tests
         run: uv run pytest --cov --cov-report=xml --cov-fail-under=70
 
@@ -184,6 +187,10 @@ jobs:
       - name: Install from TestPyPI
         run: |
           pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ glorious-agents
+
+      - name: Initialize agent
+        run: |
+          agent init
 
       - name: Verify installation
         run: |

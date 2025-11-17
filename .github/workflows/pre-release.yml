@@ -61,6 +61,16 @@ jobs:
         run: |
           test-env\Scripts\pip install dist/*.whl
 
+      - name: Initialize agent (Unix)
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          test-env/bin/agent init
+
+      - name: Initialize agent (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          test-env\Scripts\agent init
+
       - name: Test CLI works (Unix)
         if: ${{ runner.os != 'Windows' }}
         run: |
@@ -112,6 +122,10 @@ jobs:
         run: |
           /tmp/fresh-install/bin/pip install dist/*.whl
 
+      - name: Initialize agent
+        run: |
+          /tmp/fresh-install/bin/agent init
+
       - name: Test basic functionality
         run: |
           /tmp/fresh-install/bin/agent --help
@@ -148,6 +162,10 @@ jobs:
           uv tool run --from build pyproject-build
           python -m venv /tmp/skill-test
           /tmp/skill-test/bin/pip install dist/*.whl
+
+      - name: Initialize agent
+        run: |
+          /tmp/skill-test/bin/agent init
 
       - name: Find skills path
         run: |
