@@ -55,11 +55,12 @@ jobs:
 
       - name: Upload security report
         uses: actions/upload-artifact@v4
-        if: always()
+        if: failure() || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         with:
-          name: security-report
+          name: security-report-${{ github.run_id }}
           path: bandit-report.json
           if-no-files-found: warn
+          retention-days: 7
 
   test:
     name: Tests
@@ -137,9 +138,11 @@ jobs:
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
-          name: dist
+          name: dist-${{ github.run_id }}
           path: dist/
+          retention-days: 3
 
   integration:
     name: Integration Tests

@@ -125,9 +125,9 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-${{ github.run_id }}
           path: dist/
-          retention-days: 7
+          retention-days: 5
 
   publish-testpypi:
     name: Publish to TestPyPI
@@ -142,7 +142,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: dist-${{ github.run_id }}
           path: dist/
 
       - name: Publish to TestPyPI
@@ -163,7 +163,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: dist-${{ github.run_id }}
           path: dist/
 
       - name: Publish to PyPI

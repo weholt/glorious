@@ -1,0 +1,32 @@
+name: Cleanup Old Artifacts
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write  # Required to delete artifacts
+
+jobs:
+  cleanup:
+    name: Delete Old Artifacts
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Delete artifacts older than 7 days
+        uses: c-hive/gha-remove-artifacts@v1
+        with:
+          age: '7 days'
+          skip-recent: 5
+          skip-tags: true
+
+      - name: Summary
+        run: |
+          echo "✓ Cleaned up artifacts older than 7 days"
+          echo "✓ Kept the 5 most recent artifacts"
+          echo "✓ Kept all tagged release artifacts"

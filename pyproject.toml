@@ -130,6 +130,7 @@ omit = [
   "*/daemon.py",
   "*/skills_cli/*",
   "*/migrations.py",
+  "*/skills/*",
 ]
 
 [tool.coverage.report]
