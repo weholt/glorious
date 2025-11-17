@@ -15,8 +15,11 @@ def _get_default_db_url() -> str:
         db_path = get_agent_db_path()
         return f"sqlite:///{db_path}"
     except ImportError:
-        # Fallback for standalone usage
-        return "sqlite:///./issues.db"
+        # Fallback for standalone usage - use unified database location
+        from pathlib import Path
+        db_path = Path.cwd() / ".agent" / "glorious.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        return f"sqlite:///{db_path}"
 
 
 def create_db_engine(db_url: str | None = None, echo: bool = False) -> Engine:

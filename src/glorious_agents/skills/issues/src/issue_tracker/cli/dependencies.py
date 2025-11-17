@@ -26,30 +26,35 @@ _engine_registry: dict[str, Engine] = {}
 
 @lru_cache
 def get_issues_folder() -> str:
-    """Get issues folder from environment or default.
+    """Get data folder from centralized config.
 
     Returns:
-        Path to issues folder
+        Path to data folder
 
     """
-    return os.getenv("ISSUES_FOLDER", "./.issues")
+    from glorious_agents.config import config
+    return str(config.DATA_FOLDER)
 
 
 @lru_cache
 def get_db_url() -> str:
     """Get database URL from environment or default.
 
+    Uses unified glorious.db database from glorious-agents config.
+
     Returns:
         SQLite database URL
 
     """
-    # Use ISSUES_DB_PATH if set, otherwise construct from ISSUES_FOLDER
-    if "ISSUES_DB_PATH" in os.environ:
-        db_path = os.getenv("ISSUES_DB_PATH", "./.issues/issues.db")
-        path = Path(db_path).resolve()
-    else:
-        issues_folder = get_issues_folder()
-        path = Path(issues_folder).resolve() / "issues.db"
+    # Always use unified database from glorious-agents config
+    try:
+        from glorious_agents.core.db import get_agent_db_path
+        path = get_agent_db_path()
+    except ImportError:
+        # Fallback for standalone usage only
+        from glorious_agents.config import config
+        path = config.DATA_FOLDER / config.DB_NAME
+    
     path.parent.mkdir(parents=True, exist_ok=True)
     # Use as_posix() for forward slashes on all platforms (SQLite URL requirement)
     return f"sqlite:///{path.as_posix()}"

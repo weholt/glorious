@@ -194,7 +194,7 @@ def export(
         raise typer.Exit(1)
 
 
-@app.command()
+@app.command(name="import")
 def import_cmd(
     input: str = typer.Argument(..., help="Input directory"),
     db_path: str = typer.Option(None, "--db", help="Database path (default: system DB)"),

@@ -124,7 +124,7 @@ def manage_skill_config(
         console.print(f"[red]Skill '{skill_name}' not found.[/red]")
         return
 
-    config_dir = Path(agent_config.AGENT_FOLDER) / "config"
+    config_dir = Path(agent_config.DATA_FOLDER) / "config"
     config_file = config_dir / f"{skill_name}.toml"
 
     # Handle reset

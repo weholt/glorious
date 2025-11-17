@@ -24,15 +24,16 @@ class DaemonConfig:
     @classmethod
     def default(cls, workspace_path: Path) -> "DaemonConfig":
         """Create default configuration."""
-        issues_dir = workspace_path / ".issues"
+        from glorious_agents.config import config as glorious_config
+        data_dir = glorious_config.DATA_FOLDER
         return cls(
-            database_path=str(issues_dir / "issues.db"),
+            database_path=str(glorious_config.get_unified_db_path()),
             issue_prefix="issue",
             daemon_mode=os.environ.get("ISSUES_DAEMON_MODE", "poll"),
             auto_start_daemon=os.environ.get("ISSUES_AUTO_START_DAEMON", "true").lower() == "true",
             sync_enabled=True,
             sync_interval_seconds=int(os.environ.get("ISSUES_SYNC_INTERVAL", "5")),
-            export_path=str(issues_dir / "issues.jsonl"),
+            export_path=str(data_dir / "issues.jsonl"),
             git_integration=os.environ.get("ISSUES_GIT_ENABLED", "false").lower() == "true",
             workspace_path=workspace_path,
         )
@@ -40,12 +41,20 @@ class DaemonConfig:
     @classmethod
     def load(cls, workspace_path: Path) -> "DaemonConfig":
         """Load configuration from file or create default."""
-        config_path = workspace_path / ".issues" / "config.json"
+        from glorious_agents.config import config as glorious_config
+        data_dir = glorious_config.DATA_FOLDER
+        config_path = data_dir / "issues_config.json"
+        
+        # Also check legacy location
+        legacy_config_path = workspace_path / ".issues" / "config.json"
+        if legacy_config_path.exists() and not config_path.exists():
+            config_path = legacy_config_path
+        
         if config_path.exists():
             with open(config_path, encoding="utf-8") as f:
                 data = json.load(f)
                 return cls(
-                    database_path=data.get("database_path", str(workspace_path / ".issues" / "issues.db")),
+                    database_path=data.get("database_path", str(glorious_config.get_unified_db_path())),
                     issue_prefix=data.get("issue_prefix", "issue"),
                     daemon_mode=os.environ.get("ISSUES_DAEMON_MODE", data.get("daemon_mode", "poll")),
                     auto_start_daemon=os.environ.get(
@@ -56,7 +65,7 @@ class DaemonConfig:
                     sync_interval_seconds=int(
                         os.environ.get("ISSUES_SYNC_INTERVAL", str(data.get("sync_interval_seconds", 5)))
                     ),
-                    export_path=data.get("export_path", str(workspace_path / ".issues" / "issues.jsonl")),
+                    export_path=data.get("export_path", str(data_dir / "issues.jsonl")),
                     git_integration=os.environ.get(
                         "ISSUES_GIT_ENABLED", str(data.get("git_integration", False))
                     ).lower()
@@ -67,7 +76,9 @@ class DaemonConfig:
 
     def save(self, workspace_path: Path) -> None:
         """Save configuration to file."""
-        config_path = workspace_path / ".issues" / "config.json"
+        from glorious_agents.config import config as glorious_config
+        data_dir = glorious_config.DATA_FOLDER
+        config_path = data_dir / "issues_config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
         data: dict[str, Any] = {
             "database_path": self.database_path,
@@ -85,16 +96,19 @@ class DaemonConfig:
     def get_socket_path(self) -> Path:
         """Get socket path for IPC."""
         import sys
+        from glorious_agents.config import config as glorious_config
 
-        issues_dir = self.workspace_path / ".issues"
+        data_dir = glorious_config.DATA_FOLDER
         if sys.platform == "win32":
-            return issues_dir / "issues.pipe"
-        return issues_dir / "issues.sock"
+            return data_dir / "issues.pipe"
+        return data_dir / "issues.sock"
 
     def get_pid_path(self) -> Path:
         """Get PID file path."""
-        return self.workspace_path / ".issues" / "daemon.pid"
+        from glorious_agents.config import config as glorious_config
+        return glorious_config.DATA_FOLDER / "daemon.pid"
 
     def get_log_path(self) -> Path:
         """Get daemon log file path."""
-        return self.workspace_path / ".issues" / "daemon.log"
+        from glorious_agents.config import config as glorious_config
+        return glorious_config.DATA_FOLDER / "daemon.log"
