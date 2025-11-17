@@ -7,31 +7,31 @@ from pathlib import Path
 from typing import List, Tuple
 
 try:
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.prompt import Prompt
-    from rich.table import Table
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-    from rich.text import Text
     from rich.align import Align
     from rich.box import DOUBLE, ROUNDED
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+    from rich.prompt import Prompt
+    from rich.table import Table
+    from rich.text import Text
 except ImportError:
     print("Error: This script requires 'rich'. Installing...")
     subprocess.run([sys.executable, "-m", "pip", "install", "rich"], check=True)
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.prompt import Prompt
-    from rich.table import Table
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-    from rich.text import Text
     from rich.align import Align
     from rich.box import DOUBLE, ROUNDED
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+    from rich.prompt import Prompt
+    from rich.table import Table
+    from rich.text import Text
 
 
 console = Console()
 
 
-def find_skills() -> List[Tuple[str, Path, str]]:
+def find_skills() -> list[tuple[str, Path, str]]:
     """Find all installable skills in the skills directory."""
     skills_dir = Path(__file__).parent.parent / "src" / "glorious_agents" / "skills"
     skills = []
@@ -74,7 +74,7 @@ def display_banner():
     console.print()
 
 
-def display_skills_table(skills: List[Tuple[str, Path, str]], selected: set) -> Table:
+def display_skills_table(skills: list[tuple[str, Path, str]], selected: set) -> Table:
     """Create a beautiful table of available skills."""
     table = Table(
         title="📦 Available Skills",
@@ -102,7 +102,7 @@ def display_skills_table(skills: List[Tuple[str, Path, str]], selected: set) -> 
     return table
 
 
-def get_user_selection(skills: List[Tuple[str, Path, str]]) -> set:
+def get_user_selection(skills: list[tuple[str, Path, str]]) -> set:
     """Get user's skill selection through interactive prompts."""
     selected = set()
     
@@ -160,7 +160,7 @@ def get_user_selection(skills: List[Tuple[str, Path, str]]) -> set:
             console.input("\nPress Enter to continue...")
 
 
-def install_skills(skills: List[Tuple[str, Path, str]], selected: set):
+def install_skills(skills: list[tuple[str, Path, str]], selected: set):
     """Install the selected skills with glorious progress display."""
     selected_skills = [skills[i-1] for i in sorted(selected)]
     
@@ -227,7 +227,7 @@ def install_skills(skills: List[Tuple[str, Path, str]], selected: set):
     display_results(results)
 
 
-def display_results(results: List[Tuple[str, bool, str]]):
+def display_results(results: list[tuple[str, bool, str]]):
     """Display installation results in a glorious summary."""
     success_count = sum(1 for _, success, _ in results if success)
     fail_count = len(results) - success_count
@@ -267,7 +267,7 @@ def display_results(results: List[Tuple[str, bool, str]]):
         ))
     else:
         console.print(Panel(
-            f"[bold red]❌ All installations failed[/bold red]",
+            "[bold red]❌ All installations failed[/bold red]",
             border_style="red",
             box=ROUNDED
         ))

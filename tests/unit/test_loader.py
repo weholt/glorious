@@ -204,6 +204,7 @@ def test_resolve_dependencies_empty() -> None:
 def test_skill_init_function() -> None:
     """Test that skill init() function behavior is correct."""
     from unittest.mock import MagicMock, patch
+
     from glorious_agents.core.loader import _call_skill_init
     
     # Test skill with init() that succeeds

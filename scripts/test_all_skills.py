@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 
-def find_skill_directories(skills_dir: Path) -> List[Path]:
+def find_skill_directories(skills_dir: Path) -> list[Path]:
     """Find all skill directories that have a pyproject.toml and tests directory."""
     skills = []
 
@@ -38,7 +38,7 @@ def find_skill_directories(skills_dir: Path) -> List[Path]:
     return skills
 
 
-def run_tests_for_skill(skill_dir: Path, project_root: Path) -> Tuple[str, bool, str]:
+def run_tests_for_skill(skill_dir: Path, project_root: Path) -> tuple[str, bool, str]:
     """
     Run tests for a single skill using pytest.
 

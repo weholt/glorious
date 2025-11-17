@@ -226,8 +226,9 @@ def test_skill_context_conn_property(skill_context: SkillContext) -> None:
 @pytest.mark.logic
 def test_skill_context_cache_max_size(skill_context: SkillContext) -> None:
     """Test cache size limit with LRU eviction."""
-    from glorious_agents.core.context import EventBus, SkillContext
     import sqlite3
+
+    from glorious_agents.core.context import EventBus, SkillContext
     
     # Create context with small cache
     conn = sqlite3.connect(":memory:")
@@ -293,9 +294,10 @@ def test_event_bus_thread_safety() -> None:
 @pytest.mark.logic
 def test_skill_context_cache_concurrent_access() -> None:
     """Test concurrent cache access is thread-safe."""
-    from glorious_agents.core.context import EventBus, SkillContext
     import sqlite3
     import threading
+
+    from glorious_agents.core.context import EventBus, SkillContext
     
     conn = sqlite3.connect(":memory:")
     bus = EventBus()

@@ -239,7 +239,7 @@ def main():
         print("\n📝 Next steps:")
         print("1. Review and update CHANGELOG.md with actual changes")
         print("2. Commit the version bump:")
-        print(f"   git add pyproject.toml CHANGELOG.md")
+        print("   git add pyproject.toml CHANGELOG.md")
         print(f"   git commit -m 'chore: bump version to {new_version}'")
         print("3. Run the release script:")
         print("   python scripts/release.py")
