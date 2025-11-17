@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Issue Tracker Import Schema",
+  "description": "JSON schema for importing issues, epics, and sub-epics into the issue tracker. Use this schema when generating task lists from specifications.",
+  "type": "object",
+  "required": ["project_id", "items"],
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Project identifier that all issues will belong to",
+      "minLength": 1,
+      "maxLength": 50,
+      "examples": ["project-alpha", "backend-refactor", "docs-overhaul"]
+    },
+    "items": {
+      "type": "array",
+      "description": "List of issues, epics, and tasks to import",
+      "items": {
+        "$ref": "#/definitions/Issue"
+      },
+      "minItems": 1
+    }
+  },
+  "definitions": {
+    "Issue": {
+      "type": "object",
+      "required": ["title", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Optional custom issue ID. If not provided, will be auto-generated. Must be unique within project.",
+          "pattern": "^[a-z0-9-]+$",
+          "maxLength": 50,
+          "examples": ["issue-abc123", "feature-auth", "bug-mem-leak"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Issue title/summary (required)",
+          "minLength": 1,
+          "maxLength": 500,
+          "examples": [
+            "Implement user authentication system",
+            "Fix memory leak in background worker",
+            "Add API documentation"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed issue description (optional, supports markdown)",
+          "default": "",
+          "examples": [
+            "## Overview\nImplement JWT-based authentication with refresh tokens.\n\n## Acceptance Criteria\n- [ ] Login endpoint\n- [ ] Token validation middleware\n- [ ] Refresh token rotation"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "description": "Issue type classification",
+          "enum": ["epic", "feature", "task", "bug", "chore"],
+          "examples": ["epic", "feature", "task"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Current lifecycle status",
+          "enum": ["open", "in_progress", "blocked", "resolved", "closed", "archived"],
+          "default": "open"
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Priority level: 0=Critical (P0), 1=High (P1), 2=Medium (P2), 3=Low (P3), 4=Backlog (P4)",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 2,
+          "examples": [0, 1, 2, 3, 4]
+        },
+        "assignee": {
+          "type": ["string", "null"],
+          "description": "Assigned user/agent (optional)",
+          "maxLength": 100,
+          "examples": ["agent-main", "thomas", null]
+        },
+        "epic_id": {
+          "type": ["string", "null"],
+          "description": "Parent epic ID for task/feature issues. Must reference an existing epic or one defined in this import.",
+          "maxLength": 50,
+          "examples": ["epic-auth-system", "epic-api-v2", null]
+        },
+        "parent_epic_id": {
+          "type": ["string", "null"],
+          "description": "Parent epic ID for sub-epics (only for type='epic'). Enables epic hierarchies.",
+          "maxLength": 50,
+          "examples": ["epic-backend", "epic-infrastructure", null]
+        },
+        "labels": {
+          "type": "array",
+          "description": "List of labels/tags for categorization",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "uniqueItems": true,
+          "examples": [
+            ["backend", "security"],
+            ["frontend", "ui", "urgent"],
+            ["documentation"]
+          ]
+        },
+        "dependencies": {
+          "type": "array",
+          "description": "List of dependencies (blocks, depends-on relationships)",
+          "items": {
+            "$ref": "#/definitions/Dependency"
+          }
+        },
+        "subtasks": {
+          "type": "array",
+          "description": "Child issues that belong to this epic (only for type='epic')",
+          "items": {
+            "$ref": "#/definitions/Issue"
+          }
+        },
+        "start_date": {
+          "type": ["string", "null"],
+          "description": "Epic start date (ISO 8601 format, only for type='epic')",
+          "format": "date-time",
+          "examples": ["2025-01-15T00:00:00Z", null]
+        },
+        "target_date": {
+          "type": ["string", "null"],
+          "description": "Epic target completion date (ISO 8601 format, only for type='epic')",
+          "format": "date-time",
+          "examples": ["2025-03-30T23:59:59Z", null]
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional custom metadata (optional)",
+          "additionalProperties": true
+        }
+      }
+    },
+    "Dependency": {
+      "type": "object",
+      "required": ["issue_id", "type"],
+      "properties": {
+        "issue_id": {
+          "type": "string",
+          "description": "ID of the related issue",
+          "maxLength": 50,
+          "examples": ["issue-abc123", "feature-database"]
+        },
+        "type": {
+          "type": "string",
+          "description": "Dependency relationship type",
+          "enum": ["blocks", "depends-on", "related-to"],
+          "examples": ["blocks", "depends-on", "related-to"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "project_id": "project-auth-system",
+  "items": [
+    {
+      "id": "epic-authentication",
+      "title": "User Authentication System",
+      "description": "## Overview\nComplete authentication and authorization system with JWT tokens\n\n## Goals\n- Secure user authentication\n- Token-based session management\n- Role-based access control\n- Comprehensive test coverage",
+      "type": "epic",
+      "priority": 1,
+      "status": "open",
+      "labels": ["backend", "security", "milestone"],
+      "start_date": "2025-01-01T00:00:00Z",
+      "target_date": "2025-02-28T23:59:59Z",
+      "subtasks": [
+        {
+          "id": "epic-auth-core",
+          "title": "Core Authentication",
+          "description": "Basic authentication functionality including token generation and validation",
+          "type": "epic",
+          "priority": 1,
+          "parent_epic_id": "epic-authentication",
+          "labels": ["backend", "core", "auth"],
+          "subtasks": [
+            {
+              "id": "task-jwt-service",
+              "title": "Implement JWT token service",
+              "description": "## Overview\nCreate service for generating and validating JWT tokens\n\n## Requirements\n- Generate access tokens (15min expiry)\n- Generate refresh tokens (7 day expiry)\n- Sign tokens with secret key\n- Validate token signatures\n- Extract claims from tokens\n\n## Acceptance Criteria\n- [ ] Token generation function\n- [ ] Token validation function\n- [ ] Proper error handling\n- [ ] Unit tests with 90%+ coverage",
+              "type": "task",
+              "priority": 0,
+              "epic_id": "epic-auth-core",
+              "labels": ["backend", "jwt", "security", "service"]
+            },
+            {
+              "id": "feature-login",
+              "title": "Create login endpoint",
+              "description": "## Overview\nPOST /api/auth/login endpoint with email/password validation\n\n## API Spec\n```\nPOST /api/auth/login\nBody: { email: string, password: string }\nResponse: { accessToken: string, refreshToken: string, user: User }\n```\n\n## Requirements\n- Validate email format\n- Check password strength\n- Hash password comparison\n- Rate limiting (5 attempts per minute)\n- Return JWT tokens on success\n\n## Acceptance Criteria\n- [ ] Endpoint implementation\n- [ ] Input validation\n- [ ] Password hashing\n- [ ] Rate limiting\n- [ ] Error responses\n- [ ] Integration tests",
+              "type": "feature",
+              "priority": 0,
+              "epic_id": "epic-auth-core",
+              "labels": ["backend", "api", "authentication", "endpoint"],
+              "dependencies": [
+                {
+                  "issue_id": "task-jwt-service",
+                  "type": "depends-on"
+                },
+                {
+                  "issue_id": "task-user-db",
+                  "type": "depends-on"
+                }
+              ]
+            },
+            {
+              "id": "feature-refresh-token",
+              "title": "Implement refresh token flow",
+              "description": "## Overview\nRefresh token endpoint with rotation and invalidation\n\n## API Spec\n```\nPOST /api/auth/refresh\nBody: { refreshToken: string }\nResponse: { accessToken: string, refreshToken: string }\n```\n\n## Requirements\n- Validate refresh token\n- Rotate refresh tokens (invalidate old)\n- Store refresh tokens in database\n- Implement token revocation\n- Handle token expiry gracefully\n\n## Acceptance Criteria\n- [ ] Refresh endpoint\n- [ ] Token rotation\n- [ ] Database storage\n- [ ] Revocation support\n- [ ] Security tests",
+              "type": "feature",
+              "priority": 1,
+              "epic_id": "epic-auth-core",
+              "labels": ["backend", "jwt", "security", "tokens"],
+              "dependencies": [
+                {
+                  "issue_id": "task-jwt-service",
+                  "type": "depends-on"
+                }
+              ]
+            },
+            {
+              "id": "feature-logout",
+              "title": "Implement logout endpoint",
+              "description": "## Overview\nPOST /api/auth/logout endpoint to invalidate tokens\n\n## API Spec\n```\nPOST /api/auth/logout\nHeaders: { Authorization: Bearer <token> }\nResponse: { success: true }\n```\n\n## Requirements\n- Invalidate refresh token\n- Blacklist access token\n- Clear session data\n\n## Acceptance Criteria\n- [ ] Logout endpoint\n- [ ] Token invalidation\n- [ ] Success response",
+              "type": "feature",
+              "priority": 2,
+              "epic_id": "epic-auth-core",
+              "labels": ["backend", "api", "authentication"]
+            }
+          ]
+        },
+        {
+          "id": "epic-auth-middleware",
+          "title": "Authentication Middleware",
+          "description": "Request authentication and authorization middleware components",
+          "type": "epic",
+          "priority": 1,
+          "parent_epic_id": "epic-authentication",
+          "labels": ["backend", "middleware"],
+          "subtasks": [
+            {
+              "id": "task-jwt-middleware",
+              "title": "Create JWT validation middleware",
+              "description": "## Overview\nExpress middleware to validate JWT tokens on protected routes\n\n## Requirements\n- Extract token from Authorization header\n- Validate token signature\n- Check token expiration\n- Attach user to request object\n- Handle invalid tokens gracefully\n\n## Acceptance Criteria\n- [ ] Middleware function\n- [ ] Token extraction\n- [ ] Validation logic\n- [ ] Error handling\n- [ ] Unit tests",
+              "type": "task",
+              "priority": 1,
+              "epic_id": "epic-auth-middleware",
+              "labels": ["backend", "middleware", "jwt"],
+              "dependencies": [
+                {
+                  "issue_id": "task-jwt-service",
+                  "type": "depends-on"
+                }
+              ]
+            },
+            {
+              "id": "feature-rbac",
+              "title": "Implement role-based access control",
+              "description": "## Overview\nRBAC middleware for permission checking\n\n## Requirements\n- Define user roles (admin, user, guest)\n- Define permissions per role\n- Middleware to check required permissions\n- Support for multiple roles per user\n\n## Acceptance Criteria\n- [ ] Role definitions\n- [ ] Permission system\n- [ ] RBAC middleware\n- [ ] Role assignment API\n- [ ] Tests for all roles",
+              "type": "feature",
+              "priority": 2,
+              "epic_id": "epic-auth-middleware",
+              "labels": ["backend", "authorization", "rbac"],
+              "dependencies": [
+                {
+                  "issue_id": "task-jwt-middleware",
+                  "type": "depends-on"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "epic-auth-testing",
+          "title": "Authentication Testing",
+          "description": "Comprehensive test suite for authentication system",
+          "type": "epic",
+          "priority": 1,
+          "parent_epic_id": "epic-authentication",
+          "labels": ["testing", "qa"],
+          "subtasks": [
+            {
+              "title": "Write unit tests for JWT service",
+              "description": "Unit tests for token generation, validation, and error cases",
+              "type": "task",
+              "priority": 1,
+              "epic_id": "epic-auth-testing",
+              "labels": ["testing", "unit-tests", "jwt"],
+              "dependencies": [
+                {
+                  "issue_id": "task-jwt-service",
+                  "type": "depends-on"
+                }
+              ]
+            },
+            {
+              "title": "Write integration tests for auth endpoints",
+              "description": "Integration tests for login, refresh, logout flows",
+              "type": "task",
+              "priority": 1,
+              "epic_id": "epic-auth-testing",
+              "labels": ["testing", "integration-tests", "api"],
+              "dependencies": [
+                {
+                  "issue_id": "feature-login",
+                  "type": "depends-on"
+                },
+                {
+                  "issue_id": "feature-refresh-token",
+                  "type": "depends-on"
+                }
+              ]
+            },
+            {
+              "title": "Security testing for auth system",
+              "description": "Test for common vulnerabilities: SQL injection, XSS, CSRF, timing attacks",
+              "type": "task",
+              "priority": 0,
+              "epic_id": "epic-auth-testing",
+              "labels": ["testing", "security", "penetration-testing"]
+            }
+          ]
+        },
+        {
+          "title": "Document authentication API",
+          "description": "## Overview\nCreate comprehensive API documentation\n\n## Deliverables\n- OpenAPI 3.0 specification\n- Authentication flow diagrams\n- Usage examples\n- Error code reference\n- Security best practices guide",
+          "type": "chore",
+          "priority": 2,
+          "epic_id": "epic-authentication",
+          "labels": ["documentation", "api", "openapi"]
+        }
+      ]
+    },
+    {
+      "id": "task-user-db",
+      "title": "Setup user database schema",
+      "description": "## Overview\nCreate users table with proper indexes\n\n## Schema\n```sql\nCREATE TABLE users (\n  id UUID PRIMARY KEY,\n  email VARCHAR(255) UNIQUE NOT NULL,\n  password_hash VARCHAR(255) NOT NULL,\n  role VARCHAR(50) DEFAULT 'user',\n  created_at TIMESTAMP DEFAULT NOW(),\n  updated_at TIMESTAMP DEFAULT NOW()\n);\n\nCREATE INDEX idx_users_email ON users(email);\nCREATE INDEX idx_users_role ON users(role);\n```\n\n## Requirements\n- Users table with email, password_hash\n- Unique constraint on email\n- Indexes for performance\n- Migration script\n\n## Acceptance Criteria\n- [ ] Migration script\n- [ ] Table created\n- [ ] Indexes in place\n- [ ] Rollback script",
+      "type": "task",
+      "priority": 0,
+      "status": "open",
+      "labels": ["database", "migration", "schema"],
+      "dependencies": [
+        {
+          "issue_id": "epic-authentication",
+          "type": "blocks"
+        }
+      ]
+    },
+    {
+      "id": "task-env-config",
+      "title": "Setup environment configuration",
+      "description": "Configure JWT secrets and security settings\n\n## Environment Variables\n- JWT_SECRET\n- JWT_EXPIRY\n- REFRESH_TOKEN_EXPIRY\n- BCRYPT_ROUNDS\n\n## Acceptance Criteria\n- [ ] .env.example file\n- [ ] Config validation\n- [ ] Documentation",
+      "type": "task",
+      "priority": 0,
+      "status": "open",
+      "labels": ["config", "setup", "security"],
+      "dependencies": [
+        {
+          "issue_id": "epic-authentication",
+          "type": "blocks"
+        }
+      ]
+    }
+  ]
+}

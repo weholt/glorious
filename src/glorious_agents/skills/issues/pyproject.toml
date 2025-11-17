@@ -19,6 +19,7 @@ dependencies = [
     "psutil>=5.9.0",
     "pywin32>=306; sys_platform == 'win32'",
     "pydantic-settings>=2.12.0",
+    "jsonschema>=4.20.0",
 ]
 
 [project.license]
