@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 
 from glorious_agents.config import config
-from glorious_agents.core.db import get_agent_db_path, get_agent_folder
+from glorious_agents.core.db import get_agent_db_path, get_data_folder
 
 
 def migrate_from_legacy() -> None:
@@ -19,7 +19,7 @@ def migrate_from_legacy() -> None:
     New structure:
     - <project>/.agent/glorious.db (unified database)
     """
-    data_folder = get_agent_folder()
+    data_folder = get_data_folder()
     unified_db_path = get_agent_db_path()
 
     print(f"Migrating to unified database at: {unified_db_path}")

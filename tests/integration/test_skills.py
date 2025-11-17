@@ -10,7 +10,7 @@ from glorious_agents.core.runtime import get_ctx
 
 @pytest.mark.integration
 @pytest.mark.skip(reason="Requires example-skills package to be installed")
-def test_notes_skill_integration(temp_agent_folder) -> None:  # type: ignore[no-untyped-def]
+def test_notes_skill_integration(temp_data_folder) -> None:  # type: ignore[no-untyped-def]
     """Test notes skill end-to-end."""
     # Initialize and load skills
     load_all_skills()
@@ -37,7 +37,7 @@ def test_notes_skill_integration(temp_agent_folder) -> None:  # type: ignore[no-
 
 @pytest.mark.integration
 @pytest.mark.skip(reason="Requires example-skills package to be installed")
-def test_issues_skill_integration(temp_agent_folder) -> None:  # type: ignore[no-untyped-def]
+def test_issues_skill_integration(temp_data_folder) -> None:  # type: ignore[no-untyped-def]
     """Test issues skill end-to-end."""
     load_all_skills()
 
@@ -67,7 +67,7 @@ def test_issues_skill_integration(temp_agent_folder) -> None:  # type: ignore[no
 
 @pytest.mark.integration
 @pytest.mark.skip(reason="Requires example-skills package to be installed")
-def test_notes_issues_event_integration(temp_agent_folder) -> None:  # type: ignore[no-untyped-def]
+def test_notes_issues_event_integration(temp_data_folder) -> None:  # type: ignore[no-untyped-def]
     """Test event-driven integration between notes and issues."""
     load_all_skills()
 

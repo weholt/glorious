@@ -234,9 +234,6 @@ def daemon(
     run_daemon(host, port)
 
 
-
-
-
 @app.command()
 def info() -> None:
     """Display system information about the agent installation.
@@ -251,14 +248,14 @@ def info() -> None:
 
     from rich.table import Table
 
-    from glorious_agents.core.db import get_agent_db_path, get_agent_folder
+    from glorious_agents.core.db import get_agent_db_path, get_data_folder
 
     table = Table(title="Glorious Agents - System Information", show_header=False)
     table.add_column("Property", style="cyan", no_wrap=True)
     table.add_column("Value", style="white")
 
     # Data folder
-    data_folder = get_agent_folder()
+    data_folder = get_data_folder()
     table.add_row("Data Folder", str(data_folder))
 
     # Active agent

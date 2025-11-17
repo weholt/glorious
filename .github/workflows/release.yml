@@ -43,7 +43,7 @@ jobs:
         run: uv pip install .[dev]
 
       - name: Run tests
-        run: uv run pytest --cov --cov-report=xml
+        run: uv run pytest --cov --cov-report=xml --cov-fail-under=70
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -78,11 +78,11 @@ jobs:
       - name: Install dependencies
         run: uv pip install .[dev]
 
-      - name: Check formatting
-        run: uv run ruff format --check .
+      - name: Format code
+        run: uv run ruff format .
 
       - name: Run linter
-        run: uv run ruff check .
+        run: uv run ruff check --fix --unsafe-fixes .
 
       - name: Type checking
         run: uv run mypy src

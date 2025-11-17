@@ -6,42 +6,42 @@ import pytest
 
 from glorious_agents.core.db import (
     get_agent_db_path,
-    get_agent_folder,
     get_connection,
+    get_data_folder,
     init_skill_schema,
 )
 
 
 @pytest.mark.logic
-def test_get_agent_folder(temp_agent_folder: Path) -> None:
-    """Test agent folder resolution from environment."""
-    assert get_agent_folder() == temp_agent_folder
+def test_get_data_folder(temp_data_folder: Path) -> None:
+    """Test data folder resolution from environment."""
+    assert get_data_folder() == temp_data_folder
 
 
 @pytest.mark.logic
-def test_get_agent_db_path_default(temp_agent_folder: Path) -> None:
+def test_get_agent_db_path_default(temp_data_folder: Path) -> None:
     """Test unified DB path."""
     db_path = get_agent_db_path()
-    assert db_path.parent == temp_agent_folder
+    assert db_path.parent == temp_data_folder
     assert db_path.name == "glorious.db"
     # Path created on first connection, not on path retrieval
     assert db_path.parent.exists()
 
 
 @pytest.mark.logic
-def test_get_agent_db_path_custom(temp_agent_folder: Path) -> None:
+def test_get_agent_db_path_custom(temp_data_folder: Path) -> None:
     """Test unified DB path returns same path regardless of agent."""
     # Even with active agent file, should use unified DB
-    active_file = temp_agent_folder / "active_agent"
+    active_file = temp_data_folder / "active_agent"
     active_file.write_text("test-agent")
 
     db_path = get_agent_db_path()
-    assert db_path.parent == temp_agent_folder
+    assert db_path.parent == temp_data_folder
     assert db_path.name == "glorious.db"
 
 
 @pytest.mark.logic
-def test_get_connection_wal_mode(temp_agent_folder: Path) -> None:
+def test_get_connection_wal_mode(temp_data_folder: Path) -> None:
     """Test that connection uses WAL mode."""
     conn = get_connection()
 
@@ -54,7 +54,7 @@ def test_get_connection_wal_mode(temp_agent_folder: Path) -> None:
 
 
 @pytest.mark.logic
-def test_init_skill_schema(temp_agent_folder: Path, tmp_path: Path) -> None:
+def test_init_skill_schema(temp_data_folder: Path, tmp_path: Path) -> None:
     """Test skill schema initialization."""
     # Create a test schema file
     schema_file = tmp_path / "test_schema.sql"
@@ -86,7 +86,7 @@ def test_init_skill_schema(temp_agent_folder: Path, tmp_path: Path) -> None:
 
 
 @pytest.mark.logic
-def test_init_skill_schema_nonexistent(temp_agent_folder: Path, tmp_path: Path) -> None:
+def test_init_skill_schema_nonexistent(temp_data_folder: Path, tmp_path: Path) -> None:
     """Test init_skill_schema with nonexistent file."""
     nonexistent_file = tmp_path / "nonexistent.sql"
 
@@ -95,7 +95,7 @@ def test_init_skill_schema_nonexistent(temp_agent_folder: Path, tmp_path: Path) 
 
 
 @pytest.mark.logic
-def test_get_connection_works(temp_agent_folder: Path) -> None:
+def test_get_connection_works(temp_data_folder: Path) -> None:
     """Test that get_connection works."""
     conn = get_connection()
 
@@ -107,7 +107,7 @@ def test_get_connection_works(temp_agent_folder: Path) -> None:
 
 
 @pytest.mark.logic
-def test_get_connection_creates_db_file(temp_agent_folder: Path) -> None:
+def test_get_connection_creates_db_file(temp_data_folder: Path) -> None:
     """Test that get_connection creates the database file."""
     db_path = get_agent_db_path()
 
@@ -121,7 +121,7 @@ def test_get_connection_creates_db_file(temp_agent_folder: Path) -> None:
 
 
 @pytest.mark.logic
-def test_get_connection_thread_safe(temp_agent_folder: Path) -> None:
+def test_get_connection_thread_safe(temp_data_folder: Path) -> None:
     """Test that get_connection can be called with check_same_thread=False."""
     conn = get_connection(check_same_thread=False)
 
@@ -133,7 +133,7 @@ def test_get_connection_thread_safe(temp_agent_folder: Path) -> None:
 
 
 @pytest.mark.logic
-def test_init_skill_schema_duplicate(temp_agent_folder: Path, tmp_path: Path) -> None:
+def test_init_skill_schema_duplicate(temp_data_folder: Path, tmp_path: Path) -> None:
     """Test that init_skill_schema is idempotent."""
     schema_file = tmp_path / "test_schema.sql"
     schema_file.write_text("""

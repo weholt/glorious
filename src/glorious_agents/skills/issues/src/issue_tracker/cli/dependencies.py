@@ -7,7 +7,6 @@ Manages database connection lifecycle and adapter instantiation.
 import logging
 import os
 from functools import lru_cache
-from pathlib import Path
 
 from sqlalchemy import Engine
 from sqlmodel import Session, create_engine
@@ -33,6 +32,7 @@ def get_issues_folder() -> str:
 
     """
     from glorious_agents.config import config
+
     return str(config.DATA_FOLDER)
 
 
@@ -49,12 +49,14 @@ def get_db_url() -> str:
     # Always use unified database from glorious-agents config
     try:
         from glorious_agents.core.db import get_agent_db_path
+
         path = get_agent_db_path()
     except ImportError:
         # Fallback for standalone usage only
         from glorious_agents.config import config
+
         path = config.DATA_FOLDER / config.DB_NAME
-    
+
     path.parent.mkdir(parents=True, exist_ok=True)
     # Use as_posix() for forward slashes on all platforms (SQLite URL requirement)
     return f"sqlite:///{path.as_posix()}"

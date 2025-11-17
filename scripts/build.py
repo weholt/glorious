@@ -12,9 +12,8 @@ from pathlib import Path
 class BuildRunner:
     """Handles the build process for glorious-agents."""
 
-    def __init__(self, verbose: bool = False, fix: bool = False):
+    def __init__(self, verbose: bool = False):
         self.verbose = verbose
-        self.fix = fix
         self.project_root = Path(__file__).parent.parent
         self.failed_steps: list[str] = []
 
@@ -97,25 +96,33 @@ class BuildRunner:
 
     def format_code(self) -> bool:
         """Format code with ruff."""
-        self.print_step("Code Formatting")
+        self.print_step("Code Formatting & Fixing")
 
         src_path = self.project_root / "src" / "glorious_agents"
+        tests_path = self.project_root / "tests"
+        scripts_path = self.project_root / "scripts"
+
+        paths = [str(src_path)]
+        if tests_path.exists():
+            paths.append(str(tests_path))
+        if scripts_path.exists():
+            paths.append(str(scripts_path))
+
         if not src_path.exists():
             print(f"[WARN] Source directory not found at {src_path}")
             return False
 
-        cmd = ["uv", "run", "ruff", "format"]
-        if self.fix:
-            cmd.append(str(src_path))
-        else:
-            cmd.extend(["--check", str(src_path)])
+        # Always format code automatically
+        format_cmd = ["uv", "run", "ruff", "format"]
+        format_cmd.extend(paths)
+        print("[FIX] Auto-formatting code...")
 
-        success_format, output_format, error_format = self.run_command(cmd, "ruff format")
+        success_format, output_format, error_format = self.run_command(format_cmd, "ruff format")
 
-        check_cmd = ["uv", "run", "ruff", "check"]
-        if self.fix:
-            check_cmd.append("--fix")
-        check_cmd.append(str(src_path))
+        # Always check and fix linting issues automatically
+        check_cmd = ["uv", "run", "ruff", "check", "--fix", "--unsafe-fixes"]
+        print("[FIX] Auto-fixing linting issues (including unsafe fixes)...")
+        check_cmd.extend(paths)
 
         success_check, output_check, error_check = self.run_command(check_cmd, "ruff check")
 
@@ -125,22 +132,9 @@ class BuildRunner:
         return success_format and success_check
 
     def lint_code(self) -> bool:
-        """Lint code with ruff."""
-        self.print_step("Code Linting")
-
-        src_path = self.project_root / "src" / "glorious_agents"
-        if not src_path.exists():
-            print(f"[WARN] Source directory not found at {src_path}")
-            return False
-
-        cmd = ["uv", "run", "ruff", "check"]
-        if self.fix:
-            cmd.append("--fix")
-        cmd.append(str(src_path))
-
-        success, output, error = self.run_command(cmd, "ruff linting")
-        self.print_result(success, "ruff", output, error)
-        return success
+        """Lint code with ruff (combined with format_code now)."""
+        # This step is now handled by format_code to avoid duplication
+        return True
 
     def type_check(self) -> bool:
         """Type check with mypy."""
@@ -191,7 +185,7 @@ class BuildRunner:
             "--cov-report=term-missing",
             "--cov-report=html",
             "--cov-report=xml",
-            "--cov-fail-under=60",
+            "--cov-fail-under=70",
             "--durations=20",
             "-vv" if self.verbose else "-v",
         ]
@@ -299,8 +293,7 @@ class BuildRunner:
         steps = [
             ("Check Dependencies", self.check_dependencies),
             ("Sync Dependencies", self.sync_dependencies),
-            ("Format Code", self.format_code),
-            ("Lint Code", self.lint_code),
+            ("Format & Fix Code", self.format_code),
             ("Type Check", self.type_check),
             ("Security Check", self.step_security),
             ("Unit Tests", self.run_unit_tests),
@@ -348,12 +341,11 @@ def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Comprehensive build script for glorious-agents")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
-    parser.add_argument("--fix", action="store_true", help="Auto-fix formatting and linting issues")
     parser.add_argument("--clean", action="store_true", help="Clean build artifacts and exit")
 
     args = parser.parse_args()
 
-    builder = BuildRunner(verbose=args.verbose, fix=args.fix)
+    builder = BuildRunner(verbose=args.verbose)
 
     if args.clean:
         builder.clean_artifacts()

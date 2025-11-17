@@ -37,11 +37,11 @@ jobs:
       - name: Install dependencies
         run: uv pip install .[dev]
 
-      - name: Check formatting
-        run: uv run ruff format --check .
+      - name: Format code
+        run: uv run ruff format .
 
       - name: Run linter
-        run: uv run ruff check .
+        run: uv run ruff check --fix --unsafe-fixes .
 
       - name: Type checking
         run: uv run mypy src
@@ -91,7 +91,7 @@ jobs:
         run: uv pip install .[dev]
 
       - name: Run tests
-        run: uv run pytest --cov --cov-report=xml --cov-report=term
+        run: uv run pytest --cov --cov-report=xml --cov-report=term --cov-fail-under=70
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

@@ -1538,13 +1538,13 @@ def init(
     )
 
     try:
-        import os
         from pathlib import Path
 
         verbose_section("Initializing Issue Tracker Workspace")
 
         # Use centralized configuration
         from glorious_agents.config import config as glorious_config
+
         data_dir = glorious_config.DATA_FOLDER
         db_path = glorious_config.get_unified_db_path()
         config_path = data_dir / "issues_config.json"
@@ -1556,6 +1556,7 @@ def init(
         if already_initialized:
             # Check if issues table exists
             import sqlite3
+
             try:
                 conn = sqlite3.connect(str(db_path))
                 cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='issues'")
@@ -1670,7 +1671,7 @@ def init(
                 json.dumps(
                     {
                         "status": "initialized",
-                        "workspace": str(issues_dir),
+                        "workspace": str(data_dir),
                         "database": str(db_path),
                         "config": str(config_path),
                         "daemon_started": daemon_started,
@@ -1678,7 +1679,7 @@ def init(
                 )
             )
         else:
-            typer.echo(f"Initialized workspace in {issues_dir}")
+            typer.echo(f"Initialized workspace in {data_dir}")
             typer.echo(f"  Database: {db_path}")
             typer.echo(f"  Config: {config_path}")
             if daemon_started:

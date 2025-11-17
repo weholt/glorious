@@ -10,7 +10,7 @@ from pathlib import Path
 from glorious_agents.config import config
 
 
-def get_agent_folder() -> Path:
+def get_data_folder() -> Path:
     """Get the data folder path from configuration."""
     data_folder = config.DATA_FOLDER
     data_folder.mkdir(parents=True, exist_ok=True)
@@ -27,7 +27,7 @@ def get_agent_db_path(agent_code: str | None = None) -> Path:
     Returns:
         Path to the unified SQLite database.
     """
-    data_folder = get_agent_folder()
+    data_folder = get_data_folder()
     return data_folder / config.DB_NAME
 
 
@@ -131,7 +131,7 @@ def migrate_legacy_databases() -> None:
     Looks for old database files and migrates them to the unified database.
     Legacy files: agent.db (in agents/default/), master.db, glorious_shared.db
     """
-    data_folder = get_agent_folder()
+    data_folder = get_data_folder()
     unified_db = get_agent_db_path()
 
     # Check for legacy agent.db

@@ -17,6 +17,7 @@ def _get_default_db_url() -> str:
     except ImportError:
         # Fallback for standalone usage - use unified database location
         from pathlib import Path
+
         db_path = Path.cwd() / ".agent" / "glorious.db"
         db_path.parent.mkdir(parents=True, exist_ok=True)
         return f"sqlite:///{db_path}"

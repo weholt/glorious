@@ -25,6 +25,7 @@ class DaemonConfig:
     def default(cls, workspace_path: Path) -> "DaemonConfig":
         """Create default configuration."""
         from glorious_agents.config import config as glorious_config
+
         data_dir = glorious_config.DATA_FOLDER
         return cls(
             database_path=str(glorious_config.get_unified_db_path()),
@@ -42,14 +43,15 @@ class DaemonConfig:
     def load(cls, workspace_path: Path) -> "DaemonConfig":
         """Load configuration from file or create default."""
         from glorious_agents.config import config as glorious_config
+
         data_dir = glorious_config.DATA_FOLDER
         config_path = data_dir / "issues_config.json"
-        
+
         # Also check legacy location
         legacy_config_path = workspace_path / ".issues" / "config.json"
         if legacy_config_path.exists() and not config_path.exists():
             config_path = legacy_config_path
-        
+
         if config_path.exists():
             with open(config_path, encoding="utf-8") as f:
                 data = json.load(f)
@@ -77,6 +79,7 @@ class DaemonConfig:
     def save(self, workspace_path: Path) -> None:
         """Save configuration to file."""
         from glorious_agents.config import config as glorious_config
+
         data_dir = glorious_config.DATA_FOLDER
         config_path = data_dir / "issues_config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,6 +99,7 @@ class DaemonConfig:
     def get_socket_path(self) -> Path:
         """Get socket path for IPC."""
         import sys
+
         from glorious_agents.config import config as glorious_config
 
         data_dir = glorious_config.DATA_FOLDER
@@ -106,9 +110,11 @@ class DaemonConfig:
     def get_pid_path(self) -> Path:
         """Get PID file path."""
         from glorious_agents.config import config as glorious_config
+
         return glorious_config.DATA_FOLDER / "daemon.pid"
 
     def get_log_path(self) -> Path:
         """Get daemon log file path."""
         from glorious_agents.config import config as glorious_config
+
         return glorious_config.DATA_FOLDER / "daemon.log"

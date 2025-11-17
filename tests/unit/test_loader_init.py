@@ -9,7 +9,7 @@ from glorious_agents.core.loader.initialization import init_schemas
 
 
 class TestInitSchemas:
-    def test_init_schemas_no_schema_file(self):
+    def test_init_schemas_no_schema_file(self, temp_data_folder: Path):
         """Test init_schemas when skills have no schema_file."""
         skills_data = {
             "skill1": {
@@ -22,7 +22,7 @@ class TestInitSchemas:
         # Should not raise error
         init_schemas(["skill1"], skills_data)
 
-    def test_init_schemas_no_path(self):
+    def test_init_schemas_no_path(self, temp_data_folder: Path):
         """Test init_schemas when skill has no _path."""
         skills_data = {
             "skill1": {
@@ -36,7 +36,7 @@ class TestInitSchemas:
         # Should log warning and skip
         init_schemas(["skill1"], skills_data)
 
-    def test_init_schemas_nonexistent_file(self):
+    def test_init_schemas_nonexistent_file(self, temp_data_folder: Path):
         """Test init_schemas when schema file doesn't exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
             skill_path = Path(tmpdir) / "skill1"
@@ -54,7 +54,7 @@ class TestInitSchemas:
             # Should log debug and skip
             init_schemas(["skill1"], skills_data)
 
-    def test_init_schemas_with_valid_schema(self):
+    def test_init_schemas_with_valid_schema(self, temp_data_folder: Path):
         """Test init_schemas with valid schema file."""
         with tempfile.TemporaryDirectory() as tmpdir:
             skill_path = Path(tmpdir) / "skill1"
@@ -75,7 +75,7 @@ class TestInitSchemas:
             # Should execute without error
             init_schemas(["skill1"], skills_data)
 
-    def test_init_schemas_multiple_skills(self):
+    def test_init_schemas_multiple_skills(self, temp_data_folder: Path):
         """Test init_schemas with multiple skills."""
         with tempfile.TemporaryDirectory() as tmpdir:
             skills_data = {}

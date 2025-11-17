@@ -1,6 +1,5 @@
 """CLI entry point for issue tracker."""
 
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv

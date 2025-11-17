@@ -12,9 +12,9 @@ class TestConfig:
         """Test that config has default values."""
         config = Config()
 
-        assert config.AGENT_FOLDER is not None
+        assert config.DATA_FOLDER is not None
         assert config.SKILLS_DIR is not None
-        assert isinstance(config.AGENT_FOLDER, Path)
+        assert isinstance(config.DATA_FOLDER, Path)
         assert isinstance(config.SKILLS_DIR, Path)
 
     def test_shared_db_path_property(self):
@@ -32,13 +32,13 @@ class TestConfig:
 
         assert skills_dir.name == "skills"
 
-    def test_agent_folder_property(self):
-        """Test AGENT_FOLDER property."""
+    def test_data_folder_property(self):
+        """Test DATA_FOLDER property."""
         config = Config()
-        agent_folder = config.AGENT_FOLDER
+        data_folder = config.DATA_FOLDER
 
-        assert agent_folder is not None
-        assert isinstance(agent_folder, Path)
+        assert data_folder is not None
+        assert isinstance(data_folder, Path)
 
     def test_master_db_path(self):
         """Test get_master_db_path."""

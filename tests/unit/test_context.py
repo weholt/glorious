@@ -161,7 +161,7 @@ def test_skill_context_get_config_no_skill(skill_context: SkillContext) -> None:
 
 @pytest.mark.logic
 def test_skill_context_get_config_nonexistent_file(
-    skill_context: SkillContext, temp_agent_folder: Path
+    skill_context: SkillContext, temp_data_folder: Path
 ) -> None:
     """Test get_config with nonexistent config file."""
     skill_context._skill_name = "test_skill"
@@ -173,7 +173,7 @@ def test_skill_context_get_config_nonexistent_file(
 
 @pytest.mark.logic
 def test_skill_context_get_config_with_file(
-    skill_context: SkillContext, temp_agent_folder: Path
+    skill_context: SkillContext, temp_data_folder: Path
 ) -> None:
     """Test get_config with existing config file."""
     import tomli_w
@@ -181,7 +181,7 @@ def test_skill_context_get_config_with_file(
     skill_context._skill_name = "test_skill"
 
     # Create config directory and file
-    config_dir = temp_agent_folder / "config"
+    config_dir = temp_data_folder / "config"
     config_dir.mkdir(exist_ok=True)
     config_file = config_dir / "test_skill.toml"
 

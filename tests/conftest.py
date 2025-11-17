@@ -47,12 +47,12 @@ def _reset_runtime() -> Generator[None]:
 
 
 @pytest.fixture
-def temp_agent_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Create a temporary agent folder and set environment variable."""
-    agent_folder = tmp_path / ".agent"
-    agent_folder.mkdir()
-    # Use GLORIOUS_DATA_FOLDER which is what config actually reads
-    monkeypatch.setenv("GLORIOUS_DATA_FOLDER", str(agent_folder))
+def temp_data_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Create a temporary data folder and set environment variable."""
+    data_folder = tmp_path / ".agent"
+    data_folder.mkdir()
+    # Use DATA_FOLDER which is what config actually reads
+    monkeypatch.setenv("DATA_FOLDER", str(data_folder))
 
     # Reload config to pick up new environment variable
     import glorious_agents.config as config_module
@@ -64,4 +64,4 @@ def temp_agent_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     db_module.config = config_module.config
 
-    return agent_folder
+    return data_folder

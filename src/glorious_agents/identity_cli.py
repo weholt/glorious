@@ -6,7 +6,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from glorious_agents.core.db import get_agent_folder, get_master_db_path, init_master_db
+from glorious_agents.core.db import get_data_folder, get_master_db_path, init_master_db
 
 app = typer.Typer(help="Agent identity management")
 console = Console()
@@ -27,7 +27,7 @@ def get_active_agent_code() -> str | None:
         >>> get_active_agent_code()
         'my-agent'
     """
-    active_file = get_agent_folder() / "active_agent"
+    active_file = get_data_folder() / "active_agent"
     if active_file.exists():
         return active_file.read_text().strip()
     return None
@@ -48,7 +48,7 @@ def set_active_agent(code: str) -> None:
         >>> set_active_agent('my-agent')
         # 'my-agent' is now the active agent
     """
-    active_file = get_agent_folder() / "active_agent"
+    active_file = get_data_folder() / "active_agent"
     active_file.parent.mkdir(parents=True, exist_ok=True)
     active_file.write_text(code)
 
