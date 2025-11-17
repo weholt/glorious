@@ -235,6 +235,132 @@ def daemon(
 
 
 @app.command()
+def migrate(
+    force: bool = typer.Option(False, "--force", help="Force migration even if target exists"),
+) -> None:
+    """Migrate legacy databases to unified database structure.
+
+    Consolidates data from legacy database locations (~/.glorious) into
+    the project-specific unified database (.agent/glorious.db).
+
+    Example:
+        $ agent migrate
+        $ agent migrate --force
+    """
+    from glorious_agents.core.db_migration import migrate_from_legacy, show_migration_status
+
+    console.print("[bold]Database Migration Tool[/bold]\n")
+    show_migration_status()
+    console.print()
+
+    if not force:
+        confirm = typer.confirm("Proceed with migration?")
+        if not confirm:
+            console.print("[yellow]Migration cancelled.[/yellow]")
+            raise typer.Exit(0)
+
+    console.print()
+    migrate_from_legacy()
+
+
+@app.command()
+def info() -> None:
+    """Display system information about the agent installation.
+
+    Shows important configuration details including database type, paths,
+    table counts, and other system information.
+
+    Example:
+        $ agent info
+    """
+    import sqlite3
+
+    from rich.table import Table
+
+    from glorious_agents.core.db import get_agent_db_path, get_agent_folder
+
+    table = Table(title="Glorious Agents - System Information", show_header=False)
+    table.add_column("Property", style="cyan", no_wrap=True)
+    table.add_column("Value", style="white")
+
+    # Agent folder
+    agent_folder = get_agent_folder()
+    table.add_row("Data Folder", str(agent_folder))
+
+    # Active agent
+    active_file = agent_folder / "active_agent"
+    if active_file.exists():
+        active_agent = active_file.read_text().strip()
+    else:
+        active_agent = "default"
+    table.add_row("Active Agent", active_agent)
+
+    # Database type
+    table.add_row("Database Type", "sqlite")
+
+    # Unified database path
+    agent_db_path = get_agent_db_path()
+    table.add_row("Database File", str(agent_db_path))
+
+    # Database size
+    if agent_db_path.exists():
+        db_size = agent_db_path.stat().st_size / (1024 * 1024)
+        table.add_row("Database Size", f"{db_size:.2f} MB")
+    else:
+        table.add_row("Database Size", "N/A (not initialized)")
+
+    # Count tables in unified database
+    if agent_db_path.exists():
+        try:
+            conn = sqlite3.connect(str(agent_db_path))
+            cursor = conn.execute(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            )
+            table_count = cursor.fetchone()[0]
+            table.add_row("Total Tables", str(table_count))
+
+            # Count tables by prefix
+            cursor = conn.execute("""
+                SELECT 
+                    CASE 
+                        WHEN name LIKE 'core_%' THEN 'Core'
+                        WHEN name LIKE 'issues_%' THEN 'Issues'
+                        WHEN name LIKE 'notes_%' THEN 'Notes'
+                        WHEN name LIKE 'prompts_%' THEN 'Prompts'
+                        WHEN name LIKE 'automations_%' THEN 'Automations'
+                        WHEN name LIKE 'feedback_%' THEN 'Feedback'
+                        WHEN name LIKE 'cache_%' THEN 'Cache'
+                        WHEN name LIKE '_%' THEN 'Internal'
+                        ELSE 'Other'
+                    END as category,
+                    COUNT(*) as count
+                FROM sqlite_master 
+                WHERE type='table' AND name NOT LIKE 'sqlite_%'
+                GROUP BY category
+                ORDER BY count DESC
+            """)
+            categories = cursor.fetchall()
+            if categories:
+                cat_str = ", ".join([f"{cat}: {cnt}" for cat, cnt in categories])
+                table.add_row("Tables by Type", cat_str)
+
+            conn.close()
+        except Exception as e:
+            table.add_row("Total Tables", f"Error: {e}")
+    else:
+        table.add_row("Total Tables", "0 (not initialized)")
+
+    # Skills directory
+    table.add_row("Skills Directory", str(config.SKILLS_DIR))
+
+    # Daemon settings
+    table.add_row("Daemon Host", config.DAEMON_HOST)
+    table.add_row("Daemon Port", str(config.DAEMON_PORT))
+
+    console.print(table)
+
+
+@app.command()
 def search(
     query: str = typer.Argument(..., help="Search query"),
     limit: int = typer.Option(20, "--limit", "-l", help="Maximum results to return"),
@@ -327,6 +453,8 @@ def main() -> None:
         $ agent skills list
         $ agent identity whoami
     """
+    import sys
+
     # Import management CLIs
     from glorious_agents import identity_cli, skills_cli
 
@@ -334,8 +462,13 @@ def main() -> None:
     app.add_typer(skills_cli.app, name="skills")
     app.add_typer(identity_cli.app, name="identity")
 
-    # Initialize and load skills
-    init_app()
+    # Skip skill initialization for commands that don't need it
+    skip_init_commands = {"migrate", "version", "--help", "-h"}
+    should_skip = any(cmd in sys.argv for cmd in skip_init_commands)
+
+    if not should_skip:
+        # Initialize and load skills
+        init_app()
 
     # Run CLI
     app()

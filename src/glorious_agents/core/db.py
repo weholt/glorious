@@ -1,45 +1,34 @@
-"""Database management for shared agent SQLite database."""
+"""Database management for unified SQLite database.
+
+This module provides database connection and initialization for the unified
+glorious.db database that contains all agent data with prefixed tables.
+"""
 
 import sqlite3
 from pathlib import Path
 
-from dotenv import load_dotenv
-
 from glorious_agents.config import config
-
-load_dotenv()
 
 
 def get_agent_folder() -> Path:
     """Get the agent folder path from configuration."""
-    return config.AGENT_FOLDER
+    agent_folder = config.AGENT_FOLDER
+    agent_folder.mkdir(parents=True, exist_ok=True)
+    return agent_folder
 
 
 def get_agent_db_path(agent_code: str | None = None) -> Path:
     """
-    Get the database path for the active or specified agent.
+    Get the database path for the unified database.
 
     Args:
-        agent_code: Optional agent code. If None, uses active agent.
+        agent_code: Optional agent code (deprecated, kept for compatibility).
 
     Returns:
-        Path to the agent's SQLite database.
+        Path to the unified SQLite database.
     """
     agent_folder = get_agent_folder()
-
-    if agent_code is None:
-        # Read active agent code
-        active_file = agent_folder / "active_agent"
-        if active_file.exists():
-            agent_code = active_file.read_text().strip()
-        else:
-            agent_code = "default"
-
-    # Create agents directory if needed
-    agents_dir = agent_folder / "agents" / agent_code
-    agents_dir.mkdir(parents=True, exist_ok=True)
-
-    return agents_dir / "agent.db"
+    return agent_folder / config.DB_NAME
 
 
 def get_connection(check_same_thread: bool = False) -> sqlite3.Connection:
@@ -113,19 +102,16 @@ def init_skill_schema(skill_name: str, schema_path: Path) -> None:
 
 
 def get_master_db_path() -> Path:
-    """Get the path to the master registry database."""
-    return config.get_master_db_path()
+    """Get the path to the unified database (master tables are now in main DB)."""
+    return get_agent_db_path()
 
 
 def init_master_db() -> None:
-    """Initialize the master registry database."""
-    db_path = get_master_db_path()
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-
-    conn = sqlite3.connect(str(db_path))
+    """Initialize the master registry tables in unified database."""
+    conn = get_connection()
     try:
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS agents (
+            CREATE TABLE IF NOT EXISTS core_agents (
                 code TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 role TEXT,
@@ -136,6 +122,49 @@ def init_master_db() -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def migrate_legacy_databases() -> None:
+    """
+    Migrate data from legacy database files to unified database.
+
+    Looks for old database files and migrates them to the unified database.
+    Legacy files: agent.db (in agents/default/), master.db, glorious_shared.db
+    """
+    agent_folder = get_agent_folder()
+    unified_db = get_agent_db_path()
+
+    # Check for legacy agent.db
+    legacy_agent_db = agent_folder / "agents" / "default" / "agent.db"
+    if legacy_agent_db.exists() and not unified_db.exists():
+        import shutil
+
+        unified_db.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(legacy_agent_db, unified_db)
+        print(f"Migrated legacy agent.db to {unified_db}")
+
+    # Check for legacy master.db
+    legacy_master_db = agent_folder / config.DB_MASTER_NAME
+    if legacy_master_db.exists():
+        # Migrate agents table to core_agents
+        try:
+            legacy_conn = sqlite3.connect(str(legacy_master_db))
+            unified_conn = get_connection()
+
+            # Copy agents data
+            cursor = legacy_conn.execute("SELECT * FROM agents")
+            rows = cursor.fetchall()
+            if rows:
+                unified_conn.executemany(
+                    "INSERT OR IGNORE INTO core_agents VALUES (?, ?, ?, ?, ?)", rows
+                )
+                unified_conn.commit()
+                print(f"Migrated {len(rows)} agents from master.db")
+
+            legacy_conn.close()
+            unified_conn.close()
+        except Exception as e:
+            print(f"Warning: Could not migrate master.db: {e}")
 
 
 def batch_execute(

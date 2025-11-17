@@ -1,5 +1,7 @@
 """Planner skill - action queue management with state machine."""
 
+from __future__ import annotations
+
 from typing import Literal
 
 import typer

@@ -38,7 +38,13 @@ def run_migrations_offline() -> None:
     script output.
 
     """
+    # Get URL from config or use default from engine
     url = config.get_main_option("sqlalchemy.url")
+    if not url:
+        from issue_tracker.adapters.db.engine import _get_default_db_url
+
+        url = _get_default_db_url()
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -57,11 +63,20 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    # Use our engine factory to get proper database connection
+    configuration = config.get_section(config.config_ini_section, {})
+
+    # If no URL in config, use default from engine
+    if not configuration.get("sqlalchemy.url"):
+        from issue_tracker.adapters.db.engine import create_db_engine
+
+        connectable = create_db_engine()
+    else:
+        connectable = engine_from_config(
+            configuration,
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)

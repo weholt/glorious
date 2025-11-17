@@ -7,19 +7,31 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.pool import StaticPool
 
 
+def _get_default_db_url() -> str:
+    """Get default database URL from glorious-agents config."""
+    try:
+        from glorious_agents.core.db import get_agent_db_path
+
+        db_path = get_agent_db_path()
+        return f"sqlite:///{db_path}"
+    except ImportError:
+        # Fallback for standalone usage
+        return "sqlite:///./issues.db"
+
+
 def create_db_engine(db_url: str | None = None, echo: bool = False) -> Engine:
     """Create SQLAlchemy engine for issue tracker.
 
     Args:
-        db_url: Database URL. If None, reads from ISSUE_TRACKER_DB_URL env var
-                or defaults to sqlite:///./issues.db
+        db_url: Database URL. If None, uses unified glorious.db from config
+                or falls back to ISSUE_TRACKER_DB_URL env var
         echo: Whether to log SQL statements (default: False)
 
     Returns:
         Configured SQLAlchemy engine
 
     Examples:
-        >>> # Use default SQLite database
+        >>> # Use unified database (default)
         >>> engine = create_db_engine()
 
         >>> # Use custom database
@@ -29,7 +41,7 @@ def create_db_engine(db_url: str | None = None, echo: bool = False) -> Engine:
         >>> engine = create_db_engine("postgresql://user:pass@localhost/issues")
     """
     if db_url is None:
-        db_url = os.environ.get("ISSUE_TRACKER_DB_URL", "sqlite:///./issues.db")
+        db_url = os.environ.get("ISSUE_TRACKER_DB_URL", _get_default_db_url())
 
     # Use StaticPool for SQLite in-memory databases
     if db_url == "sqlite:///:memory:" or db_url == "sqlite://":
@@ -64,7 +76,7 @@ def get_database_path() -> Path:
     Raises:
         ValueError: If database URL is not SQLite-based
     """
-    db_url = os.environ.get("ISSUE_TRACKER_DB_URL", "sqlite:///./issues.db")
+    db_url = os.environ.get("ISSUE_TRACKER_DB_URL", _get_default_db_url())
 
     if db_url == "sqlite:///:memory:" or db_url == "sqlite://":
         return Path("memory")
