@@ -13,7 +13,7 @@ from glorious_agents.core.runtime import reset_ctx
 
 
 @pytest.fixture
-def temp_db() -> Generator[sqlite3.Connection, None, None]:
+def temp_db() -> Generator[sqlite3.Connection]:
     """Create a temporary database for testing."""
     fd, db_path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -40,7 +40,7 @@ def skill_context(temp_db: sqlite3.Connection, event_bus: EventBus) -> SkillCont
 
 
 @pytest.fixture(autouse=True)
-def reset_runtime() -> Generator[None, None, None]:
+def _reset_runtime() -> Generator[None]:
     """Reset runtime context between tests."""
     yield
     reset_ctx()

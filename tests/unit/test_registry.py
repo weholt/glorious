@@ -1,6 +1,7 @@
 """Tests for skill registry."""
 
 import pytest
+from pydantic import ValidationError
 
 from glorious_agents.core.registry import SkillManifest, SkillRegistry, get_registry
 
@@ -64,7 +65,7 @@ class TestSkillManifest:
 
     def test_manifest_validation_name(self):
         """Test manifest name validation."""
-        with pytest.raises(Exception):  # Pydantic validation error
+        with pytest.raises(ValidationError, match="String should have at least 1 character"):
             SkillManifest(
                 name="",  # Empty name should fail
                 version="1.0.0",
@@ -75,7 +76,7 @@ class TestSkillManifest:
 
     def test_manifest_validation_version(self):
         """Test manifest version validation."""
-        with pytest.raises(Exception):  # Pydantic validation error
+        with pytest.raises(ValidationError, match="String should match pattern"):
             SkillManifest(
                 name="test",
                 version="invalid",  # Invalid version
@@ -86,7 +87,7 @@ class TestSkillManifest:
 
     def test_manifest_validation_entry_point(self):
         """Test manifest entry_point validation."""
-        with pytest.raises(Exception):  # Pydantic validation error
+        with pytest.raises(ValidationError, match="String should match pattern"):
             SkillManifest(
                 name="test",
                 version="1.0.0",

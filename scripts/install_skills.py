@@ -4,7 +4,6 @@
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 try:
     from rich.align import Align

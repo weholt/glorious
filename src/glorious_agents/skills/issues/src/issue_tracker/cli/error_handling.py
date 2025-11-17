@@ -19,7 +19,7 @@ from issue_tracker.domain import (
 T = TypeVar("T")
 
 
-def handle_cli_errors(func: Callable[..., T]) -> Callable[..., T]:
+def handle_cli_errors(func: Callable[..., T]) -> Callable[..., T]:  # noqa: UP047
     """Decorator to handle common CLI errors with user-friendly messages.
 
     Args:
