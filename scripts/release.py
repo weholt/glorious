@@ -180,7 +180,7 @@ def print_next_steps(version: str, dry_run: bool = False):
     print("1. Push the tag to GitHub:")
     print(f"   git push origin v{version}\n")
     print("2. Create a GitHub release:")
-    print(f"   • Go to: https://github.com/weholt/glorious-agents/releases/new")
+    print("   • Go to: https://github.com/weholt/glorious-agents/releases/new")
     print(f"   • Tag: v{version}")
     print(f"   • Title: Release {version}")
     print("   • Add release notes describing changes\n")

@@ -3,9 +3,9 @@
 
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
-from datetime import datetime
 
 try:
     import yaml
@@ -77,13 +77,13 @@ def parse_markdown_issue(content: str, priority_override: int = None) -> dict[st
     
     # Format dates
     created_at = frontmatter.get('created', '')
-    if created_at and not 'T' in str(created_at):
+    if created_at and 'T' not in str(created_at):
         created_at = f"{created_at}T00:00:00"
     else:
         created_at = datetime.now().isoformat()
     
     updated_at = frontmatter.get('updated', created_at)
-    if updated_at and not 'T' in str(updated_at):
+    if updated_at and 'T' not in str(updated_at):
         updated_at = f"{updated_at}T00:00:00"
     
     # Add metadata to labels for preservation
@@ -275,13 +275,13 @@ def main():
     issues = migrate_issues_from_markdown(args.issues_dir, args.output, dry_run=args.dry_run)
     
     if not args.dry_run and args.execute and issues:
-        print(f"\n✓ Migration complete!")
+        print("\n✓ Migration complete!")
         print(f"✓ Created: {args.output}")
-        print(f"\nNext steps:")
+        print("\nNext steps:")
         print(f"  1. Review the output file: less {args.output}")
-        print(f"  2. Initialize issues skill if needed: agent issues init")
+        print("  2. Initialize issues skill if needed: agent issues init")
         print(f"  3. Import issues: agent issues import {args.output}")
-        print(f"  4. Validate: agent issues stats")
+        print("  4. Validate: agent issues stats")
     
     return 0
 
