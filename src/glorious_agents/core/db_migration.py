@@ -19,11 +19,11 @@ def migrate_from_legacy() -> None:
     New structure:
     - <project>/.agent/glorious.db (unified database)
     """
-    agent_folder = get_agent_folder()
+    data_folder = get_agent_folder()
     unified_db_path = get_agent_db_path()
 
     print(f"Migrating to unified database at: {unified_db_path}")
-    print(f"Data folder: {agent_folder}")
+    print(f"Data folder: {data_folder}")
 
     # Find legacy databases
     legacy_home = Path.home() / ".glorious"

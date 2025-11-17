@@ -1543,32 +1543,41 @@ def init(
 
         verbose_section("Initializing Issue Tracker Workspace")
 
-        # Use ISSUES_FOLDER from environment (set by CLI entry point)
-        issues_folder = os.environ.get("ISSUES_FOLDER", "./.issues")
-        issues_dir = Path(issues_folder)
-        db_path = issues_dir / "issues.db"
-        config_path = issues_dir / "config.json"
+        # Use centralized configuration
+        from glorious_agents.config import config as glorious_config
+        data_dir = glorious_config.DATA_FOLDER
+        db_path = glorious_config.get_unified_db_path()
+        config_path = data_dir / "issues_config.json"
 
-        verbose_log("Configuration", folder=issues_folder, db=str(db_path))
+        verbose_log("Configuration", folder=str(data_dir), db=str(db_path))
 
-        # Check if already initialized (only check db and config, not the directory itself)
-        already_initialized = db_path.exists() and config_path.exists()
-        if already_initialized and not force:
-            verbose_error(f"Workspace already initialized at {issues_dir}")
-            typer.echo("Error: Workspace already initialized. Use --force to reinitialize.", err=True)
-            raise typer.Exit(1)
+        # Check if already initialized (database exists and has tables)
+        already_initialized = db_path.exists()
+        if already_initialized:
+            # Check if issues table exists
+            import sqlite3
+            try:
+                conn = sqlite3.connect(str(db_path))
+                cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='issues'")
+                has_issues_table = cursor.fetchone() is not None
+                conn.close()
+                if has_issues_table and not force:
+                    verbose_error(f"Workspace already initialized at {data_dir}")
+                    typer.echo("Error: Workspace already initialized. Use --force to reinitialize.", err=True)
+                    raise typer.Exit(1)
+            except Exception:
+                pass
 
         if force and already_initialized:
             verbose_log("Force flag enabled, will reinitialize existing workspace")
 
         # Create directory structure (idempotent - won't affect existing files)
-        verbose_step("Creating directory structure", str(issues_dir))
-        issues_dir.mkdir(parents=True, exist_ok=True)
-        verbose_success(f"Created directory: {issues_dir}")
+        verbose_step("Creating directory structure", str(data_dir))
+        data_dir.mkdir(parents=True, exist_ok=True)
+        verbose_success(f"Created directory: {data_dir}")
 
-        # Update environment for this session
-        os.environ["ISSUES_DB_PATH"] = str(db_path)
-        verbose_log("Set ISSUES_DB_PATH environment variable", path=str(db_path))
+        # Database path is handled by centralized config
+        verbose_log("Using database", path=str(db_path))
 
         # Run Alembic migrations to create schema
         verbose_step("Setting up database schema")

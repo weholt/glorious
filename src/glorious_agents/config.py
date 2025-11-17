@@ -47,12 +47,12 @@ class Config:
         self.SKILLS_DIR: Path = Path(os.getenv("GLORIOUS_SKILLS_DIR", "skills"))
 
         # Agent data directory - PROJECT-SPECIFIC by default
-        # Uses .agent/ in project root, can be overridden via DATA_FOLDER or GLORIOUS_DATA_FOLDER
-        data_folder = os.getenv("DATA_FOLDER") or os.getenv("GLORIOUS_DATA_FOLDER")
+        # Uses .agent/ in project root, can be overridden via DATA_FOLDER
+        data_folder = os.getenv("DATA_FOLDER")
         if data_folder:
-            self.AGENT_FOLDER = Path(data_folder)
+            self.DATA_FOLDER = Path(data_folder)
         else:
-            self.AGENT_FOLDER = project_root / ".agent"
+            self.DATA_FOLDER = project_root / ".agent"
 
     def get_db_path(self, db_name: str | None = None) -> Path:
         """Get the full path to a database file.
@@ -62,7 +62,7 @@ class Config:
         """
         if db_name is None:
             db_name = self.DB_NAME
-        return self.AGENT_FOLDER / db_name
+        return self.DATA_FOLDER / db_name
 
     def get_unified_db_path(self) -> Path:
         """Get the path to the unified database."""

@@ -120,7 +120,7 @@ class SkillContext:
 
         from glorious_agents.config import config
 
-        config_dir = Path(config.AGENT_FOLDER) / "config"
+        config_dir = Path(config.DATA_FOLDER) / "config"
         config_file = config_dir / f"{skill_name}.toml"
 
         if config_file.exists():

@@ -11,10 +11,10 @@ from glorious_agents.config import config
 
 
 def get_agent_folder() -> Path:
-    """Get the agent folder path from configuration."""
-    agent_folder = config.AGENT_FOLDER
-    agent_folder.mkdir(parents=True, exist_ok=True)
-    return agent_folder
+    """Get the data folder path from configuration."""
+    data_folder = config.DATA_FOLDER
+    data_folder.mkdir(parents=True, exist_ok=True)
+    return data_folder
 
 
 def get_agent_db_path(agent_code: str | None = None) -> Path:
@@ -27,8 +27,8 @@ def get_agent_db_path(agent_code: str | None = None) -> Path:
     Returns:
         Path to the unified SQLite database.
     """
-    agent_folder = get_agent_folder()
-    return agent_folder / config.DB_NAME
+    data_folder = get_agent_folder()
+    return data_folder / config.DB_NAME
 
 
 def get_connection(check_same_thread: bool = False) -> sqlite3.Connection:
@@ -131,11 +131,11 @@ def migrate_legacy_databases() -> None:
     Looks for old database files and migrates them to the unified database.
     Legacy files: agent.db (in agents/default/), master.db, glorious_shared.db
     """
-    agent_folder = get_agent_folder()
+    data_folder = get_agent_folder()
     unified_db = get_agent_db_path()
 
     # Check for legacy agent.db
-    legacy_agent_db = agent_folder / "agents" / "default" / "agent.db"
+    legacy_agent_db = data_folder / "agents" / "default" / "agent.db"
     if legacy_agent_db.exists() and not unified_db.exists():
         import shutil
 
@@ -144,7 +144,7 @@ def migrate_legacy_databases() -> None:
         print(f"Migrated legacy agent.db to {unified_db}")
 
     # Check for legacy master.db
-    legacy_master_db = agent_folder / config.DB_MASTER_NAME
+    legacy_master_db = data_folder / config.DB_MASTER_NAME
     if legacy_master_db.exists():
         # Migrate agents table to core_agents
         try:
