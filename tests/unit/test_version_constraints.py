@@ -16,11 +16,11 @@ def test_parse_version_valid() -> None:
 
 def test_parse_version_invalid() -> None:
     """Test parsing invalid version strings raises ValueError."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid version format"):
         parse_version("1.2")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid version format"):
         parse_version("invalid")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid version format"):
         parse_version("1")
 
 

@@ -1,7 +1,7 @@
 """Unit tests for input validation framework."""
 
 import pytest
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 from glorious_agents.core.validation import (
     SkillInput,
@@ -42,28 +42,28 @@ def test_skill_input_strip_whitespace() -> None:
 
 def test_skill_input_validation_min_length() -> None:
     """Test min_length validation."""
-    with pytest.raises(Exception):  # Pydantic ValidationError
+    with pytest.raises(ValidationError, match="String should have at least 1 character"):
         SimpleInput(name="", age=25)
 
 
 def test_skill_input_validation_max_length() -> None:
     """Test max_length validation."""
-    with pytest.raises(Exception):  # Pydantic ValidationError
+    with pytest.raises(ValidationError, match="String should have at most 50 characters"):
         SimpleInput(name="a" * 51, age=25)
 
 
 def test_skill_input_validation_range() -> None:
     """Test numeric range validation."""
-    with pytest.raises(Exception):  # Pydantic ValidationError
+    with pytest.raises(ValidationError, match="Input should be greater than or equal to 0"):
         SimpleInput(name="test", age=-1)
 
-    with pytest.raises(Exception):  # Pydantic ValidationError
+    with pytest.raises(ValidationError, match="Input should be less than or equal to 150"):
         SimpleInput(name="test", age=151)
 
 
 def test_skill_input_extra_fields_forbidden() -> None:
     """Test that extra fields are forbidden."""
-    with pytest.raises(Exception):  # Pydantic ValidationError
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
         SimpleInput(name="test", age=25, extra_field="invalid")  # type: ignore[call-arg]
 
 
@@ -156,5 +156,5 @@ def test_nested_input_validation() -> None:
     assert valid_data.title == "test"
     assert valid_data.metadata == {"key": "value"}
 
-    with pytest.raises(Exception):  # Empty title
+    with pytest.raises(ValidationError, match="String should have at least 1 character"):
         NestedInput(title="", metadata={})

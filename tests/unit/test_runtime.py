@@ -1,5 +1,6 @@
 """Tests for runtime singleton."""
 
+import sqlite3
 import threading
 
 import pytest
@@ -47,7 +48,7 @@ class TestRuntime:
         reset_ctx()
 
         # Connection should be closed, attempts to use it should fail
-        with pytest.raises(Exception):
+        with pytest.raises(sqlite3.ProgrammingError, match="Cannot operate on a closed database"):
             conn.execute("SELECT 1")
 
     def test_thread_safety(self):
@@ -65,7 +66,7 @@ class TestRuntime:
             t.join()
 
         # All threads should get the same context
-        assert len(set(id(ctx) for ctx in contexts)) == 1
+        assert len({id(ctx) for ctx in contexts}) == 1
 
     def test_reset_ctx_when_none(self):
         """Test that reset_ctx works when context is None."""

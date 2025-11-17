@@ -9,7 +9,6 @@ This script discovers all skills and runs their tests independently.
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 
 def find_skill_directories(skills_dir: Path) -> list[Path]:
