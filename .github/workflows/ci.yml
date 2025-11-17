@@ -9,6 +9,7 @@ on:
 
 env:
   PYTHON_VERSION: "3.12"
+  PYTHONIOENCODING: utf-8
 
 jobs:
   quality:
@@ -20,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install uv
+        if: ${{ !env.ACT }}
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
@@ -73,6 +75,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install uv
+        if: ${{ !env.ACT }}
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
@@ -115,6 +118,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install uv
+        if: ${{ !env.ACT }}
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
@@ -148,6 +152,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install uv
+        if: ${{ !env.ACT }}
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
@@ -180,6 +185,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install uv
+        if: ${{ !env.ACT }}
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
