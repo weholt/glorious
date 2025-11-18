@@ -1,6 +1,6 @@
 """Schema initialization for skills and core tables."""
 
-import sqlite3
+
 from pathlib import Path
 
 from glorious_agents.core.db.connection import get_connection

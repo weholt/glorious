@@ -109,30 +109,27 @@ class RestrictedConnection:
 
             if token_value in self.READ_OPERATIONS:
                 return "read"
-            elif token_value in self.WRITE_OPERATIONS:
-                return "write"
-            elif token_value in self.DDL_OPERATIONS:
-                return "ddl"
-            elif token_value == "WITH":
-                # CTE - analyze the actual operation after the CTE definition
-                # Look for the main statement (INSERT/UPDATE/DELETE/SELECT)
+                # Find the main statement after the CTE(s)
                 tokens = list(stmt.flatten())
-                # Skip tokens until we find the main statement after WITH clause
-                found_with = False
+                cte_level = 0
+                after_cte = False
                 for token in tokens:
-                    token_upper = token.value.upper()
-                    if token_upper == "WITH":
-                        found_with = True
-                        continue
-                    # After WITH, look for main DML operations
-                    if found_with:
+                    # Track parentheses to find end of CTE definition
+                    if token.match(sqlparse.tokens.Punctuation, "("):
+                        cte_level += 1
+                    elif token.match(sqlparse.tokens.Punctuation, ")"):
+                        if cte_level > 0:
+                            cte_level -= 1
+                    # After all CTE parentheses closed, look for main statement
+                    if cte_level == 0 and token.ttype in (sqlparse.tokens.Keyword, sqlparse.tokens.DML, sqlparse.tokens.DDL):
+                        token_upper = token.value.upper()
                         if token_upper in self.WRITE_OPERATIONS:
                             return "write"
                         elif token_upper in self.DDL_OPERATIONS:
                             return "ddl"
-                        # SELECT can appear both in CTE definition and main query
-                        # We need the last SELECT or the one after the CTE
-                        elif token_upper == "SELECT" and token.ttype is not None:
+                        elif token_upper in self.READ_OPERATIONS:
+                            return "read"
+                        # If it's not a recognized operation, continue
                             # Continue looking for write operations
                             # Only return read if we reach the end without finding writes
                             pass
