@@ -128,7 +128,7 @@ class TestSkillsExportCommand:
 
             try:
                 data = json.loads(result["stdout"])
-                assert isinstance(data, (list, dict))
+                assert isinstance(data, list | dict)
             except json.JSONDecodeError:
                 pytest.skip("JSON export not implemented or no skills loaded")
 

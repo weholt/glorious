@@ -13,7 +13,7 @@ from glorious_agents.core.engine_registry import (
 
 
 @pytest.fixture(autouse=True)
-def cleanup_engines():
+def _cleanup_engines():
     """Clean up all engines after each test."""
     yield
     dispose_all_engines()
