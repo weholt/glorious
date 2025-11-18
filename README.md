@@ -188,6 +188,9 @@ python scripts/build.py
 
 - [Skill Authoring Guide](docs/skill-authoring.md)
 - [Quick Start Guide](QUICKSTART.md)
+- [Version Scheme](VERSION_SCHEME.md) - Official versioning policy
+- [Version Management](docs/version-management.md) - How to bump versions
+- [Releasing Guide](RELEASING.md) - Release process
 - [GitHub Issues](https://github.com/weholt/glorious-agents/issues)
 
 ## License
