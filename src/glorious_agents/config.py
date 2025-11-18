@@ -6,7 +6,9 @@ GLORIOUS_ prefix or via .env file in project root.
 """
 
 import os
+import threading
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -23,11 +25,26 @@ def _find_project_root() -> Path:
 class Config:
     """Configuration settings for the glorious-agents framework."""
 
-    def __init__(self) -> None:
-        """Initialize configuration from environment variables and .env file."""
+    def __init__(self, env_file: Optional[Path] = None) -> None:
+        """
+        Initialize configuration from environment variables and an optional .env file.
+        
+        If `env_file` is None, the project root is located and `<project_root>/.env` is used when present.
+        When a .env file exists at the chosen path, its values are loaded into the environment before reading
+        configuration values. The constructor then reads environment variables to populate attributes such
+        as `DB_NAME`, `DB_SHARED_NAME`, `DB_MASTER_NAME`, `DAEMON_HOST`, `DAEMON_PORT`, `DAEMON_API_KEY`,
+        `SKILLS_DIR`, and `DATA_FOLDER`. If `DATA_FOLDER` is not set in the environment, it defaults to
+        `<project_root>/.agent`.
+        
+        Parameters:
+            env_file (Optional[Path]): Path to a .env file to load before reading environment variables.
+                If omitted, a .env file in the project root will be used if it exists.
+        """
         # Load .env file from project root if it exists
-        project_root = _find_project_root()
-        env_file = project_root / ".env"
+        if env_file is None:
+            project_root = _find_project_root()
+            env_file = project_root / ".env"
+
         if env_file.exists():
             load_dotenv(env_file)
 
@@ -73,9 +90,51 @@ class Config:
         return self.get_db_path(self.DB_SHARED_NAME)
 
     def get_master_db_path(self) -> Path:
-        """Get the path to the master registry database (legacy)."""
+        """
+        Return the path to the legacy master registry database file.
+        
+        Returns:
+            Path: Full filesystem path to the master registry database.
+        """
         return self.get_db_path(self.DB_MASTER_NAME)
 
 
-# Singleton instance
-config = Config()
+# Default singleton for backward compatibility
+# New code should use get_config() or create Config() instances
+_default_config: Optional[Config] = None
+_config_lock = threading.Lock()
+
+
+def get_config() -> Config:
+    """
+    Retrieve the module-level default Config instance used across the application.
+    
+    Tests should instantiate Config() directly to obtain isolated configuration instances instead of using the shared default.
+    
+    Returns:
+        config (Config): The shared default configuration instance.
+    """
+    global _default_config
+    if _default_config is None:
+        with _config_lock:
+            if _default_config is None:
+                _default_config = Config()
+    return _default_config
+
+
+def reset_config() -> None:
+    """Reset the default config (useful for testing)."""
+    global _default_config
+    with _config_lock:
+        _default_config = None
+
+
+# Backward compatibility: module-level 'config' attribute
+# This uses __getattr__ to provide lazy loading while maintaining backward compatibility
+# Existing code: `from glorious_agents.config import config` (still works, but loads lazily)
+# New code: `get_config()` for explicit lazy loading
+def __getattr__(name: str) -> Config:
+    """Provide lazy-loaded module-level config attribute."""
+    if name == "config":
+        return get_config()
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

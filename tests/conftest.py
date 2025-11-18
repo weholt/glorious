@@ -48,20 +48,24 @@ def _reset_runtime() -> Generator[None]:
 
 @pytest.fixture
 def temp_data_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Create a temporary data folder and set environment variable."""
+    """
+    Create a temporary data folder, set DATA_FOLDER to its path, and reset the lazy-loaded config singleton.
+    
+    Parameters:
+        tmp_path (Path): Base temporary directory provided by pytest.
+        monkeypatch (pytest.MonkeyPatch): Pytest fixture used to set environment variables.
+    
+    Returns:
+        Path: Path to the created data folder.
+    """
     data_folder = tmp_path / ".agent"
     data_folder.mkdir()
     # Use DATA_FOLDER which is what config actually reads
     monkeypatch.setenv("DATA_FOLDER", str(data_folder))
 
-    # Reload config to pick up new environment variable
-    import glorious_agents.config as config_module
+    # Reset and reload config to pick up new environment variable
+    from glorious_agents.config import reset_config
 
-    config_module.config = config_module.Config()
-
-    # Also update the imported reference in db module
-    import glorious_agents.core.db as db_module
-
-    db_module.config = config_module.config
+    reset_config()  # Reset the lazy-loaded singleton
 
     return data_folder

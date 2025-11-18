@@ -64,18 +64,78 @@ class SkillContext:
     def __init__(
         self, conn: sqlite3.Connection, event_bus: EventBus, cache_max_size: int = 1000
     ) -> None:
+        """
+        Initialize a SkillContext with a shared database connection, an event bus, and a TTL-backed in-process cache.
+        
+        Parameters:
+        	conn (sqlite3.Connection): Shared SQLite connection used by skills; accessing `conn` after the context is closed will raise a RuntimeError.
+        	event_bus (EventBus): In-process event bus for inter-skill publish/subscribe.
+        	cache_max_size (int): Maximum number of entries the internal TTL cache will hold (default 1000).
+        """
         self._conn = conn
         self._event_bus = event_bus
         self._skills: dict[str, SkillApp] = {}
         self._cache = TTLCache(max_size=cache_max_size)
+        self._closed = False
+
+    def __enter__(self) -> "SkillContext":
+        """
+        Provide the SkillContext instance for use in a with statement.
+        
+        Returns:
+            The same SkillContext instance.
+        """
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """
+        Clean up the context by closing resources when exiting a with block.
+        
+        Called by the context manager protocol; invokes `close()` to release any held resources.
+        The exception type, value, and traceback passed by the protocol are accepted but ignored.
+        Parameters:
+            exc_type (Any): The exception type if an exception occurred, otherwise None.
+            exc_val (Any): The exception instance if an exception occurred, otherwise None.
+            exc_tb (Any): The traceback if an exception occurred, otherwise None.
+        """
+        self.close()
+
+    def close(self) -> None:
+        """
+        Close the shared database connection and mark the context as closed.
+        
+        Any exceptions raised while closing the connection are ignored.
+        """
+        if not self._closed:
+            try:
+                self._conn.close()
+            except Exception:
+                pass  # Ignore errors during cleanup
+            self._closed = True
 
     @property
     def conn(self) -> sqlite3.Connection:
-        """Get the shared database connection."""
+        """
+        Access the shared sqlite3 database connection for this context.
+        
+        Returns:
+            sqlite3.Connection: The shared database connection.
+        
+        Raises:
+            RuntimeError: If the context has been closed and the connection is no longer available.
+        """
+        if self._closed:
+            raise RuntimeError("Cannot use connection after context is closed")
         return self._conn
 
     def publish(self, topic: str, data: dict[str, Any]) -> None:
-        """Publish an event."""
+        """
+        Publish an event to the shared in-process event bus for subscribers of the given topic.
+        
+        Parameters:
+        	topic (str): Topic name identifying the event channel.
+        	data (dict[str, Any]): Event payload passed to each subscriber callback.
+        """
         self._event_bus.publish(topic, data)
 
     def subscribe(self, topic: str, callback: Callable[[dict[str, Any]], None]) -> None:

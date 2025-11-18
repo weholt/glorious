@@ -1,5 +1,6 @@
 """Runtime singleton for skill context."""
 
+import atexit
 import threading
 
 from glorious_agents.core.context import EventBus, SkillContext
@@ -11,12 +12,10 @@ _lock = threading.Lock()
 
 def get_ctx() -> SkillContext:
     """
-    Get the singleton skill context.
-
-    Thread-safe singleton initialization using double-checked locking pattern.
-    The context is shared across all skills and provides access to the database
-    connection and event bus.
-
+    Retrieve the global SkillContext singleton used by skills.
+    
+    Initializes and returns the shared SkillContext on first access; subsequent calls return the same instance.
+    
     Returns:
         The shared SkillContext instance.
     """
@@ -29,18 +28,28 @@ def get_ctx() -> SkillContext:
                 conn = get_connection(check_same_thread=False)
                 event_bus = EventBus()
                 _context = SkillContext(conn, event_bus)
+                # Register cleanup on exit
+                atexit.register(_cleanup_context)
     return _context
 
 
 def reset_ctx() -> None:
     """
-    Reset the context (useful for testing).
-
-    Thread-safe cleanup of the singleton context. Closes the database connection
-    and resets the global context to None.
+    Reset the module-level SkillContext singleton and release its resources.
+    
+    If a context exists, this function calls its close() method and sets the global context reference to None. The operation is performed under the module lock to be safe for concurrent use (commonly used in tests or shutdown handling).
     """
     global _context
     with _lock:
         if _context is not None:
-            _context.conn.close()
+            _context.close()
         _context = None
+
+
+def _cleanup_context() -> None:
+    """
+    Ensure the module-level SkillContext is closed and cleared at program exit.
+    
+    Intended to be registered with program-exit handlers to release resources held by the singleton context.
+    """
+    reset_ctx()

@@ -6,6 +6,8 @@ from collections.abc import Callable
 from enum import Enum
 from typing import Any
 
+import sqlparse
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,21 +64,114 @@ class SkillPermissions:
 class RestrictedConnection:
     """Database connection wrapper with permission checks."""
 
+    # Class-level constants for SQL operation types
+    READ_OPERATIONS = frozenset({"SELECT", "PRAGMA", "EXPLAIN"})
+    WRITE_OPERATIONS = frozenset({"INSERT", "UPDATE", "DELETE", "REPLACE"})
+    DDL_OPERATIONS = frozenset({"CREATE", "DROP", "ALTER", "TRUNCATE", "RENAME"})
+
     def __init__(self, conn: sqlite3.Connection, permissions: SkillPermissions) -> None:
+        """
+        Initialize the RestrictedConnection wrapper that enforces skill permissions for database operations.
+        
+        Parameters:
+            conn (sqlite3.Connection): The underlying SQLite connection to be wrapped.
+            permissions (SkillPermissions): Permission set used to authorize database operations.
+        """
         self._conn = conn
         self._permissions = permissions
 
+    def _get_sql_operation_type(self, sql: str) -> str:
+        """
+        Classify an SQL statement as a read, write, DDL, or unknown operation using sqlparse.
+        
+        Uses sqlparse to determine the statement's leading operation token and returns one of 'read', 'write', 'ddl', or 'unknown'. If parsing fails, this function conservatively returns 'write'.
+        
+        Parameters:
+            sql (str): The SQL statement to classify.
+        
+        Returns:
+            str: One of 'read', 'write', 'ddl', or 'unknown'.
+        """
+        try:
+            parsed = sqlparse.parse(sql)
+            if not parsed:
+                return "unknown"
+
+            stmt = parsed[0]
+
+            # Get first meaningful token (skip whitespace and comments)
+            first_token = stmt.token_first(skip_ws=True, skip_cm=True)
+            if not first_token:
+                return "unknown"
+
+            # Check token type and value
+            token_value = first_token.value.upper()
+
+            if token_value in self.READ_OPERATIONS:
+                return "read"
+            elif token_value in self.WRITE_OPERATIONS:
+                return "write"
+            elif token_value in self.DDL_OPERATIONS:
+                return "ddl"
+            elif token_value == "WITH":
+                # CTE - analyze the actual operation after the CTE definition
+                # Find the main statement after the CTE(s)
+                tokens = list(stmt.flatten())
+                cte_level = 0
+                for token in tokens:
+                    # Track parentheses to find end of CTE definition
+                    if token.match(sqlparse.tokens.Punctuation, "("):
+                        cte_level += 1
+                    elif token.match(sqlparse.tokens.Punctuation, ")"):
+                        if cte_level > 0:
+                            cte_level -= 1
+                    # After all CTE parentheses closed, look for main statement
+                    if cte_level == 0 and token.ttype in (sqlparse.tokens.Keyword, sqlparse.tokens.DML, sqlparse.tokens.DDL):
+                        token_upper = token.value.upper()
+                        if token_upper in self.WRITE_OPERATIONS:
+                            return "write"
+                        elif token_upper in self.DDL_OPERATIONS:
+                            return "ddl"
+                        elif token_upper in self.READ_OPERATIONS:
+                            return "read"
+                        # If it's not a recognized operation, continue
+                # If we only found SELECT, it's a read operation
+                if any(t.value.upper() == "SELECT" for t in tokens):
+                    return "read"
+                # If we can't determine, be conservative
+                return "unknown"
+            else:
+                return "unknown"
+        except Exception as e:
+            # If parsing fails, be conservative and treat as write
+            logger.warning(f"Failed to parse SQL statement: {e}")
+            return "write"
+
     def execute(self, sql: str, parameters: Any = None) -> sqlite3.Cursor:
-        """Execute SQL with permission checks."""
-        sql_upper = sql.strip().upper()
+        """
+        Execute an SQL statement against the wrapped connection after enforcing DB permissions based on the statement type.
+        
+        The statement is classified as a read, write, DDL, or unknown operation and permissions are required accordingly: read operations require DB_READ; write, DDL, and unknown operations require DB_WRITE.
+        
+        Parameters:
+            sql (str): SQL statement to execute.
+            parameters (Any, optional): Parameters for a parameterized query (positional sequence or mapping).
+        
+        Returns:
+            sqlite3.Cursor: Cursor resulting from executing the statement.
+        
+        Raises:
+            PermissionError: If the skill lacks the required database permission for the classified operation.
+        """
+        operation_type = self._get_sql_operation_type(sql)
 
-        # Check for write operations
-        write_operations = ["INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER"]
-        is_write = any(sql_upper.startswith(op) for op in write_operations)
-
-        if is_write:
+        if operation_type == "ddl":
+            # DDL operations require write permission
             self._permissions.require(Permission.DB_WRITE)
-        else:
+        elif operation_type in ("write", "unknown"):
+            # Write or unknown operations require write permission (conservative)
+            self._permissions.require(Permission.DB_WRITE)
+        else:  # read
             self._permissions.require(Permission.DB_READ)
 
         if parameters is None:
