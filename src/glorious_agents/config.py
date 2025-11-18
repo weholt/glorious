@@ -6,7 +6,9 @@ GLORIOUS_ prefix or via .env file in project root.
 """
 
 import os
+import threading
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -23,11 +25,17 @@ def _find_project_root() -> Path:
 class Config:
     """Configuration settings for the glorious-agents framework."""
 
-    def __init__(self) -> None:
-        """Initialize configuration from environment variables and .env file."""
+    def __init__(self, env_file: Optional[Path] = None) -> None:
+        """Initialize configuration from environment variables and .env file.
+
+        Args:
+            env_file: Optional path to .env file. If None, searches project root.
+        """
         # Load .env file from project root if it exists
-        project_root = _find_project_root()
-        env_file = project_root / ".env"
+        if env_file is None:
+            project_root = _find_project_root()
+            env_file = project_root / ".env"
+
         if env_file.exists():
             load_dotenv(env_file)
 
@@ -77,5 +85,33 @@ class Config:
         return self.get_db_path(self.DB_MASTER_NAME)
 
 
-# Singleton instance
-config = Config()
+# Default singleton for backward compatibility
+# New code should use get_config() or create Config() instances
+_default_config: Optional[Config] = None
+_config_lock = threading.Lock()
+
+
+def get_config() -> Config:
+    """Get the default configuration instance (lazy-loaded singleton).
+
+    For testing, use Config() directly to create isolated instances.
+    """
+    global _default_config
+    if _default_config is None:
+        with _config_lock:
+            if _default_config is None:
+                _default_config = Config()
+    return _default_config
+
+
+def reset_config() -> None:
+    """Reset the default config (useful for testing)."""
+    global _default_config
+    with _config_lock:
+        _default_config = None
+
+
+# Backward compatibility: module-level 'config' attribute
+# This allows existing code like `from glorious_agents.config import config` to work
+# But encourages new code to use get_config() or dependency injection
+config = get_config()
