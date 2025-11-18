@@ -1,6 +1,5 @@
 """Schema initialization for skills and core tables."""
 
-
 from pathlib import Path
 
 from glorious_agents.core.db.connection import get_connection
@@ -9,7 +8,7 @@ from glorious_agents.core.db.connection import get_connection
 def init_skill_schema(skill_name: str, schema_path: Path) -> None:
     """
     Initialize a skill's database schema, applying migrations when available or executing a legacy schema and recording it.
-    
+
     Parameters:
         skill_name (str): Identifier for the skill used to track applied migrations or legacy schema entries.
         schema_path (Path): Filesystem path to the SQL schema file; if the file does not exist, the function does nothing.
@@ -69,7 +68,7 @@ def init_skill_schema(skill_name: str, schema_path: Path) -> None:
 def init_master_db() -> None:
     """
     Ensure the master registry table for agents exists in the unified database.
-    
+
     Creates the `core_agents` table if missing with columns: `code` (TEXT, primary key), `name` (TEXT, not null), `role` (TEXT), `project_id` (TEXT), and `created_at` (TIMESTAMP, defaults to CURRENT_TIMESTAMP).
     """
     conn = get_connection()

@@ -9,9 +9,9 @@ from glorious_agents.config import get_config
 def get_data_folder() -> Path:
     """
     Return the configured data folder Path and ensure the directory exists.
-    
+
     Ensures the directory specified by the configuration's DATA_FOLDER exists (creates it if missing).
-    
+
     Returns:
         Path: Path object pointing to the data folder.
     """
@@ -24,10 +24,10 @@ def get_data_folder() -> Path:
 def get_agent_db_path(agent_code: str | None = None) -> Path:
     """
     Resolve the path to the unified SQLite database file in the configured data folder.
-    
+
     Parameters:
         agent_code (str | None): Deprecated and kept for compatibility; ignored when computing the path.
-    
+
     Returns:
         Path: Path to the unified SQLite database file.
     """
@@ -39,10 +39,10 @@ def get_agent_db_path(agent_code: str | None = None) -> Path:
 def get_connection(check_same_thread: bool = False) -> sqlite3.Connection:
     """
     Open a SQLite connection to the active agent's database configured for production use.
-    
+
     Parameters:
         check_same_thread (bool): If True, restricts the connection to the creating thread; otherwise allow cross-thread use.
-    
+
     Returns:
         sqlite3.Connection: A connection to the agent database with WAL journal mode, foreign key enforcement enabled, and performance-oriented PRAGMA settings applied.
     """
@@ -67,7 +67,7 @@ def get_connection(check_same_thread: bool = False) -> sqlite3.Connection:
 def get_master_db_path() -> Path:
     """
     Provide the filesystem path to the unified database used for master tables.
-    
+
     Returns:
         Path: Path object pointing to the unified database file.
     """

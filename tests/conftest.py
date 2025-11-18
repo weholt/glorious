@@ -50,11 +50,11 @@ def _reset_runtime() -> Generator[None]:
 def temp_data_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """
     Create a temporary data folder, set DATA_FOLDER to its path, and reset the lazy-loaded config singleton.
-    
+
     Parameters:
         tmp_path (Path): Base temporary directory provided by pytest.
         monkeypatch (pytest.MonkeyPatch): Pytest fixture used to set environment variables.
-    
+
     Returns:
         Path: Path to the created data folder.
     """

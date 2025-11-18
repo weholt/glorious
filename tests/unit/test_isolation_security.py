@@ -20,7 +20,7 @@ from glorious_agents.core.isolation import (
 def mock_conn():
     """
     Create a Mock object constrained to behave like a sqlite3.Connection for use in tests.
-    
+
     Returns:
         Mock: A Mock instance with spec set to `sqlite3.Connection`.
     """
@@ -31,9 +31,9 @@ def mock_conn():
 def read_only_permissions():
     """
     Create SkillPermissions for "test_skill" configured with only database read permission.
-    
+
     The returned permissions grant DB_READ and do not grant DB_WRITE or other elevated database permissions.
-    
+
     Returns:
         SkillPermissions: Permissions object for "test_skill" with only DB_READ granted.
     """
@@ -46,7 +46,7 @@ def read_only_permissions():
 def write_permissions():
     """
     Create SkillPermissions for "test_skill" with database write permission granted.
-    
+
     Returns:
         SkillPermissions: a permissions object for "test_skill" with `Permission.DB_WRITE` granted.
     """
@@ -155,7 +155,7 @@ class TestPermissionEnforcement:
         """Test that SELECT is allowed with read permission."""
         restricted = RestrictedConnection(mock_conn, read_only_permissions)
         mock_conn.execute.return_value = Mock()
-        
+
         # Should not raise
         restricted.execute("SELECT * FROM users")
         mock_conn.execute.assert_called_once()
@@ -163,7 +163,7 @@ class TestPermissionEnforcement:
     def test_write_blocked_without_write_permission(self, mock_conn, read_only_permissions):
         """Test that INSERT is blocked without write permission."""
         restricted = RestrictedConnection(mock_conn, read_only_permissions)
-        
+
         with pytest.raises(PermissionError, match="db_write"):
             restricted.execute("INSERT INTO users VALUES (1)")
 
@@ -171,7 +171,7 @@ class TestPermissionEnforcement:
         """Test that INSERT is allowed with write permission."""
         restricted = RestrictedConnection(mock_conn, write_permissions)
         mock_conn.execute.return_value = Mock()
-        
+
         # Should not raise
         restricted.execute("INSERT INTO users VALUES (1)")
         mock_conn.execute.assert_called_once()
@@ -179,7 +179,7 @@ class TestPermissionEnforcement:
     def test_comment_bypass_blocked(self, mock_conn, read_only_permissions):
         """Test that comment bypass attempt is blocked."""
         restricted = RestrictedConnection(mock_conn, read_only_permissions)
-        
+
         # Attempt to bypass with comment
         with pytest.raises(PermissionError, match="db_write"):
             restricted.execute("/* comment */ INSERT INTO users VALUES (1)")
@@ -187,7 +187,7 @@ class TestPermissionEnforcement:
     def test_whitespace_bypass_blocked(self, mock_conn, read_only_permissions):
         """Test that whitespace bypass attempt is blocked."""
         restricted = RestrictedConnection(mock_conn, read_only_permissions)
-        
+
         # Attempt to bypass with whitespace
         with pytest.raises(PermissionError, match="db_write"):
             restricted.execute("\n\t  INSERT INTO users VALUES (1)")
@@ -195,7 +195,7 @@ class TestPermissionEnforcement:
     def test_cte_bypass_blocked(self, mock_conn, read_only_permissions):
         """Test that CTE bypass attempt is blocked."""
         restricted = RestrictedConnection(mock_conn, read_only_permissions)
-        
+
         # Attempt to bypass with CTE
         with pytest.raises(PermissionError, match="db_write"):
             restricted.execute("""
@@ -206,14 +206,14 @@ class TestPermissionEnforcement:
     def test_ddl_blocked_without_write_permission(self, mock_conn, read_only_permissions):
         """Test that DDL operations are blocked without write permission."""
         restricted = RestrictedConnection(mock_conn, read_only_permissions)
-        
+
         with pytest.raises(PermissionError, match="db_write"):
             restricted.execute("CREATE TABLE test (id INT)")
 
     def test_unknown_operation_treated_as_write(self, mock_conn, read_only_permissions):
         """Test that unknown operations are conservatively treated as write."""
         restricted = RestrictedConnection(mock_conn, read_only_permissions)
-        
+
         # Malformed or unrecognized SQL should be blocked for read-only
         with pytest.raises(PermissionError, match="db_write"):
             restricted.execute("SOMETHING_WEIRD FROM users")
@@ -226,7 +226,7 @@ class TestParameterizedQueries:
         """Test SELECT with parameters."""
         restricted = RestrictedConnection(mock_conn, read_only_permissions)
         mock_conn.execute.return_value = Mock()
-        
+
         restricted.execute("SELECT * FROM users WHERE id = ?", (1,))
         mock_conn.execute.assert_called_once_with("SELECT * FROM users WHERE id = ?", (1,))
 
@@ -234,11 +234,9 @@ class TestParameterizedQueries:
         """Test INSERT with parameters."""
         restricted = RestrictedConnection(mock_conn, write_permissions)
         mock_conn.execute.return_value = Mock()
-        
+
         restricted.execute("INSERT INTO users VALUES (?, ?)", (1, "test"))
-        mock_conn.execute.assert_called_once_with(
-            "INSERT INTO users VALUES (?, ?)", (1, "test")
-        )
+        mock_conn.execute.assert_called_once_with("INSERT INTO users VALUES (?, ?)", (1, "test"))
 
 
 class TestEdgeCases:

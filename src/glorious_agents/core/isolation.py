@@ -6,7 +6,7 @@ from collections.abc import Callable
 from enum import Enum
 from typing import Any
 
-import sqlparse
+import sqlparse  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class RestrictedConnection:
     def __init__(self, conn: sqlite3.Connection, permissions: SkillPermissions) -> None:
         """
         Initialize the RestrictedConnection wrapper that enforces skill permissions for database operations.
-        
+
         Parameters:
             conn (sqlite3.Connection): The underlying SQLite connection to be wrapped.
             permissions (SkillPermissions): Permission set used to authorize database operations.
@@ -83,12 +83,12 @@ class RestrictedConnection:
     def _get_sql_operation_type(self, sql: str) -> str:
         """
         Classify an SQL statement as a read, write, DDL, or unknown operation using sqlparse.
-        
+
         Uses sqlparse to determine the statement's leading operation token and returns one of 'read', 'write', 'ddl', or 'unknown'. If parsing fails, this function conservatively returns 'write'.
-        
+
         Parameters:
             sql (str): The SQL statement to classify.
-        
+
         Returns:
             str: One of 'read', 'write', 'ddl', or 'unknown'.
         """
@@ -126,7 +126,11 @@ class RestrictedConnection:
                         if cte_level > 0:
                             cte_level -= 1
                     # After all CTE parentheses closed, look for main statement
-                    if cte_level == 0 and token.ttype in (sqlparse.tokens.Keyword, sqlparse.tokens.DML, sqlparse.tokens.DDL):
+                    if cte_level == 0 and token.ttype in (
+                        sqlparse.tokens.Keyword,
+                        sqlparse.tokens.DML,
+                        sqlparse.tokens.DDL,
+                    ):
                         token_upper = token.value.upper()
                         if token_upper in self.WRITE_OPERATIONS:
                             return "write"
@@ -150,16 +154,16 @@ class RestrictedConnection:
     def execute(self, sql: str, parameters: Any = None) -> sqlite3.Cursor:
         """
         Execute an SQL statement against the wrapped connection after enforcing DB permissions based on the statement type.
-        
+
         The statement is classified as a read, write, DDL, or unknown operation and permissions are required accordingly: read operations require DB_READ; write, DDL, and unknown operations require DB_WRITE.
-        
+
         Parameters:
             sql (str): SQL statement to execute.
             parameters (Any, optional): Parameters for a parameterized query (positional sequence or mapping).
-        
+
         Returns:
             sqlite3.Cursor: Cursor resulting from executing the statement.
-        
+
         Raises:
             PermissionError: If the skill lacks the required database permission for the classified operation.
         """

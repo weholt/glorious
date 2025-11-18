@@ -1,7 +1,8 @@
 """Batch operations for improved database performance."""
 
-from glorious_agents.core.db.connection import get_connection
 from typing import Any
+
+from glorious_agents.core.db.connection import get_connection
 
 
 def batch_execute(

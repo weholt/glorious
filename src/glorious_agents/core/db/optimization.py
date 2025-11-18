@@ -8,7 +8,7 @@ from glorious_agents.core.db.connection import get_connection
 def optimize_database() -> None:
     """
     Perform periodic maintenance to optimize the SQLite database.
-    
+
     Runs ANALYZE to update query planner statistics, attempts to compact FTS5 indexes (ignoring sqlite3 errors for tables that do not support optimize), and commits the changes. The connection is always closed when finished. The VACUUM operation is intentionally not run by default because it requires no active transactions and can be time-consuming; run it separately during maintenance windows if desired.
     """
     conn = get_connection()
@@ -27,9 +27,9 @@ def optimize_database() -> None:
             except sqlite3.Error:
                 pass  # Some FTS tables might not support optimize
 
-        # Note: VACUUM requires no active transactions and can take time
-        # Only run this during off-peak times or maintenance windows
-        # conn.execute("VACUUM;")  # Uncomment for deep cleanup
+                # Note: VACUUM requires no active transactions and can take time
+                # Only run this during off-peak times or maintenance windows
+                # conn.execute("VACUUM;")  # Uncomment for deep cleanup
                 conn.execute(f'INSERT INTO "{fts_table}"("{fts_table}") VALUES(\'optimize\');')
         conn.commit()
     finally:

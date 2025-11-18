@@ -9,7 +9,7 @@ from glorious_agents.core.db.connection import get_agent_db_path, get_connection
 def migrate_legacy_databases() -> None:
     """
     Migrate data from legacy database files into the unified agent database.
-    
+
     If a legacy agents/default/agent.db exists and the unified database is missing, copies the legacy agent database into the unified location. If a legacy master database exists, reads rows from its agents table and inserts them into the unified core_agents table, preserving existing rows. Prints status messages for performed migrations and a warning if master database migration fails.
     """
     config = get_config()
