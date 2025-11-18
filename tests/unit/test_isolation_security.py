@@ -18,13 +18,25 @@ from glorious_agents.core.isolation import (
 
 @pytest.fixture
 def mock_conn():
-    """Create a mock SQLite connection."""
+    """
+    Create a Mock object constrained to behave like a sqlite3.Connection for use in tests.
+    
+    Returns:
+        Mock: A Mock instance with spec set to `sqlite3.Connection`.
+    """
     return Mock(spec=sqlite3.Connection)
 
 
 @pytest.fixture
 def read_only_permissions():
-    """Create permissions with only read access."""
+    """
+    Create SkillPermissions for "test_skill" configured with only database read permission.
+    
+    The returned permissions grant DB_READ and do not grant DB_WRITE or other elevated database permissions.
+    
+    Returns:
+        SkillPermissions: Permissions object for "test_skill" with only DB_READ granted.
+    """
     perms = SkillPermissions("test_skill")
     # Default has DB_READ, remove others to be explicit
     return perms
@@ -32,7 +44,12 @@ def read_only_permissions():
 
 @pytest.fixture
 def write_permissions():
-    """Create permissions with write access."""
+    """
+    Create SkillPermissions for "test_skill" with database write permission granted.
+    
+    Returns:
+        SkillPermissions: a permissions object for "test_skill" with `Permission.DB_WRITE` granted.
+    """
     perms = SkillPermissions("test_skill")
     perms.grant(Permission.DB_WRITE)
     return perms

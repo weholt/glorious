@@ -12,12 +12,10 @@ _lock = threading.Lock()
 
 def get_ctx() -> SkillContext:
     """
-    Get the singleton skill context.
-
-    Thread-safe singleton initialization using double-checked locking pattern.
-    The context is shared across all skills and provides access to the database
-    connection and event bus.
-
+    Retrieve the global SkillContext singleton used by skills.
+    
+    Initializes and returns the shared SkillContext on first access; subsequent calls return the same instance.
+    
     Returns:
         The shared SkillContext instance.
     """
@@ -37,10 +35,9 @@ def get_ctx() -> SkillContext:
 
 def reset_ctx() -> None:
     """
-    Reset the context (useful for testing).
-
-    Thread-safe cleanup of the singleton context. Closes the database connection
-    and resets the global context to None.
+    Reset the module-level SkillContext singleton and release its resources.
+    
+    If a context exists, this function calls its close() method and sets the global context reference to None. The operation is performed under the module lock to be safe for concurrent use (commonly used in tests or shutdown handling).
     """
     global _context
     with _lock:
@@ -50,5 +47,9 @@ def reset_ctx() -> None:
 
 
 def _cleanup_context() -> None:
-    """Cleanup function called on program exit."""
+    """
+    Ensure the module-level SkillContext is closed and cleared at program exit.
+    
+    Intended to be registered with program-exit handlers to release resources held by the singleton context.
+    """
     reset_ctx()

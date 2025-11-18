@@ -26,10 +26,19 @@ class Config:
     """Configuration settings for the glorious-agents framework."""
 
     def __init__(self, env_file: Optional[Path] = None) -> None:
-        """Initialize configuration from environment variables and .env file.
-
-        Args:
-            env_file: Optional path to .env file. If None, searches project root.
+        """
+        Initialize configuration from environment variables and an optional .env file.
+        
+        If `env_file` is None, the project root is located and `<project_root>/.env` is used when present.
+        When a .env file exists at the chosen path, its values are loaded into the environment before reading
+        configuration values. The constructor then reads environment variables to populate attributes such
+        as `DB_NAME`, `DB_SHARED_NAME`, `DB_MASTER_NAME`, `DAEMON_HOST`, `DAEMON_PORT`, `DAEMON_API_KEY`,
+        `SKILLS_DIR`, and `DATA_FOLDER`. If `DATA_FOLDER` is not set in the environment, it defaults to
+        `<project_root>/.agent`.
+        
+        Parameters:
+            env_file (Optional[Path]): Path to a .env file to load before reading environment variables.
+                If omitted, a .env file in the project root will be used if it exists.
         """
         # Load .env file from project root if it exists
         if env_file is None:
@@ -81,7 +90,12 @@ class Config:
         return self.get_db_path(self.DB_SHARED_NAME)
 
     def get_master_db_path(self) -> Path:
-        """Get the path to the master registry database (legacy)."""
+        """
+        Return the path to the legacy master registry database file.
+        
+        Returns:
+            Path: Full filesystem path to the master registry database.
+        """
         return self.get_db_path(self.DB_MASTER_NAME)
 
 
@@ -92,9 +106,13 @@ _config_lock = threading.Lock()
 
 
 def get_config() -> Config:
-    """Get the default configuration instance (lazy-loaded singleton).
-
-    For testing, use Config() directly to create isolated instances.
+    """
+    Retrieve the module-level default Config instance used across the application.
+    
+    Tests should instantiate Config() directly to obtain isolated configuration instances instead of using the shared default.
+    
+    Returns:
+        config (Config): The shared default configuration instance.
     """
     global _default_config
     if _default_config is None:
