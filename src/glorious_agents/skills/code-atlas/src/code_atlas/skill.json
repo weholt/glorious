@@ -2,6 +2,7 @@
   "name": "atlas",
   "version": "0.1.0",
   "description": "Python codebase structure and metrics analyzer",
+  "entry_point": "code_atlas.skill:app",
   "requires": [],
   "schema_file": null,
   "requires_db": false,
