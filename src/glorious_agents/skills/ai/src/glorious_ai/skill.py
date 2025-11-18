@@ -1,13 +1,14 @@
+"""AI skill - LLM integration with embeddings and semantic search.
+
+Refactored to use modern architecture with Repository/Service patterns
+while remaining discoverable as a separate installable skill.
+"""
+
 from __future__ import annotations
 
-"""AI skill - LLM integration with embeddings and semantic search."""
-
 import json
-import os
-import pickle
 from typing import Any
 
-import numpy as np
 import typer
 from pydantic import Field
 from rich.console import Console
@@ -16,6 +17,8 @@ from rich.table import Table
 from glorious_agents.core.context import SkillContext
 from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, validate_input
+
+from .dependencies import get_ai_service
 
 app = typer.Typer(help="AI and LLM integration")
 console = Console()
@@ -48,8 +51,7 @@ class EmbeddingInput(SkillInput):
 def complete(
     prompt: str, model: str = "gpt-4", provider: str = "openai", max_tokens: int = 1000
 ) -> dict[str, Any]:
-    """
-    Generate LLM completion.
+    """Generate LLM completion.
 
     Args:
         prompt: The prompt text.
@@ -60,60 +62,15 @@ def complete(
     Returns:
         Dictionary with response and metadata.
     """
-    assert _ctx is not None, "Skill context not initialized"
+    service = get_ai_service()
 
-    api_key = os.getenv(f"{provider.upper()}_API_KEY")
-    if not api_key:
-        raise ValueError(f"Missing API key for {provider}")
-
-    if provider == "openai":
-        try:
-            from openai import OpenAI
-
-            client = OpenAI(api_key=api_key)
-            response = client.chat.completions.create(
-                model=model, messages=[{"role": "user", "content": prompt}], max_tokens=max_tokens
-            )
-            result = {
-                "response": response.choices[0].message.content,
-                "model": model,
-                "provider": provider,
-                "tokens_used": response.usage.total_tokens if response.usage else 0,
-            }
-        except ImportError:
-            raise ValueError("OpenAI library not installed")
-    elif provider == "anthropic":
-        try:
-            from anthropic import Anthropic
-
-            client = Anthropic(api_key=api_key)
-            response = client.messages.create(
-                model=model, max_tokens=max_tokens, messages=[{"role": "user", "content": prompt}]
-            )
-            result = {
-                "response": response.content[0].text,
-                "model": model,
-                "provider": provider,
-                "tokens_used": response.usage.input_tokens + response.usage.output_tokens,
-            }
-        except ImportError:
-            raise ValueError("Anthropic library not installed")
-    else:
-        raise ValueError(f"Unknown provider: {provider}")
-
-    _ctx.conn.execute(
-        "INSERT INTO ai_completions (prompt, response, model, provider, tokens_used) VALUES (?, ?, ?, ?, ?)",
-        (prompt, result["response"], model, provider, result["tokens_used"]),
-    )
-    _ctx.conn.commit()
-
-    return result
+    with service.uow:
+        return service.complete(prompt, model, provider, max_tokens)
 
 
 @validate_input
 def embed(content: str, model: str = "text-embedding-ada-002") -> list[float]:
-    """
-    Generate embeddings for content.
+    """Generate embeddings for content.
 
     Args:
         content: Content to embed.
@@ -122,29 +79,29 @@ def embed(content: str, model: str = "text-embedding-ada-002") -> list[float]:
     Returns:
         List of embedding values.
     """
-    assert _ctx is not None, "Skill context not initialized"
+    service = get_ai_service()
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError("Missing OPENAI_API_KEY")
+    with service.uow:
+        return service.embed(content, model)
 
-    try:
-        from openai import OpenAI
 
-        client = OpenAI(api_key=api_key)
-        response = client.embeddings.create(model=model, input=content)
-        embedding = response.data[0].embedding
+def semantic_search(
+    query: str, model: str = "text-embedding-ada-002", top_k: int = 5
+) -> list[dict[str, Any]]:
+    """Perform semantic search using embeddings.
 
-        embedding_blob = pickle.dumps(embedding)
-        _ctx.conn.execute(
-            "INSERT INTO ai_embeddings (content, embedding, model) VALUES (?, ?, ?)",
-            (content, embedding_blob, model),
-        )
-        _ctx.conn.commit()
+    Args:
+        query: Search query.
+        model: Embedding model name.
+        top_k: Number of results to return.
 
-        return embedding
-    except ImportError:
-        raise ValueError("OpenAI library not installed")
+    Returns:
+        List of search results with similarity scores.
+    """
+    service = get_ai_service()
+
+    with service.uow:
+        return service.semantic_search(query, model, top_k)
 
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
@@ -159,80 +116,10 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
     Returns:
         List of SearchResult objects
     """
-    from glorious_agents.core.search import SearchResult
+    service = get_ai_service()
 
-    if _ctx is None:
-        return []
-
-    # Search completions
-    cursor = _ctx.conn.execute(
-        """
-        SELECT id, prompt, response, model, provider, tokens_used
-        FROM ai_completions
-        WHERE prompt LIKE ? OR response LIKE ?
-        ORDER BY created_at DESC
-        LIMIT ?
-        """,
-        (f"%{query}%", f"%{query}%", limit),
-    )
-
-    results = []
-    for row in cursor.fetchall():
-        completion_id, prompt, response, model, provider, tokens = row
-        # Simple relevance scoring based on position
-        score = 0.8 if query.lower() in prompt.lower() else 0.6
-
-        results.append(
-            SearchResult(
-                skill="ai",
-                id=f"completion-{completion_id}",
-                type="completion",
-                content=f"{prompt[:100]}...\n\n{response[:200]}...",
-                metadata={"model": model, "provider": provider, "tokens": tokens},
-                score=score,
-            )
-        )
-
-    return results
-
-
-def semantic_search(
-    query: str, model: str = "text-embedding-ada-002", top_k: int = 5
-) -> list[dict[str, Any]]:
-    """
-    Perform semantic search using embeddings.
-
-    Args:
-        query: Search query.
-        model: Embedding model name.
-        top_k: Number of results to return.
-
-    Returns:
-        List of search results with similarity scores.
-    """
-    assert _ctx is not None, "Skill context not initialized"
-
-    query_embedding = embed(query, model)
-    query_vec = np.array(query_embedding, dtype=np.float32)
-
-    rows = _ctx.conn.execute(
-        "SELECT id, content, embedding FROM ai_embeddings WHERE model = ?", (model,)
-    ).fetchall()
-
-    if not rows:
-        return []
-
-    similarities = []
-    for row_id, content, embedding_blob in rows:
-        embedding = pickle.loads(embedding_blob)
-        doc_vec = np.array(embedding, dtype=np.float32)
-        similarity = np.dot(query_vec, doc_vec) / (
-            np.linalg.norm(query_vec) * np.linalg.norm(doc_vec)
-        )
-        similarities.append({"id": row_id, "content": content, "similarity": float(similarity)})
-
-    similarities.sort(key=lambda x: x["similarity"], reverse=True)
-    return similarities[:top_k]
+    with service.uow:
+        return service.search_completions(query, limit)
 
 
 @app.command(name="complete")
@@ -320,40 +207,48 @@ def history(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """Show completion history."""
-    assert _ctx is not None, "Skill context not initialized"
+    service = get_ai_service()
 
-    rows = _ctx.conn.execute(
-        "SELECT id, prompt, model, provider, tokens_used, created_at FROM ai_completions ORDER BY created_at DESC LIMIT ?",
-        (limit,),
-    ).fetchall()
+    with service.uow:
+        completions = service.get_completion_history(limit)
 
-    if json_output:
-        results = [
-            {
-                "id": row[0],
-                "prompt": row[1][:100] + "..." if len(row[1]) > 100 else row[1],
-                "model": row[2],
-                "provider": row[3],
-                "tokens": row[4],
-                "created_at": row[5],
-            }
-            for row in rows
-        ]
-        console.print(json.dumps(results))
-    else:
-        if not rows:
-            console.print("[yellow]No completion history found.[/yellow]")
-            return
+        if json_output:
+            results = [
+                {
+                    "id": c.id,
+                    "prompt": c.prompt[:100] + "..." if len(c.prompt) > 100 else c.prompt,
+                    "model": c.model,
+                    "provider": c.provider,
+                    "tokens": c.tokens_used,
+                    "created_at": c.created_at.isoformat() if c.created_at else None,
+                }
+                for c in completions
+            ]
+            console.print(json.dumps(results))
+        else:
+            if not completions:
+                console.print("[yellow]No completion history found.[/yellow]")
+                return
 
-        table = Table(title="Completion History")
-        table.add_column("ID", style="cyan")
-        table.add_column("Prompt", style="white")
-        table.add_column("Model", style="green")
-        table.add_column("Provider", style="blue")
-        table.add_column("Tokens", style="yellow")
+            table = Table(title="Completion History")
+            table.add_column("ID", style="cyan")
+            table.add_column("Prompt", style="white")
+            table.add_column("Model", style="green")
+            table.add_column("Provider", style="blue")
+            table.add_column("Tokens", style="yellow")
 
-        for row in rows:
-            prompt_preview = row[1][:50] + "..." if len(row[1]) > 50 else row[1]
-            table.add_row(str(row[0]), prompt_preview, row[2], row[3], str(row[4]))
+            for completion in completions:
+                prompt_preview = (
+                    completion.prompt[:50] + "..."
+                    if len(completion.prompt) > 50
+                    else completion.prompt
+                )
+                table.add_row(
+                    str(completion.id),
+                    prompt_preview,
+                    completion.model,
+                    completion.provider,
+                    str(completion.tokens_used or 0),
+                )
 
-        console.print(table)
+            console.print(table)

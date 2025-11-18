@@ -1,6 +1,10 @@
-from __future__ import annotations
+"""Orchestrator skill - intent routing and workflows.
 
-"""Orchestrator skill - intent routing and workflows."""
+Refactored to use modern architecture with Repository/Service patterns
+while remaining discoverable as a separate installable skill.
+"""
+
+from __future__ import annotations
 
 import json
 
@@ -9,6 +13,8 @@ from rich.console import Console
 
 from glorious_agents.core.context import SkillContext
 from glorious_agents.core.search import SearchResult
+
+from .dependencies import get_orchestrator_service
 
 app = typer.Typer(help="Workflow orchestration")
 console = Console()
@@ -33,54 +39,10 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
     Returns:
         List of SearchResult objects
     """
-    from glorious_agents.core.search import SearchResult
+    service = get_orchestrator_service()
 
-    if _ctx is None:
-        return []
-
-    rows = _ctx.conn.execute(
-        "SELECT id, name, intent, status, created_at, completed_at FROM workflows"
-    ).fetchall()
-
-    results = []
-    query_lower = query.lower()
-
-    for wf_id, name, intent, status, created_at, completed_at in rows:
-        score = 0.0
-        matched = False
-
-        if query_lower in name.lower():
-            score += 0.8
-            matched = True
-
-        if intent and query_lower in intent.lower():
-            score += 0.6
-            matched = True
-
-        if query_lower in status.lower():
-            score += 0.3
-            matched = True
-
-        if matched:
-            score = min(1.0, score)
-
-            results.append(
-                SearchResult(
-                    skill="orchestrator",
-                    id=wf_id,
-                    type="workflow",
-                    content=f"{name}\n{intent or ''}",
-                    metadata={
-                        "status": status,
-                        "created_at": created_at,
-                        "completed_at": completed_at,
-                    },
-                    score=score,
-                )
-            )
-
-    results.sort(key=lambda r: r.score, reverse=True)
-    return results[:limit]
+    with service.uow:
+        return service.search_workflows(query, limit)
 
 
 @app.command()
@@ -94,46 +56,35 @@ def run(query: str) -> None:
 @app.command()
 def list() -> None:
     """List workflow history."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = get_orchestrator_service()
 
-    cur = _ctx.conn.execute("""
-        SELECT id, name, status, created_at
-        FROM workflows
-        ORDER BY created_at DESC
-        LIMIT 20
-    """)
+    with service.uow:
+        workflows = service.list_workflows(limit=20)
 
-    console.print("[cyan]Recent Workflows:[/cyan]")
-    for row in cur:
-        console.print(f"  #{row[0]} - {row[1]} [{row[2]}]")
+        console.print("[cyan]Recent Workflows:[/cyan]")
+        for workflow in workflows:
+            console.print(f"  #{workflow.id} - {workflow.name} [{workflow.status}]")
 
 
 @app.command()
 def status(workflow_id: int) -> None:
     """Check workflow status."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = get_orchestrator_service()
 
-    cur = _ctx.conn.execute(
-        """
-        SELECT name, status, steps, created_at, completed_at
-        FROM workflows WHERE id = ?
-    """,
-        (workflow_id,),
-    )
+    with service.uow:
+        workflow = service.get_workflow(workflow_id)
 
-    row = cur.fetchone()
-    if row:
-        console.print(f"[bold]Workflow #{workflow_id}: {row[0]}[/bold]")
-        console.print(f"Status: {row[1]}")
-        console.print(f"Created: {row[3]}")
-        if row[4]:
-            console.print(f"Completed: {row[4]}")
-        if row[2]:
-            steps = json.loads(row[2])
-            console.print(f"Steps: {len(steps)}")
-    else:
-        console.print("[yellow]Workflow not found[/yellow]")
+        if workflow:
+            console.print(f"[bold]Workflow #{workflow.id}: {workflow.name}[/bold]")
+            console.print(f"Status: {workflow.status}")
+            console.print(f"Created: {workflow.created_at}")
+            if workflow.completed_at:
+                console.print(f"Completed: {workflow.completed_at}")
+            if workflow.steps:
+                try:
+                    steps = json.loads(workflow.steps)
+                    console.print(f"Steps: {len(steps)}")
+                except json.JSONDecodeError:
+                    console.print("Steps: (invalid JSON)")
+        else:
+            console.print("[yellow]Workflow not found[/yellow]")

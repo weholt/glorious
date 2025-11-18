@@ -1,13 +1,14 @@
+"""Documentation management skill.
+
+Refactored to use modern architecture with Repository/Service patterns
+while remaining discoverable as a separate installable skill.
+"""
+
 from __future__ import annotations
 
-"""Documentation management skill."""
-
-import hashlib
 import json
-from datetime import datetime
 from pathlib import Path
 
-import frontmatter
 import typer
 from rich.console import Console
 from rich.markdown import Markdown
@@ -15,6 +16,8 @@ from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
 from glorious_agents.core.search import SearchResult
+
+from .dependencies import get_docs_service
 
 app = typer.Typer(help="Documentation management")
 console = Console()
@@ -25,12 +28,6 @@ def init_context(ctx: SkillContext) -> None:
     """Initialize skill context."""
     global _ctx
     _ctx = ctx
-
-
-def generate_doc_id(title: str) -> str:
-    """Generate a unique document ID from title."""
-    hash_obj = hashlib.sha256(title.encode())
-    return f"doc-{hash_obj.hexdigest()[:8]}"
 
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
@@ -45,42 +42,10 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
     Returns:
         List of SearchResult objects
     """
-    from glorious_agents.core.search import SearchResult
+    service = get_docs_service()
 
-    if _ctx is None:
-        return []
-
-    cursor = _ctx.conn.execute(
-        """
-        SELECT d.id, d.title, snippet(docs_fts, 1, '<mark>', '</mark>', '...', 32) as snippet,
-               rank
-        FROM docs_fts
-        JOIN docs_documents d ON docs_fts.rowid = d.rowid
-        WHERE docs_fts MATCH ?
-        ORDER BY rank
-        LIMIT ?
-        """,
-        (query, limit),
-    )
-
-    results = []
-    for row in cursor.fetchall():
-        doc_id, title, snippet, rank = row
-        # Convert FTS5 rank to 0-1 score (rank is negative, closer to 0 is better)
-        score = max(0.0, min(1.0, 1.0 + (rank / 10.0)))
-
-        results.append(
-            SearchResult(
-                skill="docs",
-                id=doc_id,
-                type="document",
-                content=f"{title}\n\n{snippet}",
-                metadata={"title": title},
-                score=score,
-            )
-        )
-
-    return results
+    with service.uow:
+        return service.search_documents(query, limit)
 
 
 @app.command()
@@ -95,114 +60,31 @@ def create(
     custom_id: str = typer.Option(None, "--id", help="Custom document ID"),
 ) -> None:
     """Create a new document."""
-    assert _ctx is not None
+    service = get_docs_service()
 
-    # Handle --from-file convenience option
-    if from_file:
-        content_file = from_file
+    try:
+        with service.uow:
+            # Handle --from-file convenience option
+            file_path = from_file or content_file
 
-    # Load content from file if specified
-    if content_file:
-        if not content_file.exists():
-            console.print(f"[red]Error: File not found: {content_file}[/red]")
-            raise typer.Exit(1)
+            if file_path:
+                doc = service.create_from_file(file_path, title, epic_id, custom_id)
+            else:
+                if not title:
+                    console.print(
+                        "[red]Error: Title is required (provide as argument or use --from-file)[/red]"
+                    )
+                    raise typer.Exit(1)
+                doc = service.create_document(title, content, epic_id, custom_id)
 
-        # Parse frontmatter from markdown file
-        try:
-            post = frontmatter.load(content_file)
-            content = post.content
-            metadata = post.metadata
-
-            # Extract title from frontmatter if not provided
-            if not title and metadata:
-                title = metadata.get("title") or metadata.get("Title")
-
-            # Extract epic from frontmatter if not provided
-            if not epic_id and metadata:
-                epic_id = metadata.get("epic") or metadata.get("Epic") or metadata.get("epic_id")
-
-            # Extract custom_id from frontmatter if not provided
-            if not custom_id and metadata:
-                custom_id = metadata.get("id") or metadata.get("doc_id")
-
-            # Store additional metadata as tags (for future use)
-            tags = None
-            if metadata:
-                tags = metadata.get("tags") or metadata.get("Tags")
-                if tags and isinstance(tags, list):
-                    tags = ", ".join(tags)
-
-            # Show what we extracted
-            if metadata:
-                console.print("[dim]Extracted from frontmatter:[/dim]")
-                if title:
-                    console.print(f"  title: {title}")
-                if epic_id:
-                    console.print(f"  epic: {epic_id}")
-                if custom_id:
-                    console.print(f"  id: {custom_id}")
-                if tags:
-                    console.print(f"  tags: {tags}")
-        except Exception as e:
-            console.print(f"[yellow]Warning: Could not parse frontmatter: {e}[/yellow]")
-            content = content_file.read_text()
-
-        # Auto-extract title from first # heading if still not provided
-        if not title:
-            for line in content.split("\n"):
-                line = line.strip()
-                if line.startswith("# "):
-                    title = line[2:].strip()
-                    break
-
-            # Fallback to filename if no title found
-            if not title:
-                title = content_file.stem.replace("-", " ").replace("_", " ").title()
-
-    if not title:
-        console.print(
-            "[red]Error: Title is required (provide as argument or use --from-file with # heading)[/red]"
-        )
+            console.print(f"[green]✓ Created document: {doc.id}[/green]")
+            if doc.epic_id:
+                console.print(f"  Linked to epic: {doc.epic_id}")
+            console.print(f"  Title: {doc.title}")
+            console.print(f"  Content length: {len(doc.content)} characters")
+    except (FileNotFoundError, ValueError) as e:
+        console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
-
-    if not content:
-        console.print("[yellow]Warning: Creating document with empty content[/yellow]")
-
-    # Generate or use custom ID
-    doc_id = custom_id or generate_doc_id(title)
-
-    # Check if document already exists
-    existing = _ctx.conn.execute("SELECT id FROM docs_documents WHERE id = ?", (doc_id,)).fetchone()
-
-    if existing:
-        console.print(f"[red]Error: Document {doc_id} already exists[/red]")
-        raise typer.Exit(1)
-
-    # Insert document
-    _ctx.conn.execute(
-        """
-        INSERT INTO docs_documents (id, title, content, epic_id, version, created_at, updated_at)
-        VALUES (?, ?, ?, ?, 1, ?, ?)
-        """,
-        (doc_id, title, content, epic_id, datetime.now(), datetime.now()),
-    )
-
-    # Save first version
-    _ctx.conn.execute(
-        """
-        INSERT INTO docs_versions (doc_id, version, content, changed_at)
-        VALUES (?, 1, ?, ?)
-        """,
-        (doc_id, content, datetime.now()),
-    )
-
-    _ctx.conn.commit()
-
-    console.print(f"[green]✓ Created document: {doc_id}[/green]")
-    if epic_id:
-        console.print(f"  Linked to epic: {epic_id}")
-    console.print(f"  Title: {title}")
-    console.print(f"  Content length: {len(content)} characters")
 
 
 @app.command()
@@ -213,85 +95,68 @@ def get(
     render: bool = typer.Option(True, "--render/--no-render", help="Render markdown"),
 ) -> None:
     """Get a document by ID."""
-    assert _ctx is not None
+    service = get_docs_service()
 
-    if version:
-        # Get specific version
-        row = _ctx.conn.execute(
-            """
-            SELECT doc_id, version, content, changed_at
-            FROM docs_versions
-            WHERE doc_id = ? AND version = ?
-            """,
-            (doc_id, version),
-        ).fetchone()
+    with service.uow:
+        if version:
+            doc_version = service.get_version(doc_id, version)
+            if not doc_version:
+                console.print(f"[red]Document {doc_id} version {version} not found[/red]")
+                raise typer.Exit(1)
 
-        if not row:
-            console.print(f"[red]Document {doc_id} version {version} not found[/red]")
-            raise typer.Exit(1)
-
-        _, ver, content, changed_at = row
-
-        if json_output:
-            typer.echo(
-                json.dumps(
-                    {
-                        "doc_id": doc_id,
-                        "version": ver,
-                        "content": content,
-                        "changed_at": str(changed_at),
-                    }
+            if json_output:
+                typer.echo(
+                    json.dumps(
+                        {
+                            "doc_id": doc_version.doc_id,
+                            "version": doc_version.version,
+                            "content": doc_version.content,
+                            "changed_at": doc_version.changed_at.isoformat()
+                            if doc_version.changed_at
+                            else None,
+                        }
+                    )
                 )
-            )
-        else:
-            console.print(f"[cyan]Document: {doc_id} (version {ver})[/cyan]")
-            console.print(f"Changed: {changed_at}\n")
-            if render:
-                console.print(Markdown(content))
             else:
-                console.print(content)
-    else:
-        # Get current version
-        row = _ctx.conn.execute(
-            """
-            SELECT id, title, content, epic_id, version, created_at, updated_at
-            FROM docs_documents
-            WHERE id = ?
-            """,
-            (doc_id,),
-        ).fetchone()
-
-        if not row:
-            console.print(f"[red]Document {doc_id} not found[/red]")
-            raise typer.Exit(1)
-
-        doc_id, title, content, epic_id, ver, created_at, updated_at = row
-
-        if json_output:
-            typer.echo(
-                json.dumps(
-                    {
-                        "id": doc_id,
-                        "title": title,
-                        "content": content,
-                        "epic_id": epic_id,
-                        "version": ver,
-                        "created_at": str(created_at),
-                        "updated_at": str(updated_at),
-                    }
+                console.print(
+                    f"[cyan]Document: {doc_version.doc_id} (version {doc_version.version})[/cyan]"
                 )
-            )
+                console.print(f"Changed: {doc_version.changed_at}\n")
+                if render:
+                    console.print(Markdown(doc_version.content))
+                else:
+                    console.print(doc_version.content)
         else:
-            console.print(f"[cyan]Document: {doc_id}[/cyan]")
-            console.print(f"Title: {title}")
-            console.print(f"Epic: {epic_id or 'None'}")
-            console.print(f"Version: {ver}")
-            console.print(f"Created: {created_at}")
-            console.print(f"Updated: {updated_at}\n")
-            if render:
-                console.print(Markdown(content))
+            doc = service.get_document(doc_id)
+            if not doc:
+                console.print(f"[red]Document {doc_id} not found[/red]")
+                raise typer.Exit(1)
+
+            if json_output:
+                typer.echo(
+                    json.dumps(
+                        {
+                            "id": doc.id,
+                            "title": doc.title,
+                            "content": doc.content,
+                            "epic_id": doc.epic_id,
+                            "version": doc.version,
+                            "created_at": doc.created_at.isoformat() if doc.created_at else None,
+                            "updated_at": doc.updated_at.isoformat() if doc.updated_at else None,
+                        }
+                    )
+                )
             else:
-                console.print(content)
+                console.print(f"[cyan]Document: {doc.id}[/cyan]")
+                console.print(f"Title: {doc.title}")
+                console.print(f"Epic: {doc.epic_id or 'None'}")
+                console.print(f"Version: {doc.version}")
+                console.print(f"Created: {doc.created_at}")
+                console.print(f"Updated: {doc.updated_at}\n")
+                if render:
+                    console.print(Markdown(doc.content))
+                else:
+                    console.print(doc.content)
 
 
 @app.command()
@@ -303,84 +168,27 @@ def update(
     epic_id: str = typer.Option(None, "--epic", help="Update epic link"),
 ) -> None:
     """Update a document."""
-    assert _ctx is not None
+    service = get_docs_service()
 
-    # Load content from file if specified
-    if content_file:
-        if not content_file.exists():
-            console.print(f"[red]Error: File not found: {content_file}[/red]")
-            raise typer.Exit(1)
+    try:
+        with service.uow:
+            if content_file:
+                doc = service.update_from_file(doc_id, content_file, title, epic_id)
+            else:
+                if not content and not title and epic_id is None:
+                    console.print("[red]Error: Nothing to update[/red]")
+                    raise typer.Exit(1)
+                doc = service.update_document(doc_id, title, content, epic_id)
 
-        # Parse frontmatter from markdown file
-        try:
-            post = frontmatter.load(content_file)
-            content = post.content
-            metadata = post.metadata
+            if not doc:
+                console.print(f"[red]Document {doc_id} not found[/red]")
+                raise typer.Exit(1)
 
-            # Extract title from frontmatter if not provided via CLI
-            if not title and metadata:
-                title = metadata.get("title") or metadata.get("Title")
-
-            # Extract epic from frontmatter if not provided via CLI
-            if epic_id is None and metadata:
-                epic_id = metadata.get("epic") or metadata.get("Epic") or metadata.get("epic_id")
-
-            # Show what we extracted
-            if metadata:
-                console.print("[dim]Extracted from frontmatter:[/dim]")
-                if title:
-                    console.print(f"  title: {title}")
-                if epic_id:
-                    console.print(f"  epic: {epic_id}")
-        except Exception as e:
-            console.print(f"[yellow]Warning: Could not parse frontmatter: {e}[/yellow]")
-            content = content_file.read_text()
-
-    if not content and not title and epic_id is None:
-        console.print("[red]Error: Nothing to update[/red]")
+            console.print(f"[green]✓ Updated document: {doc.id}[/green]")
+            console.print(f"  New version: {doc.version}")
+    except (FileNotFoundError, ValueError) as e:
+        console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
-
-    # Get current document
-    row = _ctx.conn.execute(
-        "SELECT id, title, content, epic_id, version FROM docs_documents WHERE id = ?", (doc_id,)
-    ).fetchone()
-
-    if not row:
-        console.print(f"[red]Document {doc_id} not found[/red]")
-        raise typer.Exit(1)
-
-    _, current_title, current_content, current_epic, current_version = row
-
-    # Use current values if not updating
-    new_title = title or current_title
-    new_content = content if content is not None else current_content
-    new_epic = epic_id if epic_id is not None else current_epic
-    new_version = current_version + 1
-
-    # Update document
-    _ctx.conn.execute(
-        """
-        UPDATE docs_documents
-        SET title = ?, content = ?, epic_id = ?, version = ?, updated_at = ?
-        WHERE id = ?
-        """,
-        (new_title, new_content, new_epic, new_version, datetime.now(), doc_id),
-    )
-
-    # Save new version if content changed
-    if content is not None:
-        _ctx.conn.execute(
-            """
-            INSERT INTO docs_versions (doc_id, version, content, changed_at)
-            VALUES (?, ?, ?, ?)
-            """,
-            (doc_id, new_version, new_content, datetime.now()),
-        )
-
-    _ctx.conn.commit()
-
-    console.print(f"[green]✓ Updated document: {doc_id}[/green]")
-    console.print(f"  New version: {new_version}")
 
 
 @app.command(name="list")
@@ -389,66 +197,49 @@ def list_docs(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """List all documents."""
-    assert _ctx is not None
+    service = get_docs_service()
 
-    if epic_id:
-        cursor = _ctx.conn.execute(
-            """
-            SELECT id, title, epic_id, version, updated_at
-            FROM docs_documents
-            WHERE epic_id = ?
-            ORDER BY updated_at DESC
-            """,
-            (epic_id,),
-        )
-    else:
-        cursor = _ctx.conn.execute(
-            """
-            SELECT id, title, epic_id, version, updated_at
-            FROM docs_documents
-            ORDER BY updated_at DESC
-            """
-        )
+    with service.uow:
+        docs = service.list_documents(epic_id)
 
-    docs = cursor.fetchall()
-
-    if json_output:
-        typer.echo(
-            json.dumps(
-                [
-                    {
-                        "id": row[0],
-                        "title": row[1],
-                        "epic_id": row[2],
-                        "version": row[3],
-                        "updated_at": str(row[4]),
-                    }
-                    for row in docs
-                ]
+        if json_output:
+            typer.echo(
+                json.dumps(
+                    [
+                        {
+                            "id": doc.id,
+                            "title": doc.title,
+                            "epic_id": doc.epic_id,
+                            "version": doc.version,
+                            "updated_at": doc.updated_at.isoformat() if doc.updated_at else None,
+                        }
+                        for doc in docs
+                    ]
+                )
             )
-        )
-    else:
-        if not docs:
-            console.print("No documents found")
-            return
+        else:
+            if not docs:
+                console.print("No documents found")
+                return
 
-        table = Table(title="Documents")
-        table.add_column("ID", style="cyan")
-        table.add_column("Title")
-        table.add_column("Epic")
-        table.add_column("Ver", justify="right")
-        table.add_column("Updated")
+            table = Table(title="Documents")
+            table.add_column("ID", style="cyan")
+            table.add_column("Title")
+            table.add_column("Epic")
+            table.add_column("Ver", justify="right")
+            table.add_column("Updated")
 
-        for row in docs:
-            table.add_row(
-                row[0],
-                row[1][:50] + "..." if len(row[1]) > 50 else row[1],
-                row[2] or "-",
-                str(row[3]),
-                str(row[4])[:19],
-            )
+            for doc in docs:
+                title_preview = doc.title[:50] + "..." if len(doc.title) > 50 else doc.title
+                table.add_row(
+                    doc.id,
+                    title_preview,
+                    doc.epic_id or "-",
+                    str(doc.version),
+                    str(doc.updated_at)[:19] if doc.updated_at else "",
+                )
 
-        console.print(table)
+            console.print(table)
 
 
 @app.command()
@@ -458,8 +249,6 @@ def search_docs(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """Search documents by content."""
-    assert _ctx is not None
-
     results = search(query, limit)
 
     if json_output:
@@ -496,29 +285,27 @@ def export_doc(
     version: int = typer.Option(None, "--version", help="Export specific version"),
 ) -> None:
     """Export document to markdown file."""
-    assert _ctx is not None
+    service = get_docs_service()
 
-    if version:
-        row = _ctx.conn.execute(
-            "SELECT doc_id, content FROM docs_versions WHERE doc_id = ? AND version = ?",
-            (doc_id, version),
-        ).fetchone()
-    else:
-        row = _ctx.conn.execute(
-            "SELECT id, content FROM docs_documents WHERE id = ?", (doc_id,)
-        ).fetchone()
+    with service.uow:
+        if version:
+            doc_version = service.get_version(doc_id, version)
+            if not doc_version:
+                console.print(f"[red]Document {doc_id} version {version} not found[/red]")
+                raise typer.Exit(1)
+            content = doc_version.content
+        else:
+            doc = service.get_document(doc_id)
+            if not doc:
+                console.print(f"[red]Document {doc_id} not found[/red]")
+                raise typer.Exit(1)
+            content = doc.content
 
-    if not row:
-        console.print(f"[red]Document {doc_id} not found[/red]")
-        raise typer.Exit(1)
-
-    _, content = row
-
-    if output:
-        output.write_text(content)
-        console.print(f"[green]✓ Exported to: {output}[/green]")
-    else:
-        typer.echo(content)
+        if output:
+            output.write_text(content)
+            console.print(f"[green]✓ Exported to: {output}[/green]")
+        else:
+            typer.echo(content)
 
 
 @app.command()
@@ -527,37 +314,39 @@ def versions(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """List document version history."""
-    assert _ctx is not None
+    service = get_docs_service()
 
-    cursor = _ctx.conn.execute(
-        """
-        SELECT version, changed_at, LENGTH(content) as size
-        FROM docs_versions
-        WHERE doc_id = ?
-        ORDER BY version DESC
-        """,
-        (doc_id,),
-    )
+    with service.uow:
+        vers = service.get_versions(doc_id)
 
-    vers = cursor.fetchall()
-
-    if json_output:
-        typer.echo(
-            json.dumps(
-                [{"version": row[0], "changed_at": str(row[1]), "size": row[2]} for row in vers]
+        if json_output:
+            typer.echo(
+                json.dumps(
+                    [
+                        {
+                            "version": v.version,
+                            "changed_at": v.changed_at.isoformat() if v.changed_at else None,
+                            "size": len(v.content),
+                        }
+                        for v in vers
+                    ]
+                )
             )
-        )
-    else:
-        if not vers:
-            console.print(f"No versions found for {doc_id}")
-            return
+        else:
+            if not vers:
+                console.print(f"No versions found for {doc_id}")
+                return
 
-        table = Table(title=f"Versions: {doc_id}")
-        table.add_column("Version", justify="right")
-        table.add_column("Changed At")
-        table.add_column("Size", justify="right")
+            table = Table(title=f"Versions: {doc_id}")
+            table.add_column("Version", justify="right")
+            table.add_column("Changed At")
+            table.add_column("Size", justify="right")
 
-        for row in vers:
-            table.add_row(str(row[0]), str(row[1])[:19], f"{row[2]} chars")
+            for v in vers:
+                table.add_row(
+                    str(v.version),
+                    str(v.changed_at)[:19] if v.changed_at else "",
+                    f"{len(v.content)} chars",
+                )
 
-        console.print(table)
+            console.print(table)

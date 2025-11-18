@@ -1,12 +1,19 @@
-from __future__ import annotations
+"""Sandbox skill - Docker-based isolated execution.
 
-"""Sandbox skill - Docker-based isolated execution."""
+Refactored to use modern architecture with Repository/Service patterns
+while remaining discoverable as a separate installable skill.
+"""
+
+from __future__ import annotations
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
 from glorious_agents.core.search import SearchResult
+
+from .dependencies import get_sandbox_service
 
 app = typer.Typer(help="Sandbox execution management")
 console = Console()
@@ -17,69 +24,6 @@ def init_context(ctx: SkillContext) -> None:
     """Initialize skill context."""
     global _ctx
     _ctx = ctx
-
-
-def search(query: str, limit: int = 10) -> list[SearchResult]:
-    """Universal search API for sandboxes.
-
-    Searches sandbox containers by image name and logs.
-
-    Args:
-        query: Search query string
-        limit: Maximum number of results
-
-    Returns:
-        List of SearchResult objects
-    """
-    from glorious_agents.core.search import SearchResult
-
-    if _ctx is None:
-        return []
-
-    rows = _ctx.conn.execute(
-        "SELECT id, container_id, image, status, logs, created_at, exit_code FROM sandboxes"
-    ).fetchall()
-
-    results = []
-    query_lower = query.lower()
-
-    for sb_id, container_id, image, status, logs, created_at, exit_code in rows:
-        score = 0.0
-        matched = False
-
-        if image and query_lower in image.lower():
-            score += 0.7
-            matched = True
-
-        if query_lower in status.lower():
-            score += 0.4
-            matched = True
-
-        if logs and query_lower in logs.lower():
-            score += 0.6
-            matched = True
-
-        if matched:
-            score = min(1.0, score)
-
-            results.append(
-                SearchResult(
-                    skill="sandbox",
-                    id=sb_id,
-                    type="sandbox",
-                    content=f"{image or 'unknown'} ({status})\n{logs[:200] if logs else ''}",
-                    metadata={
-                        "container_id": container_id,
-                        "status": status,
-                        "exit_code": exit_code,
-                        "created_at": created_at,
-                    },
-                    score=score,
-                )
-            )
-
-    results.sort(key=lambda r: r.score, reverse=True)
-    return results[:limit]
 
 
 @app.command()
@@ -94,34 +38,44 @@ def run(image: str, code: str = "", timeout: int = 30) -> None:
 @app.command()
 def list() -> None:
     """List sandbox containers."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = get_sandbox_service()
 
-    cur = _ctx.conn.execute("""
-        SELECT id, container_id, image, status, created_at
-        FROM sandboxes
-        ORDER BY created_at DESC
-        LIMIT 20
-    """)
+    with service.uow:
+        sandboxes = service.get_recent_sandboxes(limit=20)
 
-    console.print("[cyan]Recent Sandboxes:[/cyan]")
-    for row in cur:
-        console.print(f"  #{row[0]} - {row[1][:12]} ({row[2]}) - {row[3]}")
+        # Build table while session is active
+        table = Table(title="Recent Sandboxes")
+        table.add_column("ID", style="cyan")
+        table.add_column("Container", style="yellow")
+        table.add_column("Image", style="white")
+        table.add_column("Status", style="magenta")
+        table.add_column("Created", style="dim")
+
+        for sb in sandboxes:
+            table.add_row(
+                str(sb.id),
+                sb.container_id[:12] if sb.container_id else "-",
+                sb.image or "-",
+                sb.status,
+                sb.created_at.strftime("%Y-%m-%d %H:%M") if sb.created_at else "-",
+            )
+
+    if not sandboxes:
+        console.print("[yellow]No sandboxes found[/yellow]")
+    else:
+        console.print(table)
 
 
 @app.command()
 def logs(sandbox_id: int) -> None:
     """Get logs from a sandbox."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = get_sandbox_service()
 
-    cur = _ctx.conn.execute("SELECT logs FROM sandboxes WHERE id = ?", (sandbox_id,))
-    row = cur.fetchone()
+    with service.uow:
+        log_content = service.get_sandbox_logs(sandbox_id)
 
-    if row and row[0]:
-        console.print(row[0])
+    if log_content:
+        console.print(log_content)
     else:
         console.print("[yellow]No logs found[/yellow]")
 
@@ -130,3 +84,21 @@ def logs(sandbox_id: int) -> None:
 def cleanup() -> None:
     """Clean up stopped containers."""
     console.print("[green]Cleanup complete[/green]")
+
+
+def search(query: str, limit: int = 10) -> list[SearchResult]:
+    """Universal search API for sandboxes.
+
+    Searches sandbox containers by image name and logs.
+
+    Args:
+        query: Search query string
+        limit: Maximum number of results
+
+    Returns:
+        List of SearchResult objects
+    """
+    service = get_sandbox_service()
+
+    with service.uow:
+        return service.search_sandboxes(query, limit)

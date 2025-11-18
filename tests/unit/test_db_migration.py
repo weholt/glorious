@@ -55,9 +55,11 @@ def test_migrate_from_legacy_agent_db(temp_data_folder: Path, tmp_path: Path, ca
     assert db_path.exists()
 
     conn = get_connection()
-    cursor = conn.execute("SELECT value FROM test_data")
-    assert cursor.fetchone()[0] == "test"
-    conn.close()
+    try:
+        cursor = conn.execute("SELECT value FROM test_data")
+        assert cursor.fetchone()[0] == "test"
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -100,12 +102,14 @@ def test_migrate_from_legacy_master_db(temp_data_folder: Path, tmp_path: Path, c
 
     # Verify data was migrated
     conn = get_connection()
-    cursor = conn.execute("SELECT code, name FROM core_agents WHERE code='test1'")
-    row = cursor.fetchone()
-    assert row is not None
-    assert row[0] == "test1"
-    assert row[1] == "Test Agent 1"
-    conn.close()
+    try:
+        cursor = conn.execute("SELECT code, name FROM core_agents WHERE code='test1'")
+        row = cursor.fetchone()
+        assert row is not None
+        assert row[0] == "test1"
+        assert row[1] == "Test Agent 1"
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -116,9 +120,11 @@ def test_migrate_from_legacy_with_backup(temp_data_folder: Path, tmp_path: Path,
     # Create existing unified database
     unified_db_path = get_agent_db_path()
     conn = get_connection()
-    conn.execute("CREATE TABLE existing_data (id INTEGER PRIMARY KEY)")
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("CREATE TABLE existing_data (id INTEGER PRIMARY KEY)")
+        conn.commit()
+    finally:
+        conn.close()
 
     # Create a legacy agent database
     legacy_home = tmp_path / ".glorious"
@@ -278,7 +284,9 @@ def test_migrate_from_legacy_multiple_agents(
 
     # Verify all agents were migrated
     conn = get_connection()
-    cursor = conn.execute("SELECT COUNT(*) FROM core_agents")
-    count = cursor.fetchone()[0]
-    assert count == 3
-    conn.close()
+    try:
+        cursor = conn.execute("SELECT COUNT(*) FROM core_agents")
+        count = cursor.fetchone()[0]
+        assert count == 3
+    finally:
+        conn.close()

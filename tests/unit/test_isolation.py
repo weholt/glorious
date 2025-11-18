@@ -63,58 +63,70 @@ def test_skill_permissions_require() -> None:
 def test_restricted_connection_read() -> None:
     """Test restricted connection allows reads."""
     conn = sqlite3.connect(":memory:")
-    conn.execute("CREATE TABLE test (id INTEGER)")
+    try:
+        conn.execute("CREATE TABLE test (id INTEGER)")
 
-    perms = SkillPermissions("test_skill")
-    restricted = RestrictedConnection(conn, perms)
+        perms = SkillPermissions("test_skill")
+        restricted = RestrictedConnection(conn, perms)
 
-    # Read should work with default permissions
-    cursor = restricted.execute("SELECT * FROM test")
-    assert cursor is not None
+        # Read should work with default permissions
+        cursor = restricted.execute("SELECT * FROM test")
+        assert cursor is not None
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
 def test_restricted_connection_write_denied() -> None:
     """Test restricted connection blocks writes without permission."""
     conn = sqlite3.connect(":memory:")
-    conn.execute("CREATE TABLE test (id INTEGER)")
+    try:
+        conn.execute("CREATE TABLE test (id INTEGER)")
 
-    perms = SkillPermissions("test_skill")
-    restricted = RestrictedConnection(conn, perms)
+        perms = SkillPermissions("test_skill")
+        restricted = RestrictedConnection(conn, perms)
 
-    # Write should fail without permission
-    with pytest.raises(PermissionError, match="does not have permission"):
-        restricted.execute("INSERT INTO test VALUES (1)")
+        # Write should fail without permission
+        with pytest.raises(PermissionError, match="does not have permission"):
+            restricted.execute("INSERT INTO test VALUES (1)")
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
 def test_restricted_connection_write_allowed() -> None:
     """Test restricted connection allows writes with permission."""
     conn = sqlite3.connect(":memory:")
-    conn.execute("CREATE TABLE test (id INTEGER)")
+    try:
+        conn.execute("CREATE TABLE test (id INTEGER)")
 
-    perms = SkillPermissions("test_skill")
-    perms.grant(Permission.DB_WRITE)
-    restricted = RestrictedConnection(conn, perms)
+        perms = SkillPermissions("test_skill")
+        perms.grant(Permission.DB_WRITE)
+        restricted = RestrictedConnection(conn, perms)
 
-    # Write should work with permission
-    restricted.execute("INSERT INTO test VALUES (1)")
-    restricted.commit()
+        # Write should work with permission
+        restricted.execute("INSERT INTO test VALUES (1)")
+        restricted.commit()
 
-    result = conn.execute("SELECT COUNT(*) FROM test").fetchone()
-    assert result[0] == 1
+        result = conn.execute("SELECT COUNT(*) FROM test").fetchone()
+        assert result[0] == 1
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
 def test_restricted_connection_close_denied() -> None:
     """Test restricted connection blocks closing shared connection."""
     conn = sqlite3.connect(":memory:")
-    perms = SkillPermissions("test_skill")
-    restricted = RestrictedConnection(conn, perms)
+    try:
+        perms = SkillPermissions("test_skill")
+        restricted = RestrictedConnection(conn, perms)
 
-    # Should not be able to close shared connection
-    with pytest.raises(PermissionError, match="Cannot close"):
-        restricted.close()
+        # Should not be able to close shared connection
+        with pytest.raises(PermissionError, match="Cannot close"):
+            restricted.close()
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -154,36 +166,44 @@ def test_restricted_event_bus_subscribe_allowed() -> None:
 def test_restricted_context_access() -> None:
     """Test restricted context provides limited access."""
     mock_ctx = MagicMock()
-    mock_ctx.conn = sqlite3.connect(":memory:")
-    mock_ctx._event_bus = MagicMock()
+    conn = sqlite3.connect(":memory:")
+    try:
+        mock_ctx.conn = conn
+        mock_ctx._event_bus = MagicMock()
 
-    perms = SkillPermissions("test_skill")
-    restricted = RestrictedSkillContext(mock_ctx, perms)
+        perms = SkillPermissions("test_skill")
+        restricted = RestrictedSkillContext(mock_ctx, perms)
 
-    # Should have access to cache
-    restricted.cache_get("key")
-    mock_ctx.cache_get.assert_called_once_with("key")
+        # Should have access to cache
+        restricted.cache_get("key")
+        mock_ctx.cache_get.assert_called_once_with("key")
 
-    # Should have access to config
-    restricted.get_config("key", "default")
-    mock_ctx.get_config.assert_called_once_with("key", "default")
+        # Should have access to config
+        restricted.get_config("key", "default")
+        mock_ctx.get_config.assert_called_once_with("key", "default")
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
 def test_restricted_context_skill_call_denied() -> None:
     """Test restricted context requires permission for skill calls."""
     mock_ctx = MagicMock()
-    mock_ctx.conn = sqlite3.connect(":memory:")
-    mock_ctx._event_bus = MagicMock()
+    conn = sqlite3.connect(":memory:")
+    try:
+        mock_ctx.conn = conn
+        mock_ctx._event_bus = MagicMock()
 
-    perms = SkillPermissions("test_skill")
-    perms.revoke(Permission.SKILL_CALL)
+        perms = SkillPermissions("test_skill")
+        perms.revoke(Permission.SKILL_CALL)
 
-    restricted = RestrictedSkillContext(mock_ctx, perms)
+        restricted = RestrictedSkillContext(mock_ctx, perms)
 
-    # Should fail without skill_call permission
-    with pytest.raises(PermissionError, match="does not have permission"):
-        restricted.get_skill("other_skill")
+        # Should fail without skill_call permission
+        with pytest.raises(PermissionError, match="does not have permission"):
+            restricted.get_skill("other_skill")
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -220,16 +240,20 @@ def test_permission_registry_set() -> None:
 def test_create_restricted_context() -> None:
     """Test creating restricted context for a skill."""
     mock_ctx = MagicMock()
-    mock_ctx.conn = sqlite3.connect(":memory:")
-    mock_ctx._event_bus = MagicMock()
+    conn = sqlite3.connect(":memory:")
+    try:
+        mock_ctx.conn = conn
+        mock_ctx._event_bus = MagicMock()
 
-    restricted = create_restricted_context(mock_ctx, "issues")
+        restricted = create_restricted_context(mock_ctx, "issues")
 
-    # Should be a RestrictedSkillContext
-    assert isinstance(restricted, RestrictedSkillContext)
+        # Should be a RestrictedSkillContext
+        assert isinstance(restricted, RestrictedSkillContext)
 
-    # Should have permissions from registry
-    assert restricted._permissions.has(Permission.DB_WRITE)
+        # Should have permissions from registry
+        assert restricted._permissions.has(Permission.DB_WRITE)
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic

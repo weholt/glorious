@@ -37,9 +37,11 @@ def event_bus() -> EventBus:
 
 
 @pytest.fixture
-def skill_context(temp_db: sqlite3.Connection, event_bus: EventBus) -> SkillContext:
+def skill_context(temp_db: sqlite3.Connection, event_bus: EventBus) -> Generator[SkillContext]:
     """Create a skill context for testing."""
-    return SkillContext(temp_db, event_bus)
+    ctx = SkillContext(temp_db, event_bus)
+    yield ctx
+    ctx.close()
 
 
 @pytest.fixture(autouse=True)

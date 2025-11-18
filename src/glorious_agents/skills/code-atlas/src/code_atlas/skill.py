@@ -1,24 +1,42 @@
+"""Code-atlas skill for Glorious Agents.
+
+Refactored to use modern architecture with Repository/Service patterns
+while remaining discoverable as a separate installable skill.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from code_atlas.cli import app
+from code_atlas.dependencies import get_atlas_service
 
 if TYPE_CHECKING:
+    from glorious_agents.core.context import SkillContext
     from glorious_agents.core.search import SearchResult
-
-"""Code-atlas skill for Glorious Agents."""
 
 # Export the existing Typer app
 # Glorious will load this automatically
 
-__all__ = ["app", "search"]
+__all__ = ["app", "search", "init_context"]
+
+_ctx: SkillContext | None = None
+
+
+def init_context(ctx: SkillContext) -> None:
+    """Initialize skill context.
+
+    Args:
+        ctx: Skill context from the framework
+    """
+    global _ctx
+    _ctx = ctx
 
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
     """Universal search API for code atlas.
 
-    Searches across classes, functions, and file names.
+    Searches across classes, functions, and file names using the service layer.
 
     Args:
         query: Search query string
@@ -29,73 +47,15 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
     """
     from pathlib import Path
 
-    from glorious_agents.core.search import SearchResult
-
-    from code_atlas.query import CodeIndex
-
-    # Load code index
+    # Get service instance
     index_path = Path.cwd() / "code_index.json"
+
+    # Check if index exists
     if not index_path.exists():
         return []
 
     try:
-        index = CodeIndex(index_path)
+        service = get_atlas_service(index_path=index_path)
+        return service.search(query, limit)
     except Exception:
         return []
-
-    results = []
-    query_lower = query.lower()
-
-    # Search through all entities
-    for file_data in index.data.get("files", []):
-        file_path = file_data["path"]
-
-        # Check if file name matches
-        if query_lower in file_path.lower():
-            results.append(
-                SearchResult(
-                    skill="atlas",
-                    id=file_path,
-                    type="file",
-                    content=f"File: {file_path}",
-                    metadata={"lines": file_data.get("lines", 0)},
-                    score=0.6,
-                )
-            )
-
-        # Search entities (classes, functions)
-        for entity in file_data.get("entities", []):
-            score = 0.0
-            matched = False
-
-            # Name exact match
-            if query_lower == entity["name"].lower():
-                score = 1.0
-                matched = True
-            # Name contains query
-            elif query_lower in entity["name"].lower():
-                score = 0.8
-                matched = True
-            # Docstring match
-            elif entity.get("docstring") and query_lower in entity["docstring"].lower():
-                score = 0.5
-                matched = True
-
-            if matched:
-                results.append(
-                    SearchResult(
-                        skill="atlas",
-                        id=f"{file_path}:{entity['name']}",
-                        type=entity["type"],
-                        content=f"{entity['type']}: {entity['name']} in {file_path}",
-                        metadata={
-                            "lineno": entity.get("lineno"),
-                            "docstring": entity.get("docstring", "")[:100],
-                        },
-                        score=score,
-                    )
-                )
-
-    # Sort by score and limit
-    results.sort(key=lambda r: r.score, reverse=True)
-    return results[:limit]
