@@ -30,7 +30,7 @@ def optimize_database() -> None:
         # Note: VACUUM requires no active transactions and can take time
         # Only run this during off-peak times or maintenance windows
         # conn.execute("VACUUM;")  # Uncomment for deep cleanup
-
+                conn.execute(f'INSERT INTO "{fts_table}"("{fts_table}") VALUES(\'optimize\');')
         conn.commit()
     finally:
         conn.close()
