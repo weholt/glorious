@@ -1,5 +1,6 @@
 """Runtime singleton for skill context."""
 
+import atexit
 import threading
 
 from glorious_agents.core.context import EventBus, SkillContext
@@ -29,6 +30,8 @@ def get_ctx() -> SkillContext:
                 conn = get_connection(check_same_thread=False)
                 event_bus = EventBus()
                 _context = SkillContext(conn, event_bus)
+                # Register cleanup on exit
+                atexit.register(_cleanup_context)
     return _context
 
 
@@ -42,5 +45,10 @@ def reset_ctx() -> None:
     global _context
     with _lock:
         if _context is not None:
-            _context.conn.close()
+            _context.close()
         _context = None
+
+
+def _cleanup_context() -> None:
+    """Cleanup function called on program exit."""
+    reset_ctx()

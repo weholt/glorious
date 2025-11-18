@@ -68,10 +68,30 @@ class SkillContext:
         self._event_bus = event_bus
         self._skills: dict[str, SkillApp] = {}
         self._cache = TTLCache(max_size=cache_max_size)
+        self._closed = False
+
+    def __enter__(self) -> "SkillContext":
+        """Enter context manager."""
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit context manager and cleanup resources."""
+        self.close()
+
+    def close(self) -> None:
+        """Close database connection and cleanup resources."""
+        if not self._closed:
+            try:
+                self._conn.close()
+            except Exception:
+                pass  # Ignore errors during cleanup
+            self._closed = True
 
     @property
     def conn(self) -> sqlite3.Connection:
         """Get the shared database connection."""
+        if self._closed:
+            raise RuntimeError("Cannot use connection after context is closed")
         return self._conn
 
     def publish(self, topic: str, data: dict[str, Any]) -> None:
