@@ -54,14 +54,9 @@ def temp_data_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     # Use DATA_FOLDER which is what config actually reads
     monkeypatch.setenv("DATA_FOLDER", str(data_folder))
 
-    # Reload config to pick up new environment variable
-    import glorious_agents.config as config_module
+    # Reset and reload config to pick up new environment variable
+    from glorious_agents.config import reset_config
 
-    config_module.config = config_module.Config()
-
-    # Also update the imported reference in db module
-    import glorious_agents.core.db as db_module
-
-    db_module.config = config_module.config
+    reset_config()  # Reset the lazy-loaded singleton
 
     return data_folder
