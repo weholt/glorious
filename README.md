@@ -9,6 +9,10 @@
 
 **A modular framework for building AI agents with plug-and-play skills, shared state, and event-driven workflows.**
 
+## Pre-alpha / Proof-of-concept
+
+**NOTE!** This is under heavy development and should be considered Pre-alpha, and a Proof-of-concept. Do not under any circumstances used this in anything even remotly important.
+
 Built for [uv](https://github.com/astral-sh/uv) 🚀
 
 </div>
