@@ -114,7 +114,11 @@ def get_config() -> Config:
     Returns:
         config (Config): The shared default configuration instance.
     """
-    global _default_config
+
+def __getattr__(name: str):
+    if name == "config":
+        return get_config()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     if _default_config is None:
         with _config_lock:
             if _default_config is None:
