@@ -114,11 +114,7 @@ def get_config() -> Config:
     Returns:
         config (Config): The shared default configuration instance.
     """
-
-def __getattr__(name: str):
-    if name == "config":
-        return get_config()
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    global _default_config
     if _default_config is None:
         with _config_lock:
             if _default_config is None:
@@ -134,6 +130,11 @@ def reset_config() -> None:
 
 
 # Backward compatibility: module-level 'config' attribute
-# This allows existing code like `from glorious_agents.config import config` to work
-# But encourages new code to use get_config() or dependency injection
-config = get_config()
+# This uses __getattr__ to provide lazy loading while maintaining backward compatibility
+# Existing code: `from glorious_agents.config import config` (still works, but loads lazily)
+# New code: `get_config()` for explicit lazy loading
+def __getattr__(name: str) -> Config:
+    """Provide lazy-loaded module-level config attribute."""
+    if name == "config":
+        return get_config()
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

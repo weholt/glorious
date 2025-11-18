@@ -109,10 +109,15 @@ class RestrictedConnection:
 
             if token_value in self.READ_OPERATIONS:
                 return "read"
+            elif token_value in self.WRITE_OPERATIONS:
+                return "write"
+            elif token_value in self.DDL_OPERATIONS:
+                return "ddl"
+            elif token_value == "WITH":
+                # CTE - analyze the actual operation after the CTE definition
                 # Find the main statement after the CTE(s)
                 tokens = list(stmt.flatten())
                 cte_level = 0
-                after_cte = False
                 for token in tokens:
                     # Track parentheses to find end of CTE definition
                     if token.match(sqlparse.tokens.Punctuation, "("):
@@ -130,9 +135,6 @@ class RestrictedConnection:
                         elif token_upper in self.READ_OPERATIONS:
                             return "read"
                         # If it's not a recognized operation, continue
-                            # Continue looking for write operations
-                            # Only return read if we reach the end without finding writes
-                            pass
                 # If we only found SELECT, it's a read operation
                 if any(t.value.upper() == "SELECT" for t in tokens):
                     return "read"
