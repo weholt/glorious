@@ -7,7 +7,14 @@ from glorious_agents.config import get_config
 
 
 def get_data_folder() -> Path:
-    """Get the data folder path from configuration."""
+    """
+    Return the configured data folder Path and ensure the directory exists.
+    
+    Ensures the directory specified by the configuration's DATA_FOLDER exists (creates it if missing).
+    
+    Returns:
+        Path: Path object pointing to the data folder.
+    """
     config = get_config()
     data_folder = config.DATA_FOLDER
     data_folder.mkdir(parents=True, exist_ok=True)
@@ -16,13 +23,13 @@ def get_data_folder() -> Path:
 
 def get_agent_db_path(agent_code: str | None = None) -> Path:
     """
-    Get the database path for the unified database.
-
-    Args:
-        agent_code: Optional agent code (deprecated, kept for compatibility).
-
+    Resolve the path to the unified SQLite database file in the configured data folder.
+    
+    Parameters:
+        agent_code (str | None): Deprecated and kept for compatibility; ignored when computing the path.
+    
     Returns:
-        Path to the unified SQLite database.
+        Path: Path to the unified SQLite database file.
     """
     config = get_config()
     data_folder = get_data_folder()
@@ -31,13 +38,13 @@ def get_agent_db_path(agent_code: str | None = None) -> Path:
 
 def get_connection(check_same_thread: bool = False) -> sqlite3.Connection:
     """
-    Get a connection to the active agent's database with optimized settings.
-
-    Args:
-        check_same_thread: Whether to check if connection is used from same thread.
-
+    Open a SQLite connection to the active agent's database configured for production use.
+    
+    Parameters:
+        check_same_thread (bool): If True, restricts the connection to the creating thread; otherwise allow cross-thread use.
+    
     Returns:
-        SQLite connection with WAL mode and performance optimizations enabled.
+        sqlite3.Connection: A connection to the agent database with WAL journal mode, foreign key enforcement enabled, and performance-oriented PRAGMA settings applied.
     """
     db_path = get_agent_db_path()
     conn = sqlite3.connect(str(db_path), check_same_thread=check_same_thread)
@@ -58,5 +65,10 @@ def get_connection(check_same_thread: bool = False) -> sqlite3.Connection:
 
 
 def get_master_db_path() -> Path:
-    """Get the path to the unified database (master tables are now in main DB)."""
+    """
+    Provide the filesystem path to the unified database used for master tables.
+    
+    Returns:
+        Path: Path object pointing to the unified database file.
+    """
     return get_agent_db_path()

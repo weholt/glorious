@@ -7,16 +7,9 @@ from glorious_agents.core.db.connection import get_connection
 
 def optimize_database() -> None:
     """
-    Perform database optimization operations.
-
-    This should be run periodically (e.g., weekly) to maintain performance.
-    Operations include:
-    - VACUUM to reclaim space and defragment
-    - ANALYZE to update query planner statistics
-    - FTS5 OPTIMIZE to compact full-text search indexes
-
-    Example:
-        >>> optimize_database()  # Run as part of maintenance task
+    Perform periodic maintenance to optimize the SQLite database.
+    
+    Runs ANALYZE to update query planner statistics, attempts to compact FTS5 indexes (ignoring sqlite3 errors for tables that do not support optimize), and commits the changes. The connection is always closed when finished. The VACUUM operation is intentionally not run by default because it requires no active transactions and can be time-consuming; run it separately during maintenance windows if desired.
     """
     conn = get_connection()
     try:

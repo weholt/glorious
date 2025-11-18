@@ -70,21 +70,27 @@ class RestrictedConnection:
     DDL_OPERATIONS = frozenset({"CREATE", "DROP", "ALTER", "TRUNCATE", "RENAME"})
 
     def __init__(self, conn: sqlite3.Connection, permissions: SkillPermissions) -> None:
+        """
+        Initialize the RestrictedConnection wrapper that enforces skill permissions for database operations.
+        
+        Parameters:
+            conn (sqlite3.Connection): The underlying SQLite connection to be wrapped.
+            permissions (SkillPermissions): Permission set used to authorize database operations.
+        """
         self._conn = conn
         self._permissions = permissions
 
     def _get_sql_operation_type(self, sql: str) -> str:
         """
-        Determine the type of SQL operation using sqlparse for robust detection.
-
-        This method uses the sqlparse library to properly parse SQL statements,
-        which prevents bypass attacks using comments, whitespace, or CTEs.
-
-        Args:
-            sql: SQL statement to analyze
-
+        Classify an SQL statement as a read, write, DDL, or unknown operation using sqlparse.
+        
+        Uses sqlparse to determine the statement's leading operation token and returns one of 'read', 'write', 'ddl', or 'unknown'. If parsing fails, this function conservatively returns 'write'.
+        
+        Parameters:
+            sql (str): The SQL statement to classify.
+        
         Returns:
-            'read', 'write', 'ddl', or 'unknown'
+            str: One of 'read', 'write', 'ddl', or 'unknown'.
         """
         try:
             parsed = sqlparse.parse(sql)
@@ -143,20 +149,20 @@ class RestrictedConnection:
             return "write"
 
     def execute(self, sql: str, parameters: Any = None) -> sqlite3.Cursor:
-        """Execute SQL with permission checks using robust SQL parsing.
-
-        Uses sqlparse to detect SQL operation types, preventing bypass attacks
-        via comments, whitespace manipulation, or common table expressions.
-
-        Args:
-            sql: SQL statement to execute
-            parameters: Optional parameters for parameterized queries
-
+        """
+        Execute an SQL statement against the wrapped connection after enforcing DB permissions based on the statement type.
+        
+        The statement is classified as a read, write, DDL, or unknown operation and permissions are required accordingly: read operations require DB_READ; write, DDL, and unknown operations require DB_WRITE.
+        
+        Parameters:
+            sql (str): SQL statement to execute.
+            parameters (Any, optional): Parameters for a parameterized query (positional sequence or mapping).
+        
         Returns:
-            Cursor from the executed statement
-
+            sqlite3.Cursor: Cursor resulting from executing the statement.
+        
         Raises:
-            PermissionError: If the skill lacks required permissions
+            PermissionError: If the skill lacks the required database permission for the classified operation.
         """
         operation_type = self._get_sql_operation_type(sql)
 
