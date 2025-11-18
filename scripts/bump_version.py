@@ -71,6 +71,15 @@ def update_version_in_file(file_path: Path, old_version: str, new_version: str) 
     return True
 
 
+def update_version_file(file_path: Path, new_version: str) -> bool:
+    """Update VERSION file with new version."""
+    if not file_path.exists():
+        return False
+
+    file_path.write_text(f"{new_version}\n")
+    return True
+
+
 def generate_changelog_entry(version: str, dry_run: bool = False) -> None:
     """Generate changelog entry from git commits since last tag."""
     print("\n📝 Generating changelog...")
@@ -196,18 +205,28 @@ def main():
     if args.dry_run:
         print("\n⚠️  DRY RUN MODE - No changes will be made\n")
 
-    # Update pyproject.toml
+    # Update pyproject.toml and VERSION file
     print("\n📝 Updating version in files...")
     pyproject = Path("pyproject.toml")
+    version_file = Path("VERSION")
 
     if args.dry_run:
         print(f"  [DRY RUN] Would update {pyproject}")
+        if version_file.exists():
+            print(f"  [DRY RUN] Would update {version_file}")
     else:
         if update_version_in_file(pyproject, current_version, new_version):
             print(f"  ✓ Updated {pyproject}")
         else:
             print(f"  ❌ Failed to update {pyproject}")
             sys.exit(1)
+
+        if version_file.exists():
+            if update_version_file(version_file, new_version):
+                print(f"  ✓ Updated {version_file}")
+            else:
+                print(f"  ❌ Failed to update {version_file}")
+                sys.exit(1)
 
     # Generate changelog summary
     if not args.no_changelog:
@@ -227,7 +246,11 @@ def main():
         print("\n📝 Next steps:")
         print("1. Review and update CHANGELOG.md with actual changes")
         print("2. Commit the version bump:")
-        print("   git add pyproject.toml CHANGELOG.md")
+        version_file = Path("VERSION")
+        if version_file.exists():
+            print("   git add pyproject.toml VERSION CHANGELOG.md")
+        else:
+            print("   git add pyproject.toml CHANGELOG.md")
         print(f"   git commit -m 'chore: bump version to {new_version}'")
         print("3. Run the release script:")
         print("   python scripts/release.py")

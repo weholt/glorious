@@ -2,12 +2,16 @@
 
 This guide explains how to manage versions in Glorious Agents.
 
+> **📖 See Also:** [VERSION_SCHEME.md](../VERSION_SCHEME.md) - Official versioning policy and complete specification
+
 ## Overview
 
 Glorious Agents uses **Semantic Versioning** (semver):
 - **Major** (1.0.0): Breaking changes
 - **Minor** (0.1.0): New features, backwards compatible
 - **Patch** (0.0.1): Bug fixes, backwards compatible
+
+For detailed versioning rules and policies, see [VERSION_SCHEME.md](../VERSION_SCHEME.md).
 
 ## Automated Version Bumping
 
@@ -43,9 +47,10 @@ python scripts/bump_version.py --no-changelog patch
 When you bump the version, the script:
 
 1. ✓ Updates `version` in `pyproject.toml`
-2. ✓ Creates/updates `CHANGELOG.md` with new version section
-3. ✓ Lists recent git commits for your reference
-4. ✓ Provides next steps for committing and releasing
+2. ✓ Updates `VERSION` file (single source of truth)
+3. ✓ Creates/updates `CHANGELOG.md` with new version section
+4. ✓ Lists recent git commits for your reference
+5. ✓ Provides next steps for committing and releasing
 
 ## Integrated Release Workflow
 

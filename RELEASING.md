@@ -202,6 +202,8 @@ Use this checklist for each release:
 
 ## Versioning Guidelines
 
+> **📖 Complete Specification:** See [VERSION_SCHEME.md](./VERSION_SCHEME.md) for the official versioning policy.
+
 Glorious Agents follows **Semantic Versioning** (semver):
 
 - **Major** (1.0.0): Breaking changes
@@ -213,6 +215,8 @@ Glorious Agents follows **Semantic Versioning** (semver):
 - `0.1.0` → `0.2.0`: Added new skills or features
 - `0.2.0` → `0.2.1`: Fixed bugs
 - `0.9.0` → `1.0.0`: First stable release, API finalized
+
+For detailed rules on when to bump each version component, see [VERSION_SCHEME.md](./VERSION_SCHEME.md).
 
 ## Troubleshooting
 
