@@ -7,6 +7,8 @@ from collections import defaultdict
 from collections.abc import Callable
 from typing import Any, Protocol
 
+from sqlalchemy import Engine
+
 from glorious_agents.core.cache import TTLCache
 
 logger = logging.getLogger(__name__)
@@ -59,10 +61,18 @@ class SkillApp(Protocol):
 
 
 class SkillContext:
-    """Shared context for all skills with TTL-aware cache."""
+    """Shared context for all skills with TTL-aware cache.
+
+    Supports both legacy SQLite connections and modern SQLAlchemy engines
+    for backward compatibility during migration.
+    """
 
     def __init__(
-        self, conn: sqlite3.Connection, event_bus: EventBus, cache_max_size: int = 1000
+        self,
+        conn: sqlite3.Connection,
+        event_bus: EventBus,
+        cache_max_size: int = 1000,
+        engine: Engine | None = None,
     ) -> None:
         """
         Initialize a SkillContext with a shared database connection, an event bus, and a TTL-backed in-process cache.
@@ -71,9 +81,11 @@ class SkillContext:
                 conn (sqlite3.Connection): Shared SQLite connection used by skills; accessing `conn` after the context is closed will raise a RuntimeError.
                 event_bus (EventBus): In-process event bus for inter-skill publish/subscribe.
                 cache_max_size (int): Maximum number of entries the internal TTL cache will hold (default 1000).
+                engine (Engine | None): Optional SQLAlchemy engine for modern ORM-based skills.
         """
         self._conn = conn
         self._event_bus = event_bus
+        self._engine = engine
         self._skills: dict[str, SkillApp] = {}
         self._cache = TTLCache(max_size=cache_max_size)
         self._closed = False
@@ -132,6 +144,21 @@ class SkillContext:
         if self._closed:
             raise RuntimeError("Cannot use connection after context is closed")
         return self._conn
+
+    @property
+    def engine(self) -> Engine | None:
+        """
+        Access the SQLAlchemy engine for ORM-based skills.
+
+        Returns:
+            Engine | None: The SQLAlchemy engine if configured, None otherwise.
+
+        Raises:
+            RuntimeError: If the context has been closed.
+        """
+        if self._closed:
+            raise RuntimeError("Cannot use engine after context is closed")
+        return self._engine
 
     def publish(self, topic: str, data: dict[str, Any]) -> None:
         """
