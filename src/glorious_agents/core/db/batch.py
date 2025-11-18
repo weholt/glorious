@@ -1,11 +1,12 @@
 """Batch operations for improved database performance."""
 
 from glorious_agents.core.db.connection import get_connection
+from typing import Any
 
 
 def batch_execute(
     query: str,
-    params_list: list[tuple[str, ...]],
+    params_list: list[tuple[Any, ...]],
     batch_size: int = 100,
 ) -> None:
     """
