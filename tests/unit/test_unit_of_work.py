@@ -22,13 +22,16 @@ def engine():
     """Create in-memory test database."""
     engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(engine)
-    return engine
+    yield engine
+    engine.dispose()
 
 
 @pytest.fixture
 def session(engine):
     """Create test session."""
-    return Session(engine)
+    session = Session(engine)
+    yield session
+    session.close()
 
 
 def test_commit_on_success(engine):
@@ -42,6 +45,8 @@ def test_commit_on_success(engine):
         entity = TestModel(name="test1", value=42)
         repo.add(entity)
         entity_id = entity.id
+
+    session.close()
 
     # Verify entity was committed
     new_session = Session(engine)
@@ -66,6 +71,8 @@ def test_rollback_on_exception(engine):
             raise ValueError("Test exception")
     except ValueError:
         pass
+
+    session.close()
 
     # Verify entity was rolled back
     new_session = Session(engine)
@@ -100,6 +107,8 @@ def test_multiple_repositories(engine):
         entity1_id = entity1.id
         entity2_id = entity2.id
 
+    session.close()
+
     # Verify both committed
     new_session = Session(engine)
     result1 = new_session.get(TestModel, entity1_id)
@@ -130,6 +139,7 @@ def test_manual_commit(engine):
     entity_id = entity.id
     uow.commit()
     uow.close()
+    session.close()
 
     # Verify committed
     new_session = Session(engine)
@@ -149,6 +159,7 @@ def test_manual_rollback(engine):
     entity_id = entity.id
     uow.rollback()
     uow.close()
+    session.close()
 
     # Verify rolled back
     new_session = Session(engine)
@@ -173,6 +184,7 @@ def test_flush(engine):
     # But not committed yet
     uow.rollback()
     uow.close()
+    session.close()
 
     new_session = Session(engine)
     result = new_session.get(TestModel, entity.id)
@@ -193,8 +205,9 @@ def test_refresh(engine):
     # Modify entity outside UoW
     new_session = Session(engine)
     db_entity = new_session.get(TestModel, entity.id)
-    db_entity.value = 100
-    new_session.commit()
+    if db_entity is not None:
+        db_entity.value = 100
+        new_session.commit()
     new_session.close()
 
     # Refresh should get new value
@@ -202,6 +215,7 @@ def test_refresh(engine):
     assert entity.value == 100
 
     uow.close()
+    session.close()
 
 
 def test_atomic_transaction(engine):
@@ -216,11 +230,14 @@ def test_atomic_transaction(engine):
         repo.add(entity1)
         entity1_id = entity1.id
 
+    session.close()
+
     # Try to add two more, but fail on second
     entity2_id = None
     entity3_id = None
+    session2 = Session(engine)
     try:
-        with UnitOfWork(Session(engine)) as uow:
+        with UnitOfWork(session2) as uow:
             repo = uow.get_repository("test", TestModel)
             entity2 = TestModel(name="test2", value=2)
             entity2 = repo.add(entity2)
@@ -233,6 +250,8 @@ def test_atomic_transaction(engine):
             raise ValueError("Simulated error")
     except ValueError:
         pass
+    finally:
+        session2.close()
 
     # Verify only first entity exists
     new_session = Session(engine)

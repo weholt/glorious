@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import pytest
 
@@ -49,6 +49,14 @@ def _reset_runtime() -> Generator[None]:
     """Reset runtime context between tests."""
     yield
     reset_ctx()
+    # Also cleanup any SQLAlchemy engines
+    from glorious_agents.core.engine_registry import dispose_all_engines
+
+    dispose_all_engines()
+    # Also cleanup any SQLAlchemy engines
+    from glorious_agents.core.engine_registry import dispose_all_engines
+
+    dispose_all_engines()
 
 
 @pytest.fixture
@@ -77,7 +85,7 @@ def temp_data_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture
-def isolated_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[dict[str, any]]:
+def isolated_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[dict[str, Any]]:
     """
     Create isolated environment for each test.
 
@@ -130,8 +138,8 @@ def run_agent_cli(
     env: dict[str, str] | None = None,
     input_data: str | None = None,
     expect_failure: bool = False,
-    isolated_env: dict[str, any] | None = None,
-) -> dict[str, any]:
+    isolated_env: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Run agent CLI command and capture output.
 
@@ -204,7 +212,7 @@ def cli_runner(isolated_env):
 
     def runner(
         args: list[str], input_data: str | None = None, expect_failure: bool = False
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """Run CLI command in isolated environment."""
         return run_agent_cli(
             args=args,

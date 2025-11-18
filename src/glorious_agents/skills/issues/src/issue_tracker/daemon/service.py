@@ -3,114 +3,133 @@
 import asyncio
 import logging
 import os
-import signal
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from glorious_agents.core.daemon import BaseDaemonService, PeriodicTask
+
 from issue_tracker.daemon.config import DaemonConfig
-from issue_tracker.daemon.ipc_server import IPCServer
 from issue_tracker.daemon.sync_engine import SyncEngine
 
 logger = logging.getLogger(__name__)
 
 
-class DaemonService:
-    """Background daemon service for continuous sync."""
+class IssuesDaemonService(BaseDaemonService):
+    """Issues-specific daemon extending core infrastructure.
+
+    Provides background sync for issue tracking with Git integration.
+    """
 
     def __init__(self, config: DaemonConfig):
-        """Initialize daemon service.
+        """Initialize issues daemon service.
 
         Args:
-            config: Daemon configuration
+            config: Issues daemon configuration
         """
-        self.config = config
-        self.workspace_path = config.workspace_path
-        self.running = False
-        self.start_time = datetime.now()
+        # Initialize base daemon with core config
+        from glorious_agents.core.daemon import DaemonConfig as CoreDaemonConfig
+
+        core_config = CoreDaemonConfig(
+            workspace_path=config.workspace_path,
+            daemon_mode=config.daemon_mode,  # type: ignore[arg-type]
+            auto_start=config.auto_start_daemon,
+            log_level="INFO",
+        )
+        super().__init__(core_config)
+
+        # Store issues-specific config
+        self.issues_config = config
+
+        # Initialize sync engine
         self.sync_engine = SyncEngine(
             workspace_path=config.workspace_path,
             export_path=Path(config.export_path),
             git_enabled=config.git_integration,
         )
-        self.ipc_server = IPCServer(config.get_socket_path(), self._handle_request)
-        self._sync_task: asyncio.Task[None] | None = None
+
+        # Database engine (reused across syncs to prevent memory leak)
         self._engine = None
-        self._loop: asyncio.AbstractEventLoop | None = None
-        self._setup_logging()
 
-    def _setup_logging(self) -> None:
-        """Set up daemon logging."""
-        log_path = self.config.get_log_path()
-        log_path.parent.mkdir(parents=True, exist_ok=True)
+        # Periodic sync task
+        self._sync_task: PeriodicTask | None = None
 
-        # Configure logging
-        file_handler = logging.FileHandler(log_path)
-        file_handler.setLevel(logging.INFO)
-        file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    async def on_startup(self) -> None:
+        """Initialize issues-specific resources."""
+        logger.info("Starting issues daemon")
 
-        logger.addHandler(file_handler)
-        logger.setLevel(logging.INFO)
+        # Start periodic sync if enabled
+        if self.issues_config.sync_enabled:
+            self._sync_task = PeriodicTask(
+                interval=self.issues_config.sync_interval_seconds, callback=self._perform_sync, name="issues_sync"
+            )
+            await self._sync_task.start()
+            logger.info(f"Sync task started (interval: {self.issues_config.sync_interval_seconds}s)")
 
-    def _handle_request(self, request: dict[str, Any]) -> dict[str, Any]:
-        """Handle IPC request.
+    async def on_shutdown(self) -> None:
+        """Cleanup issues-specific resources."""
+        logger.info("Shutting down issues daemon")
+
+        # Stop sync task
+        if self._sync_task:
+            await self._sync_task.stop()
+            self._sync_task = None
+
+        # CRITICAL: Dispose database engine to prevent memory leak
+        if self._engine:
+            self._engine.dispose()
+            self._engine = None
+
+        logger.info("Issues daemon shutdown complete")
+
+    def get_health_info(self) -> dict[str, Any]:
+        """Return issues-specific health information."""
+        return {
+            "sync_enabled": self.issues_config.sync_enabled,
+            "sync_interval": self.issues_config.sync_interval_seconds,
+            "git_enabled": self.issues_config.git_integration,
+            "last_sync": getattr(self.sync_engine, "last_sync", None),
+        }
+
+    def handle_command(self, request: dict[str, Any]) -> dict[str, Any]:
+        """Handle issues-specific IPC commands.
+
+        Supports:
+        - sync: Trigger immediate sync
 
         Args:
-            request: Request data
+            request: Request dictionary
 
         Returns:
-            Response data
+            Response dictionary
         """
         method = request.get("method", "")
 
-        if method == "health":
-            return self._health_check()
-        elif method == "stop":
-            # Schedule shutdown in the main event loop (we're in executor thread)
-            if self._loop:
-                self._loop.call_soon_threadsafe(lambda: asyncio.create_task(self._shutdown()))
-            return {"status": "stopping"}
-        elif method == "sync":
+        if method == "sync":
             return self._trigger_sync()
-        elif method == "status":
-            return self._get_status()
-        else:
-            return {"error": f"Unknown method: {method}"}
 
-    def _health_check(self) -> dict[str, Any]:
-        """Perform health check."""
-        return {
-            "healthy": True,
-            "uptime_seconds": int((datetime.now() - self.start_time).total_seconds()),
-            "workspace": str(self.workspace_path),
-            "pid": os.getpid(),
-            "version": "1.0.0",
-        }
-
-    def _get_status(self) -> dict[str, Any]:
-        """Get daemon status."""
-        return {
-            "running": self.running,
-            "workspace": str(self.workspace_path),
-            "pid": os.getpid(),
-            "uptime_seconds": int((datetime.now() - self.start_time).total_seconds()),
-            "sync_enabled": self.config.sync_enabled,
-            "sync_interval": self.config.sync_interval_seconds,
-            "daemon_mode": self.config.daemon_mode,
-        }
+        # Unknown command
+        return super().handle_command(request)
 
     def _trigger_sync(self) -> dict[str, Any]:
         """Trigger immediate sync."""
         try:
-            # Get issues from database (simplified for now)
             issues = self._get_issues_from_db()
             stats = self.sync_engine.sync(issues)
             return {"status": "success", "stats": stats}
         except Exception as e:
-            logger.error(f"Sync failed: {e}")
+            logger.error(f"Sync failed: {e}", exc_info=True)
             return {"status": "error", "error": str(e)}
+
+    async def _perform_sync(self) -> None:
+        """Perform sync operation (called by PeriodicTask)."""
+        try:
+            issues = self._get_issues_from_db()
+            stats = self.sync_engine.sync(issues)
+            logger.info(f"Sync complete: {stats}")
+        except Exception as e:
+            logger.error(f"Error in sync: {e}", exc_info=True)
 
     def _get_engine(self):
         """Get or create a reusable database engine.
@@ -124,7 +143,7 @@ class DaemonService:
         if self._engine is None:
             from sqlmodel import create_engine
 
-            self._engine = create_engine(f"sqlite:///{self.config.database_path}")
+            self._engine = create_engine(f"sqlite:///{self.issues_config.database_path}")
         return self._engine
 
     def _get_issues_from_db(self) -> list[dict[str, Any]]:
@@ -162,101 +181,6 @@ class DaemonService:
             logger.error(f"Failed to get issues from database: {e}")
             return []
 
-    async def _sync_loop(self) -> None:
-        """Main sync loop."""
-        logger.info(
-            f"Starting sync loop (mode: {self.config.daemon_mode}, interval: {self.config.sync_interval_seconds}s)"
-        )
-
-        while self.running:
-            try:
-                if self.config.sync_enabled:
-                    issues = self._get_issues_from_db()
-                    stats = self.sync_engine.sync(issues)
-                    logger.info(f"Sync complete: {stats}")
-
-                await asyncio.sleep(self.config.sync_interval_seconds)
-
-            except Exception as e:
-                logger.error(f"Error in sync loop: {e}")
-                await asyncio.sleep(self.config.sync_interval_seconds)
-
-    def _write_pid_file(self) -> None:
-        """Write PID file."""
-        pid_path = self.config.get_pid_path()
-        pid_path.parent.mkdir(parents=True, exist_ok=True)
-        pid_path.write_text(str(os.getpid()))
-        logger.info(f"PID {os.getpid()} written to {pid_path}")
-
-    def _remove_pid_file(self) -> None:
-        """Remove PID file."""
-        pid_path = self.config.get_pid_path()
-        if pid_path.exists():
-            pid_path.unlink()
-            logger.info(f"Removed PID file {pid_path}")
-
-    async def start(self) -> None:
-        """Start the daemon service."""
-        logger.info(f"Starting daemon for workspace: {self.workspace_path}")
-        self.running = True
-        self._loop = asyncio.get_running_loop()
-        self._write_pid_file()
-
-        # Start IPC server
-        await self.ipc_server.start()
-
-        # Start sync loop
-        if self.config.sync_enabled:
-            self._sync_task = asyncio.create_task(self._sync_loop())
-
-        logger.info("Daemon started successfully")
-
-    async def _shutdown(self) -> None:
-        """Shutdown the daemon."""
-        logger.info("Shutting down daemon...")
-        self.running = False
-
-        # Stop sync loop
-        if self._sync_task:
-            self._sync_task.cancel()
-            try:
-                await self._sync_task
-            except asyncio.CancelledError:
-                pass
-
-        # Stop IPC server
-        await self.ipc_server.stop()
-
-        # CRITICAL: Dispose database engine to prevent memory leak
-        if self._engine:
-            self._engine.dispose()
-            self._engine = None
-
-        # Clear event loop reference
-        self._loop = None
-
-        # Cleanup
-        self._remove_pid_file()
-        logger.info("Daemon stopped")
-
-    async def run(self) -> None:
-        """Run the daemon (blocking)."""
-        await self.start()
-
-        # Setup signal handlers
-        def signal_handler(sig: Any, frame: Any) -> None:
-            """Handle shutdown signals."""
-            logger.info(f"Received signal {sig}")
-            asyncio.create_task(self._shutdown())
-
-        if sys.platform != "win32":
-            signal.signal(signal.SIGTERM, signal_handler)
-            signal.signal(signal.SIGINT, signal_handler)
-
-        # Keep running until shutdown
-        while self.running:
-            await asyncio.sleep(1)
-
 
 def _kill_existing_daemon(workspace_path: Path) -> None:
     """Kill existing daemon for this workspace if running.
@@ -264,39 +188,14 @@ def _kill_existing_daemon(workspace_path: Path) -> None:
     Args:
         workspace_path: Workspace directory
     """
+    from glorious_agents.core.daemon import PIDFileManager
+
     config = DaemonConfig.load(workspace_path)
-    pid_path = config.get_pid_path()
+    pid_manager = PIDFileManager(config.get_pid_path())
 
-    if not pid_path.exists():
-        return
-
-    try:
-        pid = int(pid_path.read_text())
-
-        # Use psutil for cross-platform process management
-        import psutil  # type: ignore[import-untyped]
-
-        try:
-            process = psutil.Process(pid)
-            logger.info(f"Killing existing daemon with PID {pid}")
-            process.terminate()
-
-            # Wait briefly for graceful shutdown
-            try:
-                process.wait(timeout=2)
-            except psutil.TimeoutExpired:
-                # Force kill if it doesn't terminate
-                process.kill()
-                process.wait(timeout=1)
-        except psutil.NoSuchProcess:
-            pass  # Process doesn't exist
-
-    except (ValueError, FileNotFoundError):
-        pass  # Invalid PID file
-
-    # Always remove PID file
-    if pid_path.exists():
-        pid_path.unlink()
+    if pid_manager.is_running():
+        logger.info(f"Killing existing daemon with PID {pid_manager.read()}")
+        pid_manager.kill_existing()
 
 
 def _cleanup_zombie_processes() -> int:
@@ -360,8 +259,6 @@ def start_daemon(workspace_path: Path, detach: bool = True) -> int:
         RuntimeError: If ISSUES_AUTO_START_DAEMON is set to 'false'
     """
     # CRITICAL: Respect ISSUES_AUTO_START_DAEMON environment variable
-    import os
-
     if os.environ.get("ISSUES_AUTO_START_DAEMON", "true").lower() == "false":
         raise RuntimeError("Daemon auto-start is disabled (ISSUES_AUTO_START_DAEMON='false')")
 
@@ -438,7 +335,7 @@ def start_daemon(workspace_path: Path, detach: bool = True) -> int:
                 sys.exit(0)
 
     # Run daemon (non-detached or in forked child)
-    daemon = DaemonService(config)
+    daemon = IssuesDaemonService(config)
 
     # Write PID file before running
     pid_path.write_text(str(os.getpid()))
@@ -481,23 +378,11 @@ def is_daemon_running(workspace_path: Path) -> bool:
     Returns:
         True if daemon is running
     """
+    from glorious_agents.core.daemon import PIDFileManager
+
     config = DaemonConfig.load(workspace_path)
-    pid_path = config.get_pid_path()
-
-    if not pid_path.exists():
-        return False
-
-    try:
-        pid = int(pid_path.read_text())
-        if sys.platform == "win32":
-            import subprocess
-
-            result = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], capture_output=True, text=True, check=False)  # noqa: S603, S607
-            return str(pid) in result.stdout
-        os.kill(pid, 0)
-        return True
-    except (OSError, ValueError):
-        return False
+    pid_manager = PIDFileManager(config.get_pid_path())
+    return pid_manager.is_running()
 
 
 if __name__ == "__main__":
@@ -510,7 +395,7 @@ if __name__ == "__main__":
     config = DaemonConfig.load(workspace_path)
 
     # Run daemon directly (already detached by parent)
-    daemon = DaemonService(config)
+    daemon = IssuesDaemonService(config)
 
     # Write PID file
     pid_path = config.get_pid_path()

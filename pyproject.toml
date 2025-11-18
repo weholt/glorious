@@ -129,9 +129,12 @@ omit = [
   "*/skills_cli.py",
   "*/identity_cli.py",
   "*/daemon.py",
+  "*/daemon/*",
+  "*/daemon_rpc.py",
   "*/skills_cli/*",
   "*/migrations.py",
   "*/skills/*",
+  "*/loader/__init__.py",
 ]
 
 [tool.coverage.report]
@@ -168,6 +171,7 @@ exclude = [
 dev = [
     "mypy>=1.18.2",
     "types-jsonschema>=4.25.1.20251009",
+    "types-psutil>=7.0.0.20251116",
 ]
 
 [tool.uv.sources]
