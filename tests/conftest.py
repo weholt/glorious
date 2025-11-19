@@ -154,7 +154,8 @@ def run_agent_cli(
     Returns:
         dict with keys: returncode, stdout, stderr, success, output
     """
-    cmd = ["uv", "run", "agent"] + args
+    # Use python -m instead of uv run since uv may not be available
+    cmd = ["python", "-m", "glorious_agents.cli"] + args
 
     # Start with a minimal environment to avoid leaking current workspace settings
     full_env = {
