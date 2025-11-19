@@ -1,7 +1,5 @@
 """Unit tests for daemon RPC endpoints."""
 
-import asyncio
-import inspect
 import sqlite3
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -265,8 +263,7 @@ class TestCallSkillMethod:
                 assert data["method"] == "add"
                 assert data["result"] == 8
 
-    @pytest.mark.asyncio
-    async def test_rpc_call_async_function_success(self, client: TestClient) -> None:
+    def test_rpc_call_async_function_success(self, client: TestClient) -> None:
         """Test calling an asynchronous function via RPC."""
         with patch("glorious_agents.core.daemon_rpc.get_registry") as mock_get_registry:
             with patch("glorious_agents.core.daemon_rpc.importlib.import_module") as mock_import:
