@@ -44,7 +44,7 @@ def mock_ctx(skill_context: SkillContext) -> SkillContext:
 
 
 @pytest.fixture(autouse=True)
-def reset_config_before_tests(monkeypatch: pytest.MonkeyPatch) -> None:
+def _reset_config_before_tests(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reset config before each test to control DAEMON_API_KEY."""
     from glorious_agents.config import reset_config
 

@@ -595,6 +595,7 @@ code-atlas = [
 ]
 dev = [
     { name = "bandit" },
+    { name = "httpx" },
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -685,6 +686,7 @@ requires-dist = [
     { name = "glorious-temporal", marker = "extra == 'temporal'", editable = "src/glorious_agents/skills/temporal" },
     { name = "glorious-vacuum", marker = "extra == 'all-skills'", editable = "src/glorious_agents/skills/vacuum" },
     { name = "glorious-vacuum", marker = "extra == 'vacuum'", editable = "src/glorious_agents/skills/vacuum" },
+    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.25.0" },
     { name = "issue-tracker", marker = "extra == 'all-skills'", editable = "src/glorious_agents/skills/issues" },
     { name = "issue-tracker", marker = "extra == 'issues'", editable = "src/glorious_agents/skills/issues" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.0" },
