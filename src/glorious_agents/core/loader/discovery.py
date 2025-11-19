@@ -146,7 +146,11 @@ def discover_entrypoint_skills(group: str = "glorious_agents.skills") -> dict[st
                     requires_validated = []
 
                 # Extract properties from JSON Schema format if needed
-                config_schema_normalized = normalize_config_schema(config_schema_val)
+                # Type narrowing: config_schema_val should be dict[str, Any] | None
+                config_schema_dict = (
+                    config_schema_val if isinstance(config_schema_val, dict) else None
+                )
+                config_schema_normalized = normalize_config_schema(config_schema_dict)
 
                 SkillManifest(
                     name=str(manifest_data.get("name", ep.name)),
