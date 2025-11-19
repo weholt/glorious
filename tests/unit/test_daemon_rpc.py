@@ -71,7 +71,7 @@ class TestAuthentication:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that 401 is returned when API key is required but missing."""
-        monkeypatch.setenv("DAEMON_API_KEY", "secret-key-123")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "secret-key-123")
 
         from glorious_agents.config import reset_config
 
@@ -86,7 +86,7 @@ class TestAuthentication:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that 403 is returned for invalid API key."""
-        monkeypatch.setenv("DAEMON_API_KEY", "correct-secret-key")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "correct-secret-key")
 
         from glorious_agents.config import reset_config
 
@@ -101,7 +101,7 @@ class TestAuthentication:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that valid API key allows access."""
-        monkeypatch.setenv("DAEMON_API_KEY", "correct-secret-key")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "correct-secret-key")
 
         from glorious_agents.config import reset_config
 
@@ -428,7 +428,7 @@ class TestCallSkillMethod:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that RPC endpoint requires authentication when API key is set."""
-        monkeypatch.setenv("DAEMON_API_KEY", "required-key")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "required-key")
 
         from glorious_agents.config import reset_config
 
@@ -539,7 +539,7 @@ class TestPublishEvent:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that publishing events requires authentication when API key is set."""
-        monkeypatch.setenv("DAEMON_API_KEY", "required-key")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "required-key")
 
         from glorious_agents.config import reset_config
 
@@ -702,7 +702,7 @@ class TestGetCache:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that cache get requires authentication when API key is set."""
-        monkeypatch.setenv("DAEMON_API_KEY", "required-key")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "required-key")
 
         from glorious_agents.config import reset_config
 
@@ -845,7 +845,7 @@ class TestSetCache:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that cache set requires authentication when API key is set."""
-        monkeypatch.setenv("DAEMON_API_KEY", "required-key")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "required-key")
 
         from glorious_agents.config import reset_config
 
@@ -899,7 +899,7 @@ class TestDeleteCache:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that cache delete requires authentication when API key is set."""
-        monkeypatch.setenv("DAEMON_API_KEY", "required-key")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "required-key")
 
         from glorious_agents.config import reset_config
 
@@ -958,7 +958,7 @@ class TestClearCache:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that cache clear requires authentication when API key is set."""
-        monkeypatch.setenv("DAEMON_API_KEY", "required-key")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "required-key")
 
         from glorious_agents.config import reset_config
 
@@ -1020,7 +1020,7 @@ class TestCacheStats:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that cache stats requires authentication when API key is set."""
-        monkeypatch.setenv("DAEMON_API_KEY", "required-key")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "required-key")
 
         from glorious_agents.config import reset_config
 
@@ -1063,7 +1063,7 @@ class TestIntegration:
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test complete RPC flow with authentication."""
-        monkeypatch.setenv("DAEMON_API_KEY", "test-api-key-123")
+        monkeypatch.setenv("GLORIOUS_DAEMON_API_KEY", "test-api-key-123")
 
         from glorious_agents.config import reset_config
 

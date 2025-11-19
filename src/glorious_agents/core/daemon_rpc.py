@@ -1,5 +1,7 @@
 """FastAPI daemon for RPC access to skills."""
 
+import importlib
+import inspect
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -23,8 +25,13 @@ def verify_api_key(x_api_key: str | None = Header(None)) -> None:
     Raises:
         HTTPException: If API key is required but missing or invalid.
     """
+    # Get fresh config to support dynamic config changes in tests
+    from glorious_agents.config import get_config
+    
+    current_config = get_config()
+    
     # If no API key is configured, allow all requests
-    if config.DAEMON_API_KEY is None:
+    if current_config.DAEMON_API_KEY is None:
         logger.debug("API key authentication disabled")
         return
 
@@ -36,7 +43,7 @@ def verify_api_key(x_api_key: str | None = Header(None)) -> None:
             headers={"WWW-Authenticate": "ApiKey"},
         )
 
-    if x_api_key != config.DAEMON_API_KEY:
+    if x_api_key != current_config.DAEMON_API_KEY:
         raise HTTPException(
             status_code=403,
             detail="Invalid API key",
@@ -144,8 +151,6 @@ async def call_skill_method(
 
     # Get the skill module
     try:
-        import importlib
-
         module_path = manifest.entry_point.split(":")[0]
         module = importlib.import_module(module_path)
     except (ImportError, AttributeError) as e:
@@ -171,8 +176,6 @@ async def call_skill_method(
     # Call the function
     try:
         # Handle both sync and async functions
-        import inspect
-
         if inspect.iscoroutinefunction(func):
             result = await func(**request.params)
         else:
@@ -233,7 +236,7 @@ async def list_topics() -> dict[str, list[str]]:
     return {"topics": topics}
 
 
-@daemon_app.get("/cache/{key}")
+@daemon_app.get("/cache/{key:path}")
 async def get_cache(key: str, _auth: None = Depends(verify_api_key)) -> dict[str, Any]:
     """
     Retrieve a value from the cache.
@@ -256,7 +259,7 @@ async def get_cache(key: str, _auth: None = Depends(verify_api_key)) -> dict[str
     return {"key": key, "value": value}
 
 
-@daemon_app.put("/cache/{key}")
+@daemon_app.put("/cache/{key:path}")
 async def set_cache(
     key: str,
     data: dict[str, Any],
@@ -285,7 +288,7 @@ async def set_cache(
     return {"status": "stored", "key": key}
 
 
-@daemon_app.delete("/cache/{key}")
+@daemon_app.delete("/cache/{key:path}")
 async def delete_cache(key: str, _auth: None = Depends(verify_api_key)) -> dict[str, str]:
     """
     Delete a value from the cache.

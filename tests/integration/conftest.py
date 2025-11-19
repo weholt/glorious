@@ -4,6 +4,7 @@ import os
 import shutil
 import sqlite3
 import subprocess
+import sys
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
@@ -144,13 +145,17 @@ def run_agent_cli(
     Returns:
         dict with keys: returncode, stdout, stderr, success, output
     """
-    cmd = ["uv", "run", "agent"] + args
+    # Use sys.executable to ensure we use the same Python that's running the tests
+    cmd = [sys.executable, "-m", "glorious_agents.cli"] + args
 
     # Start with a minimal environment to avoid leaking current workspace settings
+    # Include Python-related env vars to ensure subprocess can find installed packages
     full_env = {
         "PATH": os.environ.get("PATH", ""),
         "PYTHONPATH": os.environ.get("PYTHONPATH", ""),
         "VIRTUAL_ENV": os.environ.get("VIRTUAL_ENV", ""),
+        "PYTHONUSERBASE": os.environ.get("PYTHONUSERBASE", ""),
+        "PYTHON_KEYRING_BACKEND": os.environ.get("PYTHON_KEYRING_BACKEND", ""),
     }
 
     # Add isolated environment variables if provided
