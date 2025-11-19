@@ -6,13 +6,15 @@ import typer
 
 app = typer.Typer(name="comments", help="Manage issue comments")
 
+__all__ = ["app", "add", "list_comments", "delete"]
+
 
 @app.command(name="add")
 def add(
     issue_id: str = typer.Argument(..., help="Issue ID"),
     text: str = typer.Argument(..., help="Comment text"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """Add a comment to an issue."""
     from issue_tracker.cli.app import get_issue_service
 
@@ -51,7 +53,7 @@ def add(
 def list_comments(
     issue_id: str = typer.Argument(..., help="Issue ID"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """List comments on an issue."""
     from issue_tracker.cli.app import get_issue_service
 
@@ -95,7 +97,7 @@ def delete(
     comment_index: int = typer.Argument(..., help="Comment index (1-based)"),
     force: bool = typer.Option(False, "--force", help="Force delete without confirmation"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """Delete a comment."""
     from issue_tracker.cli.app import get_issue_service
 

@@ -8,6 +8,8 @@ from issue_tracker.domain.entities.dependency import Dependency, DependencyType
 from issue_tracker.domain.entities.issue import Issue, IssueStatus
 from issue_tracker.domain.exceptions import InvariantViolationError, NotFoundError
 
+__all__ = ["IssueGraphService"]
+
 
 class IssueGraphService:
     """Service for managing issue dependency graphs.

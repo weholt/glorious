@@ -15,6 +15,8 @@ from issue_tracker.domain import (
     IssueType,
 )
 
+__all__ = ["app", "set_service"]
+
 app = typer.Typer(
     name="issues",
     help="Issue tracker command-line interface",
@@ -47,7 +49,7 @@ def set_service(name: str, service: Any) -> None:
     _SERVICE_OVERRIDE[name] = service
 
 
-def get_issue_service():
+def get_issue_service() -> Any:
     """Get issue service instance (from override or create new)."""
     if _SERVICE_OVERRIDE["issue_service"] is not None:
         return _SERVICE_OVERRIDE["issue_service"]
@@ -56,7 +58,7 @@ def get_issue_service():
     return get_issue_service()
 
 
-def get_graph_service():
+def get_graph_service() -> Any:
     """Get graph service instance (from override or create new)."""
     if _SERVICE_OVERRIDE["graph_service"] is not None:
         return _SERVICE_OVERRIDE["graph_service"]
@@ -65,7 +67,7 @@ def get_graph_service():
     return get_issue_graph_service()
 
 
-def get_stats_service():
+def get_stats_service() -> Any:
     """Get stats service instance (from override or create new)."""
     if _SERVICE_OVERRIDE["stats_service"] is not None:
         return _SERVICE_OVERRIDE["stats_service"]

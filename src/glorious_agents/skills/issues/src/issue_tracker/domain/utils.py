@@ -2,6 +2,8 @@
 
 from datetime import UTC, datetime
 
+__all__ = ["utcnow_naive"]
+
 
 def utcnow_naive() -> datetime:
     """Return current UTC time as naive datetime.

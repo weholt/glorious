@@ -1,6 +1,7 @@
 """Instructions template commands."""
 
 import json
+from typing import Any
 
 import typer
 
@@ -12,8 +13,10 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
+__all__ = ["app", "list_templates", "apply_template"]
 
-def get_issue_service():
+
+def get_issue_service() -> Any:
     """Import and return issue service (avoids circular import)."""
     from issue_tracker.cli.app import get_issue_service as _get_issue_service
 
@@ -23,7 +26,7 @@ def get_issue_service():
 @app.command(name="list")
 def list_templates(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """List all available instruction templates."""
     try:
         from pathlib import Path

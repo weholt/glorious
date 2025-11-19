@@ -1,6 +1,7 @@
 """Unit of Work pattern for transaction management."""
 
 import logging
+from types import TracebackType
 from typing import Any
 
 from sqlmodel import Session
@@ -8,6 +9,8 @@ from sqlmodel import Session
 from issue_tracker.adapters.db.repositories import CommentRepository, IssueGraphRepository, IssueRepository
 
 logger = logging.getLogger(__name__)
+
+__all__ = ["UnitOfWork"]
 
 
 class UnitOfWork:
@@ -62,7 +65,7 @@ class UnitOfWork:
         self,
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
-        exc_tb: Any,
+        exc_tb: TracebackType | None,
     ) -> None:
         """End transaction - commit on success, rollback on exception.
 

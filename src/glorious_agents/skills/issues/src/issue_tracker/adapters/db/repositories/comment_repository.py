@@ -5,6 +5,8 @@ from sqlmodel import Session, select
 from issue_tracker.adapters.db.models import CommentModel
 from issue_tracker.domain.entities.comment import Comment
 
+__all__ = ["CommentRepository"]
+
 
 class CommentRepository:
     """Repository for Comment entities using SQLModel.

@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+__all__ = ["Template", "TemplateManager"]
+
 
 @dataclass
 class Template:
@@ -49,7 +51,7 @@ class Template:
 class TemplateManager:
     """Manages issue templates."""
 
-    def __init__(self, templates_dir: Path):
+    def __init__(self, templates_dir: Path) -> None:
         """Initialize template manager.
 
         Args:

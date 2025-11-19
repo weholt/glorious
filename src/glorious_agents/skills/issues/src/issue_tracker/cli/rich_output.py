@@ -7,6 +7,19 @@ from rich.text import Text
 
 from issue_tracker.domain import Issue, IssuePriority, IssueStatus
 
+__all__ = [
+    "format_issue_table",
+    "format_issue_panel",
+    "print_issue_table",
+    "print_issue_panel",
+    "print_success",
+    "print_error",
+    "print_warning",
+    "print_info",
+    "get_status_color",
+    "get_priority_emoji",
+]
+
 console = Console()
 
 

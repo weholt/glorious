@@ -7,13 +7,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+__all__ = ["SyncEngine"]
+
 logger = logging.getLogger(__name__)
 
 
 class SyncEngine:
     """Handles synchronization between database and git repository."""
 
-    def __init__(self, workspace_path: Path, export_path: Path, git_enabled: bool = True):
+    def __init__(self, workspace_path: Path, export_path: Path, git_enabled: bool = True) -> None:
         """Initialize sync engine.
 
         Args:

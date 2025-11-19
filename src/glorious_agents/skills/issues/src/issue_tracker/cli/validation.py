@@ -6,6 +6,17 @@ from typing import Any
 
 from issue_tracker.domain import IssuePriority, IssueStatus, IssueType, ValidationError
 
+__all__ = [
+    "validate_issue_id",
+    "validate_priority",
+    "validate_status",
+    "validate_issue_type",
+    "validate_date_string",
+    "validate_title",
+    "validate_labels",
+    "validate_positive_integer",
+]
+
 
 def validate_issue_id(issue_id: str) -> str:
     """Validate issue ID format.

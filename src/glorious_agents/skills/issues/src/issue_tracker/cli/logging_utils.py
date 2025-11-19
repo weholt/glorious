@@ -5,6 +5,16 @@ from typing import Any
 
 import typer
 
+__all__ = [
+    "set_verbose",
+    "is_verbose",
+    "verbose_log",
+    "verbose_section",
+    "verbose_step",
+    "verbose_error",
+    "verbose_success",
+]
+
 # Global verbose flag
 _VERBOSE_ENABLED = False
 
@@ -20,7 +30,7 @@ def is_verbose() -> bool:
     return _VERBOSE_ENABLED
 
 
-def verbose_log(message: str, **kwargs: Any) -> None:
+def verbose_log(message: str, **kwargs: Any) -> None:  # type: ignore[no-untyped-def]
     """Log message only when verbose mode is enabled.
 
     Args:

@@ -8,6 +8,8 @@ from issue_tracker.adapters.db.models import IssueLabelModel, IssueModel
 from issue_tracker.domain.entities.issue import Issue, IssuePriority, IssueStatus, IssueType
 from issue_tracker.domain.utils import utcnow_naive
 
+__all__ = ["IssueRepository"]
+
 
 class IssueRepository:
     """Repository for Issue entities using SQLModel.

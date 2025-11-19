@@ -7,13 +7,15 @@ import typer
 
 app = typer.Typer(name="epics", help="Manage epics")
 
+__all__ = ["app", "add", "remove"]
+
 
 @app.command(name="add")
 def add(
     epic_id: str = typer.Argument(..., help="Epic ID"),
     issue_ids: builtins.list[str] = typer.Argument(..., help="Issue ID(s) to add"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """Add issue to an epic."""
     from issue_tracker.cli.app import get_issue_service
 
@@ -42,7 +44,7 @@ def remove(
     epic_id: str = typer.Argument(..., help="Epic ID"),
     issue_ids: builtins.list[str] = typer.Argument(..., help="Issue ID(s) to remove"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """Remove issue from an epic."""
     from issue_tracker.cli.app import get_issue_service
 

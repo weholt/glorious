@@ -9,13 +9,15 @@ from issue_tracker.domain import IssuePriority, IssueStatus, IssueType
 
 app = typer.Typer(name="labels", help="Manage issue labels")
 
+__all__ = ["app", "add", "remove"]
+
 
 @app.command(name="add")
 def add(
     issue_id: str = typer.Argument(..., help="Issue ID"),
     labels: builtins.list[str] = typer.Argument(..., help="Label(s) to add"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """Add labels to an issue."""
     from issue_tracker.cli.app import get_issue_service
 
@@ -52,7 +54,7 @@ def remove(
     issue_id: str = typer.Argument(..., help="Issue ID"),
     labels: builtins.list[str] = typer.Argument(..., help="Label(s) to remove"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """Remove labels from an issue."""
     from issue_tracker.cli.app import get_issue_service
 

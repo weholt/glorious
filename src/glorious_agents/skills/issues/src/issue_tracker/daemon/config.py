@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+__all__ = ["DaemonConfig"]
+
 
 @dataclass
 class DaemonConfig:
@@ -77,7 +79,11 @@ class DaemonConfig:
         return cls.default(workspace_path)
 
     def save(self, workspace_path: Path) -> None:
-        """Save configuration to file."""
+        """Save configuration to file.
+
+        Args:
+            workspace_path: Path to workspace directory
+        """
         from glorious_agents.config import config as glorious_config
 
         data_dir = glorious_config.DATA_FOLDER
@@ -97,7 +103,11 @@ class DaemonConfig:
             json.dump(data, f, indent=2)
 
     def get_socket_path(self) -> Path:
-        """Get socket path for IPC."""
+        """Get socket path for IPC.
+
+        Returns:
+            Path to IPC socket file
+        """
         import sys
 
         from glorious_agents.config import config as glorious_config
@@ -108,13 +118,21 @@ class DaemonConfig:
         return data_dir / "issues.sock"
 
     def get_pid_path(self) -> Path:
-        """Get PID file path."""
+        """Get PID file path.
+
+        Returns:
+            Path to daemon PID file
+        """
         from glorious_agents.config import config as glorious_config
 
         return glorious_config.DATA_FOLDER / "daemon.pid"
 
     def get_log_path(self) -> Path:
-        """Get daemon log file path."""
+        """Get daemon log file path.
+
+        Returns:
+            Path to daemon log file
+        """
         from glorious_agents.config import config as glorious_config
 
         return glorious_config.DATA_FOLDER / "daemon.log"

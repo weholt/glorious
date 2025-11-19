@@ -7,6 +7,15 @@ from datetime import datetime
 
 from sqlmodel import Column, Field, Index, SQLModel, String
 
+__all__ = [
+    "IssueModel",
+    "LabelModel",
+    "IssueLabelModel",
+    "CommentModel",
+    "DependencyModel",
+    "EpicModel",
+]
+
 
 class IssueModel(SQLModel, table=True):
     """Issue table model.

@@ -13,6 +13,8 @@ from glorious_agents.core.daemon import BaseDaemonService, PeriodicTask
 from issue_tracker.daemon.config import DaemonConfig
 from issue_tracker.daemon.sync_engine import SyncEngine
 
+__all__ = ["IssuesDaemonService"]
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +24,7 @@ class IssuesDaemonService(BaseDaemonService):
     Provides background sync for issue tracking with Git integration.
     """
 
-    def __init__(self, config: DaemonConfig):
+    def __init__(self, config: DaemonConfig) -> None:
         """Initialize issues daemon service.
 
         Args:
@@ -56,7 +58,10 @@ class IssuesDaemonService(BaseDaemonService):
         self._sync_task: PeriodicTask | None = None
 
     async def on_startup(self) -> None:
-        """Initialize issues-specific resources."""
+        """Initialize issues-specific resources.
+
+        Starts the periodic sync task if enabled.
+        """
         logger.info("Starting issues daemon")
 
         # Start periodic sync if enabled
@@ -68,7 +73,10 @@ class IssuesDaemonService(BaseDaemonService):
             logger.info(f"Sync task started (interval: {self.issues_config.sync_interval_seconds}s)")
 
     async def on_shutdown(self) -> None:
-        """Cleanup issues-specific resources."""
+        """Cleanup issues-specific resources.
+
+        Stops the sync task and disposes the database engine.
+        """
         logger.info("Shutting down issues daemon")
 
         # Stop sync task

@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from sqlmodel import Session, text
 
+__all__ = ["SearchService", "SearchResult"]
+
 
 @dataclass
 class SearchResult:
@@ -17,7 +19,7 @@ class SearchResult:
 class SearchService:
     """Service for full-text search using FTS5."""
 
-    def __init__(self, session: Session):
+    def __init__(self, session: Session) -> None:
         """Initialize search service.
 
         Args:
