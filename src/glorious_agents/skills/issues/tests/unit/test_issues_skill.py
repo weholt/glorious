@@ -13,9 +13,10 @@ Note: These tests use the mock services provided in conftest.py fixtures.
 The fixtures provide stateful mock implementations that track created issues.
 """
 
-import pytest
+from datetime import datetime
 from unittest.mock import MagicMock
-from datetime import UTC, datetime
+
+import pytest
 
 
 class TestIssueCRUD:
@@ -437,7 +438,7 @@ class TestSearchAndFiltering:
         from issue_tracker.domain import IssuePriority
 
         high = mock_service.create_issue(title="High priority", priority=1)
-        low = mock_service.create_issue(title="Low priority", priority=3)
+        mock_service.create_issue(title="Low priority", priority=3)
 
         high_priority_issues = mock_service.list_issues(priority=IssuePriority.HIGH)
         assert any(i.id == high.id for i in high_priority_issues)
