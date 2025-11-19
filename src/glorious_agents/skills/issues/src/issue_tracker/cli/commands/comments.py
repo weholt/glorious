@@ -1,8 +1,11 @@
 """Comment management commands."""
 
 import json
+import logging
 
 import typer
+
+logger = logging.getLogger(__name__)
 
 app = typer.Typer(name="comments", help="Manage issue comments")
 
@@ -19,9 +22,11 @@ def add(
     from issue_tracker.cli.app import get_issue_service
 
     try:
+        logger.debug("CLI: add comment command: issue_id=%s", issue_id)
         service = get_issue_service()
 
         # Add comment through service
+        logger.debug("CLI: adding comment to issue: id=%s", issue_id)
         comment = service.add_comment(
             issue_id=issue_id,
             text=text,
@@ -38,6 +43,7 @@ def add(
             "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
         }
 
+        logger.info("CLI: comment added: id=%s, issue_id=%s", comment.id, issue_id)
         if not json_output:
             typer.echo(f"Added comment to {issue_id}")
         else:
@@ -45,6 +51,7 @@ def add(
     except typer.Exit:
         raise
     except Exception as e:
+        logger.error("CLI: error adding comment: %s", str(e))
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
 
@@ -58,9 +65,11 @@ def list_comments(
     from issue_tracker.cli.app import get_issue_service
 
     try:
+        logger.debug("CLI: list comments command: issue_id=%s", issue_id)
         service = get_issue_service()
 
         # Get comments through service
+        logger.debug("CLI: fetching comments for issue: id=%s", issue_id)
         comments_list = service.list_comments(issue_id)
 
         # Convert Comment entities to dicts
@@ -76,6 +85,7 @@ def list_comments(
             for comment in comments_list
         ]
 
+        logger.debug("CLI: found %d comments for issue: id=%s", len(comments), issue_id)
         if json_output:
             typer.echo(json.dumps(comments))
         else:
@@ -87,6 +97,7 @@ def list_comments(
     except typer.Exit:
         raise
     except Exception as e:
+        logger.error("CLI: error listing comments: %s", str(e))
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
 
@@ -102,21 +113,31 @@ def delete(
     from issue_tracker.cli.app import get_issue_service
 
     try:
+        logger.debug("CLI: delete comment command: issue_id=%s, comment_index=%d", issue_id, comment_index)
         service = get_issue_service()
 
         if not force:
+            logger.warning("CLI: delete comment attempted without --force flag")
             typer.echo("Error: --force flag required for deletion", err=True)
             raise typer.Exit(1)
 
         # Get comments to find the one to delete
+        logger.debug("CLI: fetching comments for deletion: issue_id=%s", issue_id)
         comments_list = service.list_comments(issue_id)
 
         if not comments_list:
+            logger.warning("CLI: no comments found for issue: id=%s", issue_id)
             typer.echo(f"Error: No comments on issue {issue_id}", err=True)
             raise typer.Exit(1)
 
         # Validate index
         if comment_index < 1 or comment_index > len(comments_list):
+            logger.warning(
+                "CLI: invalid comment index: issue_id=%s, index=%d, count=%d",
+                issue_id,
+                comment_index,
+                len(comments_list),
+            )
             typer.echo(f"Error: Invalid comment index {comment_index}. Valid range: 1-{len(comments_list)}", err=True)
             raise typer.Exit(1)
 
@@ -125,8 +146,10 @@ def delete(
         comment_id = comment_to_delete.id
 
         # Delete through service
+        logger.debug("CLI: deleting comment: id=%s, issue_id=%s", comment_id, issue_id)
         service.delete_comment(comment_id)
 
+        logger.info("CLI: comment deleted: id=%s, issue_id=%s", comment_id, issue_id)
         if not json_output:
             typer.echo(f"Deleted comment {comment_id} from {issue_id}")
         else:
@@ -134,5 +157,6 @@ def delete(
     except typer.Exit:
         raise
     except Exception as e:
+        logger.error("CLI: error deleting comment: %s", str(e))
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)

@@ -58,6 +58,7 @@ class UnitOfWork:
         Returns:
             Self for context manager pattern
         """
+        logger.debug("Entering transaction context")
         self._in_transaction = True
         return self
 
@@ -75,9 +76,11 @@ class UnitOfWork:
             exc_tb: Exception traceback if raised
         """
         if exc_type is not None:
+            logger.warning("Transaction error, rolling back: %s", exc_type.__name__)
             self.rollback()
         else:
             if self._in_transaction:
+                logger.debug("Committing transaction")
                 self.commit()
         self._in_transaction = False
 
@@ -86,7 +89,9 @@ class UnitOfWork:
 
         Persists all changes made within the transaction to the database.
         """
+        logger.debug("Committing database transaction")
         self.session.commit()
+        logger.debug("Transaction committed successfully")
 
     def rollback(self) -> None:
         """Rollback current transaction.
@@ -94,7 +99,9 @@ class UnitOfWork:
         Discards all changes made within the transaction.
         """
         if self._in_transaction:
+            logger.warning("Rolling back database transaction")
             self.session.rollback()
+            logger.debug("Transaction rolled back")
 
     @property
     def issues(self) -> IssueRepository:

@@ -4,11 +4,15 @@ Provides high-level operations for issue management, coordinating
 between repositories and enforcing business rules.
 """
 
+import logging
+
 from issue_tracker.adapters.db.unit_of_work import UnitOfWork
 from issue_tracker.domain.entities.comment import Comment
 from issue_tracker.domain.entities.dependency import Dependency, DependencyType
 from issue_tracker.domain.entities.issue import Issue, IssuePriority, IssueStatus, IssueType
 from issue_tracker.domain.ports import Clock, IdentifierService
+
+logger = logging.getLogger(__name__)
 
 
 class IssueService:
@@ -70,11 +74,21 @@ class IssueService:
             >>> service.create_issue("Custom", custom_id="PROJECT-123")
             Issue(id='PROJECT-123', title='Custom', ...)
         """
+        logger.debug(
+            "Creating issue: title=%s, type=%s, priority=%s, assignee=%s",
+            title,
+            issue_type.value,
+            priority.value,
+            assignee,
+        )
+
         # Use custom ID if provided, otherwise generate one
         if custom_id:
             # Validate that custom ID doesn't already exist
+            logger.debug("Checking if custom ID already exists: %s", custom_id)
             existing = self.uow.issues.get(custom_id)
             if existing:
+                logger.warning("Cannot create issue with custom_id=%s: already exists", custom_id)
                 raise ValueError(f"Issue with ID '{custom_id}' already exists")
             issue_id = custom_id
         else:
@@ -97,7 +111,9 @@ class IssueService:
             updated_at=now,
         )
 
-        return self.uow.issues.save(issue)
+        saved_issue = self.uow.issues.save(issue)
+        logger.info("Issue created: id=%s, title=%s, project=%s", saved_issue.id, saved_issue.title, project_id)
+        return saved_issue
 
     def get_issue(self, issue_id: str) -> Issue | None:
         """Get issue by ID.
@@ -108,7 +124,13 @@ class IssueService:
         Returns:
             Issue if found, None otherwise
         """
-        return self.uow.issues.get(issue_id)
+        logger.debug("Retrieving issue: id=%s", issue_id)
+        issue = self.uow.issues.get(issue_id)
+        if issue:
+            logger.debug("Issue found: id=%s, title=%s, status=%s", issue.id, issue.title, issue.status.value)
+        else:
+            logger.debug("Issue not found: id=%s", issue_id)
+        return issue
 
     def update_issue(
         self,
@@ -132,8 +154,17 @@ class IssueService:
         Returns:
             Updated issue if found, None otherwise
         """
+        logger.debug(
+            "Updating issue: id=%s, title=%s, priority=%s, assignee=%s, epic_id=%s",
+            issue_id,
+            title,
+            priority,
+            assignee,
+            epic_id,
+        )
         issue = self.uow.issues.get(issue_id)
         if not issue:
+            logger.warning("Cannot update: issue not found: id=%s", issue_id)
             return None
 
         if title is not None:
@@ -148,7 +179,9 @@ class IssueService:
             issue.epic_id = epic_id
 
         issue.updated_at = self.clock.now()
-        return self.uow.issues.save(issue)
+        updated_issue = self.uow.issues.save(issue)
+        logger.info("Issue updated: id=%s, title=%s", updated_issue.id, updated_issue.title)
+        return updated_issue
 
     def transition_issue(self, issue_id: str, new_status: IssueStatus) -> Issue | None:
         """Transition issue to new status.
@@ -163,10 +196,13 @@ class IssueService:
         Raises:
             InvalidTransitionError: If transition is not allowed
         """
+        logger.debug("Transitioning issue: id=%s, from_status=?, to_status=%s", issue_id, new_status.value)
         issue = self.uow.issues.get(issue_id)
         if not issue:
+            logger.warning("Cannot transition: issue not found: id=%s", issue_id)
             return None
 
+        logger.debug("Issue status transition: id=%s, from=%s, to=%s", issue_id, issue.status.value, new_status.value)
         # transition() returns a new Issue object
         transitioned = issue.transition(new_status)
         transitioned.updated_at = self.clock.now()
@@ -174,7 +210,9 @@ class IssueService:
         if new_status == IssueStatus.CLOSED:
             transitioned.closed_at = self.clock.now()
 
-        return self.uow.issues.save(transitioned)
+        saved = self.uow.issues.save(transitioned)
+        logger.info("Issue transitioned: id=%s, new_status=%s", saved.id, saved.status.value)
+        return saved
 
     def close_issue(self, issue_id: str) -> Issue | None:
         """Close an issue.
@@ -188,18 +226,24 @@ class IssueService:
         Returns:
             Closed issue if found, None otherwise
         """
+        logger.debug("Closing issue: id=%s", issue_id)
         issue = self.uow.issues.get(issue_id)
         if not issue:
+            logger.warning("Cannot close: issue not found: id=%s", issue_id)
             return None
 
         # If not already resolved, transition to resolved first
         if issue.status != IssueStatus.RESOLVED:
+            logger.debug("Issue not resolved yet, transitioning to RESOLVED first: id=%s", issue_id)
             issue = self.transition_issue(issue_id, IssueStatus.RESOLVED)
             if not issue:
                 return None
 
         # Then close it
-        return self.transition_issue(issue_id, IssueStatus.CLOSED)
+        closed = self.transition_issue(issue_id, IssueStatus.CLOSED)
+        if closed:
+            logger.info("Issue closed: id=%s", issue_id)
+        return closed
 
     def reopen_issue(self, issue_id: str) -> Issue | None:
         """Reopen a closed issue.
@@ -228,7 +272,13 @@ class IssueService:
         Returns:
             True if deleted, False if not found
         """
-        return self.uow.issues.delete(issue_id)
+        logger.debug("Deleting issue: id=%s", issue_id)
+        deleted = self.uow.issues.delete(issue_id)
+        if deleted:
+            logger.info("Issue deleted: id=%s", issue_id)
+        else:
+            logger.warning("Cannot delete: issue not found: id=%s", issue_id)
+        return deleted
 
     def list_issues(
         self,
@@ -278,9 +328,11 @@ class IssueService:
         Returns:
             Created comment if issue exists, None otherwise
         """
+        logger.debug("Adding comment to issue: issue_id=%s, author=%s", issue_id, author)
         # Verify issue exists
         issue = self.uow.issues.get(issue_id)
         if not issue:
+            logger.warning("Cannot add comment: issue not found: id=%s", issue_id)
             return None
 
         comment_id = self.id_service.generate("comment")
@@ -295,7 +347,9 @@ class IssueService:
             updated_at=now,
         )
 
-        return self.uow.comments.save(comment)
+        saved_comment = self.uow.comments.save(comment)
+        logger.info("Comment added: id=%s, issue_id=%s, author=%s", saved_comment.id, issue_id, author)
+        return saved_comment
 
     def list_comments(self, issue_id: str) -> list[Comment]:
         """List all comments for an issue.
@@ -324,8 +378,10 @@ class IssueService:
         Returns:
             Created dependency if no cycle detected, None otherwise
         """
+        logger.debug("Adding dependency: from=%s, to=%s, type=%s", from_issue_id, to_issue_id, dependency_type.value)
         # Check for cycles
         if self.uow.graph.has_cycle(from_issue_id, to_issue_id):
+            logger.warning("Cannot add dependency: would create cycle: from=%s, to=%s", from_issue_id, to_issue_id)
             return None
 
         now = self.clock.now()
@@ -336,7 +392,9 @@ class IssueService:
             created_at=now,
         )
 
-        return self.uow.graph.add_dependency(dependency)
+        saved_dep = self.uow.graph.add_dependency(dependency)
+        logger.info("Dependency added: from=%s, to=%s, type=%s", from_issue_id, to_issue_id, dependency_type.value)
+        return saved_dep
 
     def remove_dependency(
         self,
@@ -388,6 +446,7 @@ class IssueService:
         Returns:
             Tuple of (successfully updated issues, failed issue IDs)
         """
+        logger.debug("Bulk updating status for %d issues: new_status=%s", len(issue_ids), new_status.value)
         updated: list[Issue] = []
         failed: list[str] = []
 
@@ -398,9 +457,11 @@ class IssueService:
                     updated.append(issue)
                 else:
                     failed.append(issue_id)
-            except Exception:
+            except Exception as e:
+                logger.error("Failed to transition issue: id=%s, error=%s", issue_id, str(e))
                 failed.append(issue_id)
 
+        logger.info("Bulk status update completed: updated=%d, failed=%d", len(updated), len(failed))
         return updated, failed
 
     def bulk_update_priority(self, issue_ids: list[str], new_priority: IssuePriority) -> tuple[list[Issue], list[str]]:
