@@ -10,6 +10,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from glorious_agents.config import config
+from glorious_agents.core.loader.utils import normalize_config_schema
 from glorious_agents.core.registry import SkillManifest
 
 logger = logging.getLogger(__name__)
@@ -55,14 +56,7 @@ def discover_local_skills(skills_dir: Path | None = None) -> dict[str, dict[str,
                     requires_validated = []
 
                 # Extract properties from JSON Schema format if needed
-                config_schema_normalized = None
-                if config_schema_val:
-                    if isinstance(config_schema_val, dict):
-                        # If it's a JSON Schema with "properties", extract them
-                        if "properties" in config_schema_val:
-                            config_schema_normalized = dict(config_schema_val["properties"])
-                        else:
-                            config_schema_normalized = dict(config_schema_val)
+                config_schema_normalized = normalize_config_schema(config_schema_val)
 
                 SkillManifest(
                     name=str(manifest_data.get("name", "")),
@@ -152,14 +146,7 @@ def discover_entrypoint_skills(group: str = "glorious_agents.skills") -> dict[st
                     requires_validated = []
 
                 # Extract properties from JSON Schema format if needed
-                config_schema_normalized = None
-                if config_schema_val:
-                    if isinstance(config_schema_val, dict):
-                        # If it's a JSON Schema with "properties", extract them
-                        if "properties" in config_schema_val:
-                            config_schema_normalized = dict(config_schema_val["properties"])
-                        else:
-                            config_schema_normalized = dict(config_schema_val)
+                config_schema_normalized = normalize_config_schema(config_schema_val)
 
                 SkillManifest(
                     name=str(manifest_data.get("name", ep.name)),

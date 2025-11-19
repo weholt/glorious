@@ -13,6 +13,7 @@ from glorious_agents.core.loader.initialization import (
     init_schemas,
     load_skill_entry,
 )
+from glorious_agents.core.loader.utils import normalize_config_schema
 from glorious_agents.core.loader.versioning import check_version_constraint, parse_version
 from glorious_agents.core.registry import SkillManifest, get_registry
 from glorious_agents.core.runtime import get_ctx
@@ -69,13 +70,7 @@ def load_all_skills() -> None:
         # Create manifest object
         config_schema_data = manifest_data.get("config_schema")
         # Extract properties from JSON Schema format if needed
-        config_schema_normalized = None
-        if config_schema_data and isinstance(config_schema_data, dict):
-            # If it's a JSON Schema with "properties", extract them
-            if "properties" in config_schema_data:
-                config_schema_normalized = dict(config_schema_data["properties"])
-            else:
-                config_schema_normalized = dict(config_schema_data)
+        config_schema_normalized = normalize_config_schema(config_schema_data)
 
         manifest = SkillManifest(
             name=manifest_data["name"],
