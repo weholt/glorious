@@ -16,6 +16,8 @@ from issue_tracker.domain import (
     ValidationError,
 )
 
+__all__ = ["handle_cli_errors", "format_error_message"]
+
 T = TypeVar("T")
 
 

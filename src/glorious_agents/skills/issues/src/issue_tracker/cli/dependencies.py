@@ -16,6 +16,17 @@ from ..services.issue_graph_service import IssueGraphService
 from ..services.issue_service import IssueService
 from ..services.issue_stats_service import IssueStatsService
 
+__all__ = [
+    "get_issues_folder",
+    "get_db_url",
+    "get_engine",
+    "get_session",
+    "get_issue_service",
+    "get_issue_graph_service",
+    "get_issue_stats_service",
+    "dispose_all_engines",
+]
+
 logger = logging.getLogger(__name__)
 
 # Track all created engines for proper cleanup
@@ -62,7 +73,7 @@ def get_db_url() -> str:
     return f"sqlite:///{path.as_posix()}"
 
 
-def get_engine():
+def get_engine() -> Engine:
     """Get cached database engine.
 
     IMPORTANT: Engines are cached per db_url to prevent memory leaks.
@@ -107,7 +118,7 @@ def get_engine():
     return engine
 
 
-def dispose_all_engines():
+def dispose_all_engines() -> None:
     """Dispose all cached engines and clear registry.
 
     CRITICAL: Must be called during test cleanup to prevent memory leaks.

@@ -1,4 +1,8 @@
-"""Planner skill - action queue management with state machine."""
+"""Planner skill - action queue management with state machine.
+
+Refactored to use modern architecture with Repository/Service patterns
+while remaining discoverable as a separate installable skill.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +16,9 @@ from rich.table import Table
 from glorious_agents.core.context import SkillContext
 from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
+
+from .dependencies import get_planner_service
+from .models import PlannerTask
 
 app = typer.Typer(help="Task planning and queue management")
 console = Console()
@@ -39,8 +46,7 @@ class AddTaskInput(SkillInput):
 def add_task(
     issue_id: str, priority: int = 0, project_id: str = "", important: bool = False
 ) -> int:
-    """
-    Add a task to the queue (callable API).
+    """Add a task to the queue (callable API).
 
     Args:
         issue_id: Issue identifier (1-200 chars).
@@ -54,52 +60,29 @@ def add_task(
     Raises:
         ValidationException: If input validation fails.
     """
-    if _ctx is None:
-        raise RuntimeError("Context not initialized")
+    # Get service and create task
+    service = get_planner_service(event_bus=_ctx.event_bus if _ctx else None)
 
-    cur = _ctx.conn.execute(
-        """INSERT INTO planner_queue (issue_id, priority, project_id, important, status)
-           VALUES (?, ?, ?, ?, 'queued')""",
-        (issue_id, priority, project_id, 1 if important else 0),
-    )
-    _ctx.conn.commit()
-    return cur.lastrowid
+    with service.uow:
+        task = service.create_task(issue_id, priority, project_id, important)
+        return task.id
 
 
 def get_next_task(respect_important: bool = True) -> dict | None:
     """Get the highest priority task from the queue."""
-    if _ctx is None:
-        raise RuntimeError("Context not initialized")
+    service = get_planner_service()
 
-    if respect_important:
-        query = """
-            SELECT id, issue_id, priority, project_id, important
-            FROM planner_queue
-            WHERE status = 'queued'
-            ORDER BY important DESC, priority DESC
-            LIMIT 1
-        """
-    else:
-        query = """
-            SELECT id, issue_id, priority, project_id, important
-            FROM planner_queue
-            WHERE status = 'queued'
-            ORDER BY priority DESC
-            LIMIT 1
-        """
-
-    cur = _ctx.conn.execute(query)
-    row = cur.fetchone()
-
-    if row:
-        return {
-            "id": row[0],
-            "issue_id": row[1],
-            "priority": row[2],
-            "project_id": row[3],
-            "important": bool(row[4]),
-        }
-    return None
+    with service.uow:
+        task = service.get_next_task(respect_important)
+        if task:
+            return {
+                "id": task.id,
+                "issue_id": task.issue_id,
+                "priority": task.priority,
+                "project_id": task.project_id,
+                "important": task.important,
+            }
+        return None
 
 
 @app.command()
@@ -113,6 +96,7 @@ def add(issue_id: str, priority: int = 0, project_id: str = "", important: bool 
         )
     except ValidationException as e:
         console.print(f"[red]{e.message}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -133,57 +117,50 @@ def next(respect_important: bool = True) -> None:
 
 @app.command()
 def update(
-    task_id: int, status: str = typer.Option(..., help="New status: queued, running, blocked, done")
+    task_id: int,
+    status: str = typer.Option(..., help="New status: queued, running, blocked, done"),
 ) -> None:
     """Update task status."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
-
     if status not in ["queued", "running", "blocked", "done"]:
         console.print("[red]Invalid status. Must be: queued, running, blocked, or done[/red]")
-        return
+        raise typer.Exit(1)
 
-    from datetime import datetime
+    service = get_planner_service(event_bus=_ctx.event_bus if _ctx else None)
 
-    _ctx.conn.execute(
-        "UPDATE planner_queue SET status = ?, updated_at = ? WHERE id = ?",
-        (status, datetime.utcnow().isoformat(), task_id),
-    )
-    _ctx.conn.commit()
-
-    console.print(f"[green]Task {task_id} status updated to '{status}'[/green]")
+    with service.uow:
+        task = service.update_task_status(task_id, status)
+        if task:
+            console.print(f"[green]Task {task_id} status updated to '{status}'[/green]")
+        else:
+            console.print(f"[yellow]Task {task_id} not found[/yellow]")
+            raise typer.Exit(1)
 
 
 @app.command()
 def list(status: str = typer.Option("queued", help="Filter by status"), limit: int = 20) -> None:
     """List tasks in the queue."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = get_planner_service()
 
-    cur = _ctx.conn.execute(
-        """
-        SELECT id, issue_id, priority, status, important, project_id, created_at
-        FROM planner_queue
-        WHERE status = ?
-        ORDER BY important DESC, priority DESC, created_at ASC
-        LIMIT ?
-    """,
-        (status, limit),
-    )
+    with service.uow:
+        tasks = service.list_tasks(status, limit)
 
-    table = Table(title=f"Tasks ({status})")
-    table.add_column("ID", style="cyan")
-    table.add_column("Issue", style="white")
-    table.add_column("Priority", style="yellow")
-    table.add_column("Flags", style="magenta")
-    table.add_column("Project", style="dim")
+        # Build table while session is active
+        table = Table(title=f"Tasks ({status})")
+        table.add_column("ID", style="cyan")
+        table.add_column("Issue", style="white")
+        table.add_column("Priority", style="yellow")
+        table.add_column("Flags", style="magenta")
+        table.add_column("Project", style="dim")
 
-    for row in cur:
-        task_id, issue_id, priority, status_val, important, project_id, _ = row
-        flags = "⭐" if important else ""
-        table.add_row(str(task_id), issue_id, str(priority), flags, project_id or "-")
+        for task in tasks:
+            flags = "⭐" if task.important else ""
+            table.add_row(
+                str(task.id),
+                task.issue_id,
+                str(task.priority),
+                flags,
+                task.project_id or "-",
+            )
 
     console.print(table)
 
@@ -199,14 +176,12 @@ def sync(project_id: str = typer.Option(..., help="Project ID to sync")) -> None
 @app.command()
 def delete(task_id: int) -> None:
     """Delete a task from the queue."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = get_planner_service()
 
-    cur = _ctx.conn.execute("DELETE FROM planner_queue WHERE id = ?", (task_id,))
-    _ctx.conn.commit()
+    with service.uow:
+        deleted = service.delete_task(task_id)
 
-    if cur.rowcount > 0:
+    if deleted:
         console.print(f"[green]Task {task_id} deleted[/green]")
     else:
         console.print(f"[yellow]Task {task_id} not found[/yellow]")
@@ -224,44 +199,7 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
     Returns:
         List of SearchResult objects
     """
-    if _ctx is None:
-        return []
+    service = get_planner_service()
 
-    query_lower = query.lower()
-    cur = _ctx.conn.execute(
-        """
-        SELECT id, issue_id, status, priority, project_id, important
-        FROM planner_queue
-        WHERE LOWER(issue_id) LIKE ? OR LOWER(project_id) LIKE ?
-        ORDER BY priority DESC, id
-        LIMIT ?
-    """,
-        (f"%{query_lower}%", f"%{query_lower}%", limit),
-    )
-
-    results = []
-    for row in cur:
-        # Calculate score based on priority and important flag
-        score = 0.5 + (row[3] / 200.0)  # priority normalized
-        if row[5]:  # important flag
-            score += 0.3
-        score = min(1.0, max(0.0, score))
-
-        results.append(
-            SearchResult(
-                skill="planner",
-                id=row[0],
-                type="task",
-                content=f"Task #{row[0]}: {row[1]}",
-                metadata={
-                    "issue_id": row[1],
-                    "status": row[2],
-                    "priority": row[3],
-                    "project_id": row[4],
-                    "important": bool(row[5]),
-                },
-                score=score,
-            )
-        )
-
-    return results
+    with service.uow:
+        return service.search_tasks(query, limit)

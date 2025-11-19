@@ -5,19 +5,43 @@ import sqlite3
 import threading
 from collections import defaultdict
 from collections.abc import Callable
+from enum import Enum
 from typing import Any, Protocol
+
+from sqlalchemy import Engine
 
 from glorious_agents.core.cache import TTLCache
 
 logger = logging.getLogger(__name__)
 
 
-class EventBus:
-    """In-process publish-subscribe event bus."""
+class ErrorHandlingMode(Enum):
+    """Error handling modes for event bus."""
 
-    def __init__(self) -> None:
+    SILENT = "silent"  # Log errors but continue (default behavior)
+    FAIL_FAST = "fail_fast"  # Raise first error
+    COLLECT = "collect"  # Collect all errors and provide them
+
+
+class EventBus:
+    """In-process publish-subscribe event bus with configurable error handling.
+
+    The event bus supports three error handling modes:
+    - SILENT (default): Logs errors but continues processing other handlers
+    - FAIL_FAST: Raises the first error encountered
+    - COLLECT: Collects all errors and makes them available via get_last_errors()
+    """
+
+    def __init__(self, error_mode: ErrorHandlingMode = ErrorHandlingMode.SILENT) -> None:
+        """Initialize EventBus with specified error handling mode.
+
+        Args:
+            error_mode: How to handle errors in event handlers (default: SILENT)
+        """
         self._subscribers: dict[str, list[Callable[[dict[str, Any]], None]]] = defaultdict(list)
         self._lock = threading.Lock()
+        self._error_mode = error_mode
+        self._last_errors: list[tuple[str, Exception]] = []
 
     def subscribe(self, topic: str, callback: Callable[[dict[str, Any]], None]) -> None:
         """
@@ -37,17 +61,57 @@ class EventBus:
         Args:
             topic: Event topic name.
             data: Event data payload.
+
+        Raises:
+            Exception: If error_mode is FAIL_FAST and a handler raises
         """
         with self._lock:
             callbacks = self._subscribers.get(topic, [])
+            self._last_errors.clear()
 
         # Execute callbacks outside lock to avoid deadlocks
         for callback in callbacks:
             try:
                 callback(data)
             except Exception as e:
-                # Log error but don't fail the publish
+                # Log error
                 logger.error(f"Error in event handler for {topic}: {e}", exc_info=True)
+
+                # Handle based on mode
+                if self._error_mode == ErrorHandlingMode.FAIL_FAST:
+                    raise
+                elif self._error_mode == ErrorHandlingMode.COLLECT:
+                    self._last_errors.append((topic, e))
+                # SILENT mode: just log (default behavior)
+
+    def get_last_errors(self) -> list[tuple[str, Exception]]:
+        """Get errors from last publish operation (if error_mode is COLLECT).
+
+        Returns:
+            List of (topic, exception) tuples from the last publish call
+        """
+        return self._last_errors.copy()
+
+    def get_subscriber_count(self, topic: str) -> int:
+        """Get number of subscribers for a topic.
+
+        Args:
+            topic: Topic name to query
+
+        Returns:
+            Number of subscribers for the topic
+        """
+        with self._lock:
+            return len(self._subscribers.get(topic, []))
+
+    def get_all_topics(self) -> list[str]:
+        """Get list of all topics with subscribers.
+
+        Returns:
+            List of topic names that have at least one subscriber
+        """
+        with self._lock:
+            return list(self._subscribers.keys())
 
 
 class SkillApp(Protocol):
@@ -59,10 +123,18 @@ class SkillApp(Protocol):
 
 
 class SkillContext:
-    """Shared context for all skills with TTL-aware cache."""
+    """Shared context for all skills with TTL-aware cache.
+
+    Supports both legacy SQLite connections and modern SQLAlchemy engines
+    for backward compatibility during migration.
+    """
 
     def __init__(
-        self, conn: sqlite3.Connection, event_bus: EventBus, cache_max_size: int = 1000
+        self,
+        conn: sqlite3.Connection,
+        event_bus: EventBus,
+        cache_max_size: int = 1000,
+        engine: Engine | None = None,
     ) -> None:
         """
         Initialize a SkillContext with a shared database connection, an event bus, and a TTL-backed in-process cache.
@@ -71,9 +143,11 @@ class SkillContext:
                 conn (sqlite3.Connection): Shared SQLite connection used by skills; accessing `conn` after the context is closed will raise a RuntimeError.
                 event_bus (EventBus): In-process event bus for inter-skill publish/subscribe.
                 cache_max_size (int): Maximum number of entries the internal TTL cache will hold (default 1000).
+                engine (Engine | None): Optional SQLAlchemy engine for modern ORM-based skills.
         """
         self._conn = conn
         self._event_bus = event_bus
+        self._engine = engine
         self._skills: dict[str, SkillApp] = {}
         self._cache = TTLCache(max_size=cache_max_size)
         self._closed = False
@@ -132,6 +206,21 @@ class SkillContext:
         if self._closed:
             raise RuntimeError("Cannot use connection after context is closed")
         return self._conn
+
+    @property
+    def engine(self) -> Engine | None:
+        """
+        Access the SQLAlchemy engine for ORM-based skills.
+
+        Returns:
+            Engine | None: The SQLAlchemy engine if configured, None otherwise.
+
+        Raises:
+            RuntimeError: If the context has been closed.
+        """
+        if self._closed:
+            raise RuntimeError("Cannot use engine after context is closed")
+        return self._engine
 
     def publish(self, topic: str, data: dict[str, Any]) -> None:
         """

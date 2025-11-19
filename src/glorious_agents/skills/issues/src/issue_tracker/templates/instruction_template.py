@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+__all__ = ["TaskDefinition", "InstructionTemplate", "InstructionTemplateParser", "InstructionTemplateManager"]
+
 
 @dataclass
 class TaskDefinition:
@@ -121,7 +123,7 @@ class InstructionTemplateParser:
 class InstructionTemplateManager:
     """Manager for instruction-based templates."""
 
-    def __init__(self, templates_dir: Path):
+    def __init__(self, templates_dir: Path) -> None:
         """Initialize instruction template manager.
 
         Args:

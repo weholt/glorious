@@ -7,15 +7,17 @@ import typer
 
 app = typer.Typer(name="dependencies", help="Manage issue dependencies and blocking relationships")
 
+__all__ = ["app", "add", "remove", "list_deps", "list_all", "tree", "cycles"]
 
-def get_issue_service():
+
+def get_issue_service() -> Any:
     """Import and return issue service (avoids circular import)."""
     from issue_tracker.cli.app import get_issue_service as _get_issue_service
 
     return _get_issue_service()
 
 
-def get_graph_service():
+def get_graph_service() -> Any:
     """Import and return graph service (avoids circular import)."""
     from issue_tracker.cli.app import get_graph_service as _get_graph_service
 
@@ -29,7 +31,7 @@ def add(
     to_id: str = typer.Argument(..., help="Target issue ID"),
     skip_cycle_check: bool = typer.Option(False, "--skip-cycle-check", help="Skip circular dependency check"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """Add a dependency between two issues with full validation.
 
     Validates:
@@ -119,7 +121,7 @@ def remove(
     dep_type_or_to: str = typer.Argument(..., help="Dependency type or target ID"),
     to_id: str | None = typer.Argument(None, help="Target issue ID"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """Remove a dependency."""
     try:
         from issue_tracker.domain.entities.dependency import DependencyType
@@ -163,7 +165,7 @@ def list_deps(
     issue_id: str = typer.Argument(..., help="Issue ID"),
     type: str | None = typer.Option(None, "--type", help="Filter by dependency type"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """List dependencies."""
     try:
         from issue_tracker.domain.entities.dependency import DependencyType
@@ -211,7 +213,7 @@ def list_all(
     from_issue: str | None = typer.Option(None, "--from", help="Filter by source issue"),
     to_issue: str | None = typer.Option(None, "--to", help="Filter by target issue"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """List all dependencies in the system with optional filtering.
 
     Shows global view of all dependency relationships.
@@ -322,7 +324,7 @@ def tree(
     depth: int | None = typer.Option(None, "--depth", help="Maximum depth"),
     format: str = typer.Option("text", "--format", help="Output format: text, json, mermaid"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON (deprecated, use --format json)"),
-):
+) -> None:
     """Show dependency tree with multiple output formats.
 
     Examples:
@@ -350,7 +352,14 @@ def tree(
         if format == "json":
             # Enhanced JSON output with full issue details
             def convert_tree_to_dict(node: dict[str, Any]) -> dict[str, Any]:
-                """Convert dependency tree node to dictionary format."""
+                """Convert dependency tree node to dictionary format.
+
+                Args:
+                    node: Tree node dictionary
+
+                Returns:
+                    Formatted dictionary for JSON output
+                """
                 result = {
                     "issue_id": node["issue_id"],
                     "is_circular": node.get("is_circular", False),
@@ -387,8 +396,13 @@ def tree(
             lines = ["graph TD"]
             visited = set()
 
-            def add_mermaid_node(node: dict[str, Any], parent_id: str | None = None):
-                """Add node to mermaid diagram."""
+            def add_mermaid_node(node: dict[str, Any], parent_id: str | None = None) -> None:
+                """Add node to mermaid diagram.
+
+                Args:
+                    node: Tree node dictionary
+                    parent_id: Parent node ID for linking
+                """
                 node_id = node["issue_id"]
 
                 if node_id not in visited:
@@ -428,8 +442,14 @@ def tree(
 
         else:  # text format (default)
 
-            def print_tree(node: dict[str, Any], prefix: str = "", is_last: bool = True):
-                """Print dependency tree in text format."""
+            def print_tree(node: dict[str, Any], prefix: str = "", is_last: bool = True) -> None:
+                """Print dependency tree in text format.
+
+                Args:
+                    node: Tree node dictionary
+                    prefix: Current indentation prefix
+                    is_last: Whether this is the last sibling
+                """
                 connector = "└── " if is_last else "├── "
                 dep_type = f" ({node.get('dependency_type', '')})" if "dependency_type" in node else ""
                 cycle_marker = " [CYCLE]" if node.get("is_circular") else ""
@@ -461,7 +481,7 @@ def tree(
 def cycles(
     fix: bool = typer.Option(False, "--fix", help="Suggest dependency removals to break cycles"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-):
+) -> None:
     """Detect dependency cycles with detailed reporting.
 
     Shows cycle paths with issue titles, cycle length/severity, and optional

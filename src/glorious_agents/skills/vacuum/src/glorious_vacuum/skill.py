@@ -1,12 +1,19 @@
-from __future__ import annotations
+"""Vacuum skill - knowledge distillation and optimization.
 
-"""Vacuum skill - knowledge distillation and optimization."""
+Refactored to use modern architecture with Repository/Service patterns
+while remaining discoverable as a separate installable skill.
+"""
+
+from __future__ import annotations
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
 from glorious_agents.core.search import SearchResult
+
+from .dependencies import get_vacuum_service
 
 app = typer.Typer(help="Knowledge distillation")
 console = Console()
@@ -28,64 +35,70 @@ def run(
     console.print("[yellow]Vacuum (placeholder) - requires LLM integration[/yellow]")
     console.print("[dim]Would process notes using LLM for optimization[/dim]")
 
-    if mode not in ["summarize", "dedupe", "promote-rules", "sharpen"]:
-        console.print("[red]Invalid mode[/red]")
-        return
+    event_bus = getattr(_ctx, "event_bus", None) if _ctx else None
+    service = get_vacuum_service(event_bus=event_bus)
 
-    # Record operation
-    if _ctx:
-        _ctx.conn.execute(
-            "INSERT INTO vacuum_operations (mode, status) VALUES (?, 'completed')", (mode,)
-        )
-        _ctx.conn.commit()
+    with service.uow:
+        try:
+            # Start operation
+            operation = service.start_operation(mode)
 
-    console.print(f"[green]Vacuum operation '{mode}' completed[/green]")
+            # Simulate processing (in real implementation, this would do actual work)
+            # For now, just complete it immediately
+            service.complete_operation(operation.id, items_processed=0, items_modified=0)
+
+            console.print(f"[green]Vacuum operation '{mode}' completed[/green]")
+        except ValueError as e:
+            console.print(f"[red]{e}[/red]")
+            raise typer.Exit(1)
 
 
 @app.command()
 def history() -> None:
     """Show vacuum operation history."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = get_vacuum_service()
 
-    cur = _ctx.conn.execute("""
-        SELECT id, mode, items_processed, items_modified, started_at, status
-        FROM vacuum_operations
-        ORDER BY started_at DESC
-        LIMIT 20
-    """)
+    with service.uow:
+        operations = service.get_recent_operations(limit=20)
 
-    console.print("[cyan]Vacuum History:[/cyan]")
-    for row in cur:
-        console.print(
-            f"  #{row[0]} - {row[1]} | Processed: {row[2]}, Modified: {row[3]} [{row[5]}]"
-        )
+        # Build table while session is active
+        table = Table(title="Vacuum History")
+        table.add_column("ID", style="cyan")
+        table.add_column("Mode", style="yellow")
+        table.add_column("Processed", style="white")
+        table.add_column("Modified", style="green")
+        table.add_column("Status", style="magenta")
+        table.add_column("Started", style="dim")
+
+        for op in operations:
+            table.add_row(
+                str(op.id),
+                op.mode,
+                str(op.items_processed),
+                str(op.items_modified),
+                op.status,
+                op.started_at.strftime("%Y-%m-%d %H:%M") if op.started_at else "-",
+            )
+
+    if not operations:
+        console.print("[yellow]No vacuum operations found[/yellow]")
+    else:
+        console.print(table)
 
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
-    """Universal search API for vacuum knowledge entries."""
-    from glorious_agents.core.search import SearchResult
+    """Universal search API for vacuum operations.
 
-    if _ctx is None:
-        return []
-    query_lower = query.lower()
-    cur = _ctx.conn.execute(
-        """
-        SELECT id, title, summary FROM vacuum_knowledge
-        WHERE LOWER(title) LIKE ? OR LOWER(summary) LIKE ?
-        LIMIT ?
-    """,
-        (f"%{query_lower}%", f"%{query_lower}%", limit),
-    )
-    return [
-        SearchResult(
-            skill="vacuum",
-            id=row[0],
-            type="knowledge",
-            content=f"{row[1]}: {row[2][:80]}",
-            metadata={},
-            score=0.7,
-        )
-        for row in cur
-    ]
+    Searches through vacuum operations by mode and status.
+
+    Args:
+        query: Search query string
+        limit: Maximum number of results
+
+    Returns:
+        List of SearchResult objects
+    """
+    service = get_vacuum_service()
+
+    with service.uow:
+        return service.search_operations(query, limit)

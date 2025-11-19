@@ -1,3 +1,14 @@
+"""Issue-tracker skill for Glorious Agents.
+
+The issues skill uses domain-driven design with a sophisticated architecture:
+- Domain entities in domain/entities/
+- Repositories in adapters/db/repositories/
+- Services in services/
+- Unit of Work pattern for transactions
+
+This module provides the framework integration layer.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -5,12 +16,23 @@ from typing import TYPE_CHECKING
 from issue_tracker.cli.app import app
 
 if TYPE_CHECKING:
+    from glorious_agents.core.context import SkillContext
     from glorious_agents.core.search import SearchResult
 
-"""Issue-tracker skill for Glorious Agents."""
-
 # Re-export existing app
-__all__ = ["app", "search"]
+__all__ = ["app", "search", "init_context"]
+
+_ctx: SkillContext | None = None
+
+
+def init_context(ctx: SkillContext) -> None:
+    """Initialize skill context.
+
+    Args:
+        ctx: Skill context from the framework
+    """
+    global _ctx
+    _ctx = ctx
 
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
@@ -27,16 +49,12 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
         List of SearchResult objects ordered by relevance
     """
     from glorious_agents.core.search import SearchResult
+    from sqlmodel import Session
 
-    from issue_tracker.cli.dependencies import get_issue_service
+    from issue_tracker.dependencies import get_engine, get_issue_service
     from issue_tracker.services.search_service import SearchService
 
     try:
-        from sqlmodel import Session
-
-        from issue_tracker.cli.dependencies import get_engine
-        from issue_tracker.services.search_service import SearchService
-
         engine = get_engine()
         session = Session(engine)
 

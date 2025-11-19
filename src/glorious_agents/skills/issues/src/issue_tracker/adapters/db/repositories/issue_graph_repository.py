@@ -5,6 +5,8 @@ from sqlmodel import Session, or_, select
 from issue_tracker.adapters.db.models import DependencyModel
 from issue_tracker.domain.entities.dependency import Dependency, DependencyType
 
+__all__ = ["IssueGraphRepository"]
+
 
 class IssueGraphRepository:
     """Repository for issue dependency graph operations.
@@ -138,7 +140,7 @@ class IssueGraphRepository:
             visited.add(current)
 
             # Get all dependencies of current issue
-            statement = select(DependencyModel).where(DependencyModel.from_issue_id == current)
+            statement = select(DependencyModel).where(DependencyModel.from_issue_id == current)  # type: ignore[attr-defined]
             models = self.session.exec(statement).all()
 
             for model in models:

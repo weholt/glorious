@@ -165,12 +165,16 @@ class BuildRunner:
                 else:
                     path.unlink()
 
-        tests_dir = self.project_root / "tests"
+        tests_dir = self.project_root / "tests" / "unit"
         src_path = self.project_root / "src"
 
         if not tests_dir.exists():
-            print(f"[WARN] Test directory not found at {tests_dir}")
-            return False
+            print(f"[WARN] Unit test directory not found at {tests_dir}")
+            # Try tests directory without unit subdirectory
+            tests_dir = self.project_root / "tests"
+            if not tests_dir.exists():
+                print(f"[WARN] Test directory not found at {tests_dir}")
+                return False
 
         if not src_path.exists():
             print(f"[WARN] Source directory not found at {src_path}")
@@ -188,6 +192,8 @@ class BuildRunner:
             "--cov-fail-under=70",
             "--durations=20",
             "-vv" if self.verbose else "-v",
+            "-m",
+            "not integration",  # Exclude integration tests from unit test run
         ]
 
         if self.verbose:
@@ -222,6 +228,70 @@ class BuildRunner:
             else:
                 print("Warning: coverage.xml not found")
 
+        return success
+
+    def run_integration_tests(self, test_filter: str = "all") -> bool:
+        """Run integration tests in isolated environments."""
+        self.print_step("Integration Tests")
+
+        integration_dir = self.project_root / "tests" / "integration"
+
+        if not integration_dir.exists():
+            print(f"[WARN] Integration test directory not found at {integration_dir}")
+            return False
+
+        # Build pytest command
+        cmd = [
+            "uv",
+            "run",
+            "pytest",
+            str(integration_dir),
+            "-v",
+            "--no-cov",  # Integration tests don't need coverage
+            "-m",
+            "integration",
+        ]
+
+        # Add test filter if specified
+        if test_filter != "all":
+            if test_filter == "isolation":
+                cmd.append(str(integration_dir / "test_isolation_verification.py"))
+            elif test_filter == "cli":
+                cmd.extend(
+                    [
+                        str(integration_dir / "test_main_cli.py"),
+                        str(integration_dir / "test_skills_cli.py"),
+                        str(integration_dir / "test_identity_cli.py"),
+                    ]
+                )
+            elif test_filter == "skills":
+                cmd.append(str(integration_dir / "skills"))
+            elif test_filter == "critical":
+                # Run tests for critical skills
+                cmd.extend(
+                    [
+                        str(integration_dir / "skills" / "test_issues.py"),
+                        str(integration_dir / "skills" / "test_planner.py"),
+                        str(integration_dir / "skills" / "test_notes.py"),
+                    ]
+                )
+            else:
+                # Assume it's a specific test file or pattern
+                cmd.append(test_filter)
+
+        if self.verbose:
+            cmd.append("-vv")
+
+        print(f"[INFO] Running integration tests: {test_filter}")
+        print("[INFO] Tests run in complete isolation (temp directories)")
+
+        success, output, error = self.run_command(
+            cmd,
+            "Integration tests",
+            capture_output=False,
+        )
+
+        self.print_result(success, "Integration Tests", "", "")
         return success
 
     def step_security(self) -> bool:
@@ -342,6 +412,13 @@ def main():
     parser = argparse.ArgumentParser(description="Comprehensive build script for glorious-agents")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     parser.add_argument("--clean", action="store_true", help="Clean build artifacts and exit")
+    parser.add_argument(
+        "--integration",
+        type=str,
+        nargs="?",
+        const="all",
+        help="Run integration tests. Options: all, isolation, cli, skills, critical, or specific test path",
+    )
 
     args = parser.parse_args()
 
@@ -350,6 +427,10 @@ def main():
     if args.clean:
         builder.clean_artifacts()
         return 0
+
+    if args.integration is not None:
+        success = builder.run_integration_tests(args.integration)
+        return 0 if success else 1
 
     success = builder.run_full_build()
     return 0 if success else 1

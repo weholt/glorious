@@ -44,13 +44,13 @@ def test_get_agent_db_path_custom(temp_data_folder: Path) -> None:
 def test_get_connection_wal_mode(temp_data_folder: Path) -> None:
     """Test that connection uses WAL mode."""
     conn = get_connection()
-
-    # Check journal mode
-    cur = conn.execute("PRAGMA journal_mode;")
-    mode = cur.fetchone()[0]
-    assert mode.upper() == "WAL"
-
-    conn.close()
+    try:
+        # Check journal mode
+        cur = conn.execute("PRAGMA journal_mode;")
+        mode = cur.fetchone()[0]
+        assert mode.upper() == "WAL"
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -69,20 +69,21 @@ def test_init_skill_schema(temp_data_folder: Path, tmp_path: Path) -> None:
 
     # Verify table exists
     conn = get_connection()
-    cur = conn.execute("""
-        SELECT name FROM sqlite_master
-        WHERE type='table' AND name='test_table'
-    """)
-    assert cur.fetchone() is not None
+    try:
+        cur = conn.execute("""
+            SELECT name FROM sqlite_master
+            WHERE type='table' AND name='test_table'
+        """)
+        assert cur.fetchone() is not None
 
-    # Verify metadata table
-    cur = conn.execute("""
-        SELECT skill_name FROM _skill_schemas
-        WHERE skill_name='test_skill'
-    """)
-    assert cur.fetchone() is not None
-
-    conn.close()
+        # Verify metadata table
+        cur = conn.execute("""
+            SELECT skill_name FROM _skill_schemas
+            WHERE skill_name='test_skill'
+        """)
+        assert cur.fetchone() is not None
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -98,12 +99,12 @@ def test_init_skill_schema_nonexistent(temp_data_folder: Path, tmp_path: Path) -
 def test_get_connection_works(temp_data_folder: Path) -> None:
     """Test that get_connection works."""
     conn = get_connection()
-
-    # Should be able to execute queries
-    cursor = conn.execute("SELECT 1")
-    assert cursor.fetchone()[0] == 1
-
-    conn.close()
+    try:
+        # Should be able to execute queries
+        cursor = conn.execute("SELECT 1")
+        assert cursor.fetchone()[0] == 1
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -113,23 +114,23 @@ def test_get_connection_creates_db_file(temp_data_folder: Path) -> None:
 
     # Get connection (creates file if needed)
     conn = get_connection()
-
-    # Verify database file exists
-    assert db_path.exists()
-
-    conn.close()
+    try:
+        # Verify database file exists
+        assert db_path.exists()
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
 def test_get_connection_thread_safe(temp_data_folder: Path) -> None:
     """Test that get_connection can be called with check_same_thread=False."""
     conn = get_connection(check_same_thread=False)
-
-    # Should be able to execute queries
-    cursor = conn.execute("SELECT 1")
-    assert cursor.fetchone()[0] == 1
-
-    conn.close()
+    try:
+        # Should be able to execute queries
+        cursor = conn.execute("SELECT 1")
+        assert cursor.fetchone()[0] == 1
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -149,12 +150,14 @@ def test_init_skill_schema_duplicate(temp_data_folder: Path, tmp_path: Path) -> 
 
     # Should still work
     conn = get_connection()
-    cur = conn.execute("""
-        SELECT name FROM sqlite_master
-        WHERE type='table' AND name='test_table'
-    """)
-    assert cur.fetchone() is not None
-    conn.close()
+    try:
+        cur = conn.execute("""
+            SELECT name FROM sqlite_master
+            WHERE type='table' AND name='test_table'
+        """)
+        assert cur.fetchone() is not None
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -175,12 +178,14 @@ def test_init_master_db(temp_data_folder: Path) -> None:
     init_master_db()
 
     conn = get_connection()
-    cur = conn.execute("""
-        SELECT name FROM sqlite_master
-        WHERE type='table' AND name='core_agents'
-    """)
-    assert cur.fetchone() is not None
-    conn.close()
+    try:
+        cur = conn.execute("""
+            SELECT name FROM sqlite_master
+            WHERE type='table' AND name='core_agents'
+        """)
+        assert cur.fetchone() is not None
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -190,8 +195,10 @@ def test_batch_execute(temp_data_folder: Path) -> None:
 
     # Create a test table
     conn = get_connection()
-    conn.execute("CREATE TABLE test_batch (id INTEGER PRIMARY KEY, value TEXT)")
-    conn.close()
+    try:
+        conn.execute("CREATE TABLE test_batch (id INTEGER PRIMARY KEY, value TEXT)")
+    finally:
+        conn.close()
 
     # Batch insert
     params = [("value1",), ("value2",), ("value3",), ("value4",), ("value5",)]
@@ -199,10 +206,12 @@ def test_batch_execute(temp_data_folder: Path) -> None:
 
     # Verify all rows were inserted
     conn = get_connection()
-    cur = conn.execute("SELECT COUNT(*) FROM test_batch")
-    count = cur.fetchone()[0]
-    assert count == 5
-    conn.close()
+    try:
+        cur = conn.execute("SELECT COUNT(*) FROM test_batch")
+        count = cur.fetchone()[0]
+        assert count == 5
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -211,17 +220,21 @@ def test_batch_execute_empty_list(temp_data_folder: Path) -> None:
     from glorious_agents.core.db import batch_execute
 
     conn = get_connection()
-    conn.execute("CREATE TABLE test_batch (id INTEGER PRIMARY KEY, value TEXT)")
-    conn.close()
+    try:
+        conn.execute("CREATE TABLE test_batch (id INTEGER PRIMARY KEY, value TEXT)")
+    finally:
+        conn.close()
 
     # Should not crash with empty list
     batch_execute("INSERT INTO test_batch (value) VALUES (?)", [], batch_size=10)
 
     conn = get_connection()
-    cur = conn.execute("SELECT COUNT(*) FROM test_batch")
-    count = cur.fetchone()[0]
-    assert count == 0
-    conn.close()
+    try:
+        cur = conn.execute("SELECT COUNT(*) FROM test_batch")
+        count = cur.fetchone()[0]
+        assert count == 0
+    finally:
+        conn.close()
 
 
 @pytest.mark.logic
@@ -231,10 +244,12 @@ def test_optimize_database(temp_data_folder: Path) -> None:
 
     # Create some data first
     conn = get_connection()
-    conn.execute("CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)")
-    conn.execute("INSERT INTO test_data (value) VALUES ('test')")
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)")
+        conn.execute("INSERT INTO test_data (value) VALUES ('test')")
+        conn.commit()
+    finally:
+        conn.close()
 
     # Should run without errors
     optimize_database()
@@ -247,10 +262,12 @@ def test_optimize_database_with_fts(temp_data_folder: Path) -> None:
 
     # Create an FTS5 table
     conn = get_connection()
-    conn.execute("CREATE VIRTUAL TABLE test_fts USING fts5(content)")
-    conn.execute("INSERT INTO test_fts (content) VALUES ('test content')")
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("CREATE VIRTUAL TABLE test_fts USING fts5(content)")
+        conn.execute("INSERT INTO test_fts (content) VALUES ('test content')")
+        conn.commit()
+    finally:
+        conn.close()
 
     # Should optimize FTS5 tables
     optimize_database()
@@ -330,9 +347,11 @@ def test_migrate_legacy_databases_master_db(temp_data_folder: Path, capsys) -> N
 
     # Verify agents were migrated
     conn = get_connection()
-    cur = conn.execute("SELECT code FROM core_agents WHERE code='test1'")
-    assert cur.fetchone() is not None
-    conn.close()
+    try:
+        cur = conn.execute("SELECT code FROM core_agents WHERE code='test1'")
+        assert cur.fetchone() is not None
+    finally:
+        conn.close()
     assert "Migrated" in captured.out
     assert "agents from master.db" in captured.out
 
@@ -361,17 +380,17 @@ def test_migrate_legacy_databases_error_handling(temp_data_folder: Path, capsys)
 def test_connection_pragmas(temp_data_folder: Path) -> None:
     """Test that connection has correct PRAGMA settings."""
     conn = get_connection()
+    try:
+        # Check various pragmas
+        cur = conn.execute("PRAGMA foreign_keys;")
+        assert cur.fetchone()[0] == 1
 
-    # Check various pragmas
-    cur = conn.execute("PRAGMA foreign_keys;")
-    assert cur.fetchone()[0] == 1
+        cur = conn.execute("PRAGMA synchronous;")
+        sync_mode = cur.fetchone()[0]
+        assert sync_mode in (1, 2)  # NORMAL or FULL
 
-    cur = conn.execute("PRAGMA synchronous;")
-    sync_mode = cur.fetchone()[0]
-    assert sync_mode in (1, 2)  # NORMAL or FULL
-
-    cur = conn.execute("PRAGMA busy_timeout;")
-    timeout = cur.fetchone()[0]
-    assert timeout == 5000
-
-    conn.close()
+        cur = conn.execute("PRAGMA busy_timeout;")
+        timeout = cur.fetchone()[0]
+        assert timeout == 5000
+    finally:
+        conn.close()

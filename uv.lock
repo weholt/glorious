@@ -546,15 +546,19 @@ name = "glorious-agents"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aiohttp" },
     { name = "fastapi" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "rich" },
     { name = "ruff" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
     { name = "sqlparse" },
     { name = "tomli-w" },
     { name = "typer" },
     { name = "uvicorn" },
+    { name = "watchdog" },
 ]
 
 [package.optional-dependencies]
@@ -641,10 +645,12 @@ vacuum = [
 dev = [
     { name = "mypy" },
     { name = "types-jsonschema" },
+    { name = "types-psutil" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "aiohttp", specifier = ">=3.9.0" },
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.7.0" },
     { name = "code-atlas", marker = "extra == 'all-skills'", editable = "src/glorious_agents/skills/code-atlas" },
     { name = "code-atlas", marker = "extra == 'code-atlas'", editable = "src/glorious_agents/skills/code-atlas" },
@@ -690,10 +696,13 @@ requires-dist = [
     { name = "rich", specifier = ">=13.7.0" },
     { name = "ruff", specifier = ">=0.14.5" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
     { name = "sqlparse", specifier = ">=0.5.0" },
     { name = "tomli-w", specifier = ">=1.0.0" },
     { name = "typer", specifier = ">=0.12.0" },
     { name = "uvicorn", specifier = ">=0.30.0" },
+    { name = "watchdog", specifier = ">=4.0.0" },
 ]
 provides-extras = ["dev", "ai", "automations", "cache", "code-atlas", "docs", "feedback", "issues", "linker", "migrate", "notes", "orchestrator", "planner", "prompts", "sandbox", "telemetry", "temporal", "vacuum", "all-skills"]
 
@@ -701,6 +710,7 @@ provides-extras = ["dev", "ai", "automations", "cache", "code-atlas", "docs", "f
 dev = [
     { name = "mypy", specifier = ">=1.18.2" },
     { name = "types-jsonschema", specifier = ">=4.25.1.20251009" },
+    { name = "types-psutil", specifier = ">=7.0.0.20251116" },
 ]
 
 [[package]]
@@ -713,6 +723,8 @@ dependencies = [
     { name = "glorious-agents" },
     { name = "numpy" },
     { name = "openai" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
 ]
 
 [package.metadata]
@@ -724,6 +736,8 @@ requires-dist = [
     { name = "openai", specifier = ">=1.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
 ]
 provides-extras = ["dev"]
 
@@ -734,6 +748,8 @@ source = { editable = "src/glorious_agents/skills/automations" }
 dependencies = [
     { name = "glorious-agents" },
     { name = "pyyaml" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
 ]
 
 [package.metadata]
@@ -742,6 +758,8 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
 ]
 provides-extras = ["dev"]
 
@@ -767,17 +785,8 @@ version = "0.1.0"
 source = { editable = "src/glorious_agents/skills/feedback" }
 dependencies = [
     { name = "glorious-agents" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "glorious-agents", specifier = ">=0.1.0" }]
-
-[[package]]
-name = "glorious-linker"
-version = "0.1.0"
-source = { editable = "src/glorious_agents/skills/linker" }
-dependencies = [
-    { name = "glorious-agents" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
 ]
 
 [package.metadata]
@@ -785,6 +794,28 @@ requires-dist = [
     { name = "glorious-agents", specifier = ">=0.1.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
+]
+provides-extras = ["dev"]
+
+[[package]]
+name = "glorious-linker"
+version = "0.1.0"
+source = { editable = "src/glorious_agents/skills/linker" }
+dependencies = [
+    { name = "glorious-agents" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "glorious-agents", specifier = ">=0.1.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.14" },
 ]
 provides-extras = ["dev"]
 
@@ -810,10 +841,16 @@ version = "0.1.0"
 source = { editable = "src/glorious_agents/skills/orchestrator" }
 dependencies = [
     { name = "glorious-agents" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "glorious-agents", specifier = ">=0.1.0" }]
+requires-dist = [
+    { name = "glorious-agents", specifier = ">=0.1.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
+]
 
 [[package]]
 name = "glorious-planner"
@@ -821,6 +858,8 @@ version = "0.1.0"
 source = { editable = "src/glorious_agents/skills/planner" }
 dependencies = [
     { name = "glorious-agents" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
 ]
 
 [package.metadata]
@@ -828,6 +867,8 @@ requires-dist = [
     { name = "glorious-agents", specifier = ">=0.1.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
 ]
 provides-extras = ["dev"]
 
@@ -837,10 +878,16 @@ version = "0.1.0"
 source = { editable = "src/glorious_agents/skills/prompts" }
 dependencies = [
     { name = "glorious-agents" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "glorious-agents", specifier = ">=0.1.0" }]
+requires-dist = [
+    { name = "glorious-agents", specifier = ">=0.1.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.14" },
+]
 
 [[package]]
 name = "glorious-sandbox"
@@ -848,27 +895,42 @@ version = "0.1.0"
 source = { editable = "src/glorious_agents/skills/sandbox" }
 dependencies = [
     { name = "glorious-agents" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "glorious-agents", specifier = ">=0.1.0" }]
+requires-dist = [
+    { name = "glorious-agents", specifier = ">=0.1.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
+]
+provides-extras = ["dev"]
 
 [[package]]
 name = "glorious-skill-docs"
 version = "0.1.0"
 source = { editable = "src/glorious_agents/skills/docs" }
 dependencies = [
+    { name = "glorious-agents" },
     { name = "python-frontmatter" },
     { name = "rich" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
     { name = "typer" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "glorious-agents", specifier = ">=0.1.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "python-frontmatter", specifier = ">=1.0.0" },
     { name = "rich", specifier = ">=13.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
     { name = "typer", specifier = ">=0.9.0" },
 ]
 provides-extras = ["dev"]
@@ -879,6 +941,46 @@ version = "0.1.0"
 source = { editable = "src/glorious_agents/skills/notes" }
 dependencies = [
     { name = "glorious-agents" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "glorious-agents", specifier = ">=0.1.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.14" },
+]
+provides-extras = ["dev"]
+
+[[package]]
+name = "glorious-telemetry"
+version = "0.1.0"
+source = { editable = "src/glorious_agents/skills/telemetry" }
+dependencies = [
+    { name = "glorious-agents" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "glorious-agents", specifier = ">=0.1.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
+]
+provides-extras = ["dev"]
+
+[[package]]
+name = "glorious-temporal"
+version = "0.1.0"
+source = { editable = "src/glorious_agents/skills/temporal" }
+dependencies = [
+    { name = "glorious-agents" },
 ]
 
 [package.metadata]
@@ -890,37 +992,24 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [[package]]
-name = "glorious-telemetry"
-version = "0.1.0"
-source = { editable = "src/glorious_agents/skills/telemetry" }
-dependencies = [
-    { name = "glorious-agents" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "glorious-agents", specifier = ">=0.1.0" }]
-
-[[package]]
-name = "glorious-temporal"
-version = "0.1.0"
-source = { editable = "src/glorious_agents/skills/temporal" }
-dependencies = [
-    { name = "glorious-agents" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "glorious-agents", specifier = ">=0.1.0" }]
-
-[[package]]
 name = "glorious-vacuum"
 version = "0.1.0"
 source = { editable = "src/glorious_agents/skills/vacuum" }
 dependencies = [
     { name = "glorious-agents" },
+    { name = "sqlalchemy" },
+    { name = "sqlmodel" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "glorious-agents", specifier = ">=0.1.0" }]
+requires-dist = [
+    { name = "glorious-agents", specifier = ">=0.1.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlmodel", specifier = ">=0.0.16" },
+]
+provides-extras = ["dev"]
 
 [[package]]
 name = "greenlet"
@@ -2159,6 +2248,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ef/da/5b901088da5f710690b422137e8ae74197fb1ca471e4aa84dd3ef0d6e295/types_jsonschema-4.25.1.20251009.tar.gz", hash = "sha256:75d0f5c5dd18dc23b664437a0c1a625743e8d2e665ceaf3aecb29841f3a5f97f", size = 15661, upload-time = "2025-10-09T02:54:36.963Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7f/6a/e5146754c0dfc272f176db9c245bc43cc19030262d891a5a85d472797e60/types_jsonschema-4.25.1.20251009-py3-none-any.whl", hash = "sha256:f30b329037b78e7a60146b1146feb0b6fb0b71628637584409bada83968dad3e", size = 15925, upload-time = "2025-10-09T02:54:35.847Z" },
+]
+
+[[package]]
+name = "types-psutil"
+version = "7.0.0.20251116"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/ec/c1e9308b91582cad1d7e7d3007fd003ef45a62c2500f8219313df5fc3bba/types_psutil-7.0.0.20251116.tar.gz", hash = "sha256:92b5c78962e55ce1ed7b0189901a4409ece36ab9fd50c3029cca7e681c606c8a", size = 22192, upload-time = "2025-11-16T03:10:32.859Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c3/0e/11ba08a5375c21039ed5f8e6bba41e9452fb69f0e2f7ee05ed5cca2a2cdf/types_psutil-7.0.0.20251116-py3-none-any.whl", hash = "sha256:74c052de077c2024b85cd435e2cba971165fe92a5eace79cbeb821e776dbc047", size = 25376, upload-time = "2025-11-16T03:10:31.813Z" },
 ]
 
 [[package]]

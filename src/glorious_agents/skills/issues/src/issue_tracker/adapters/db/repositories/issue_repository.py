@@ -1,5 +1,6 @@
 """Issue repository implementation with SQLModel."""
 
+import logging
 from collections.abc import Sequence
 
 from sqlmodel import Session, select
@@ -7,6 +8,10 @@ from sqlmodel import Session, select
 from issue_tracker.adapters.db.models import IssueLabelModel, IssueModel
 from issue_tracker.domain.entities.issue import Issue, IssuePriority, IssueStatus, IssueType
 from issue_tracker.domain.utils import utcnow_naive
+
+logger = logging.getLogger(__name__)
+
+__all__ = ["IssueRepository"]
 
 
 class IssueRepository:
@@ -32,7 +37,12 @@ class IssueRepository:
         Returns:
             Issue entity if found, None otherwise
         """
+        logger.debug("Repository: fetching issue: id=%s", issue_id)
         model = self.session.get(IssueModel, issue_id)
+        if model:
+            logger.debug("Repository: issue found: id=%s, title=%s", model.id, model.title)
+        else:
+            logger.debug("Repository: issue not found: id=%s", issue_id)
         return self._model_to_entity(model) if model else None
 
     def save(self, issue: Issue) -> Issue:
@@ -44,6 +54,7 @@ class IssueRepository:
         Returns:
             Saved issue with updated timestamps
         """
+        logger.debug("Repository: saving issue: id=%s, title=%s, labels=%d", issue.id, issue.title, len(issue.labels))
         model = self._entity_to_model(issue)
         merged = self.session.merge(model)
         self.session.flush()
@@ -68,7 +79,9 @@ class IssueRepository:
         self.session.flush()
 
         self.session.refresh(merged)
-        return self._model_to_entity(merged)
+        saved_issue = self._model_to_entity(merged)
+        logger.debug("Repository: issue saved: id=%s", saved_issue.id)
+        return saved_issue
 
     def delete(self, issue_id: str) -> bool:
         """Delete issue by ID.
@@ -79,11 +92,14 @@ class IssueRepository:
         Returns:
             True if issue was deleted, False if not found
         """
+        logger.debug("Repository: deleting issue: id=%s", issue_id)
         model = self.session.get(IssueModel, issue_id)
         if model:
             self.session.delete(model)
             self.session.flush()
+            logger.info("Repository: issue deleted: id=%s", issue_id)
             return True
+        logger.warning("Repository: issue not found for deletion: id=%s", issue_id)
         return False
 
     def list_all(self, limit: int = 100, offset: int = 0) -> list[Issue]:

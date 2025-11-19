@@ -236,17 +236,20 @@ def test_skill_context_cache_max_size(skill_context: SkillContext) -> None:
     bus = EventBus()
     ctx = SkillContext(conn, bus, cache_max_size=3)
 
-    # Add 4 items
-    ctx.cache_set("key1", "value1")
-    ctx.cache_set("key2", "value2")
-    ctx.cache_set("key3", "value3")
-    ctx.cache_set("key4", "value4")
+    try:
+        # Add 4 items
+        ctx.cache_set("key1", "value1")
+        ctx.cache_set("key2", "value2")
+        ctx.cache_set("key3", "value3")
+        ctx.cache_set("key4", "value4")
 
-    # First key should be evicted (LRU)
-    assert ctx.cache_get("key1") is None
-    assert ctx.cache_get("key2") == "value2"
-    assert ctx.cache_get("key3") == "value3"
-    assert ctx.cache_get("key4") == "value4"
+        # First key should be evicted (LRU)
+        assert ctx.cache_get("key1") is None
+        assert ctx.cache_get("key2") == "value2"
+        assert ctx.cache_get("key3") == "value3"
+        assert ctx.cache_get("key4") == "value4"
+    finally:
+        ctx.close()
 
 
 @pytest.mark.logic
@@ -319,16 +322,19 @@ def test_skill_context_cache_concurrent_access() -> None:
         except Exception as e:
             errors.append(e)
 
-    # Run concurrent operations
-    threads = []
-    for i in range(5):
-        threads.append(threading.Thread(target=writer_worker, args=(i,)))
-        threads.append(threading.Thread(target=reader_worker, args=(i,)))
+    try:
+        # Run concurrent operations
+        threads = []
+        for i in range(5):
+            threads.append(threading.Thread(target=writer_worker, args=(i,)))
+            threads.append(threading.Thread(target=reader_worker, args=(i,)))
 
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
-    # Should not have any errors
-    assert len(errors) == 0
+        # Should not have any errors
+        assert len(errors) == 0
+    finally:
+        ctx.close()

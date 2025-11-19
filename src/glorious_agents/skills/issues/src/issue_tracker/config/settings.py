@@ -12,6 +12,8 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+__all__ = ["IssueTrackerSettings", "get_settings", "reset_settings"]
+
 
 class IssueTrackerSettings(BaseSettings):
     """Application settings with environment variable support.
@@ -121,25 +123,41 @@ class IssueTrackerSettings(BaseSettings):
     )
 
     def get_db_path(self) -> Path:
-        """Get resolved database path."""
+        """Get resolved database path.
+
+        Returns:
+            Resolved path to database file
+        """
         if self.db_path:
             return Path(self.db_path).resolve()
         return Path(self.folder).resolve() / "issues.db"
 
     def get_export_path(self) -> Path:
-        """Get resolved export path."""
+        """Get resolved export path.
+
+        Returns:
+            Resolved path to export file
+        """
         if self.export_path:
             return Path(self.export_path).resolve()
         return Path(self.folder).resolve() / "issues.jsonl"
 
     def get_daemon_log_path(self) -> Path:
-        """Get resolved daemon log path."""
+        """Get resolved daemon log path.
+
+        Returns:
+            Resolved path to daemon log file
+        """
         if self.daemon_log_path:
             return Path(self.daemon_log_path).resolve()
         return Path(self.folder).resolve() / "daemon.log"
 
     def get_socket_path(self) -> Path:
-        """Get socket path for IPC."""
+        """Get socket path for IPC.
+
+        Returns:
+            Path to IPC socket file
+        """
         import sys
 
         folder = Path(self.folder).resolve()
@@ -148,7 +166,11 @@ class IssueTrackerSettings(BaseSettings):
         return folder / "issues.sock"
 
     def get_pid_path(self) -> Path:
-        """Get PID file path."""
+        """Get PID file path.
+
+        Returns:
+            Path to daemon PID file
+        """
         return Path(self.folder).resolve() / "daemon.pid"
 
 
@@ -156,7 +178,11 @@ _settings: IssueTrackerSettings | None = None
 
 
 def get_settings() -> IssueTrackerSettings:
-    """Get or create global settings instance."""
+    """Get or create global settings instance.
+
+    Returns:
+        Global IssueTrackerSettings instance
+    """
     global _settings
     if _settings is None:
         _settings = IssueTrackerSettings()

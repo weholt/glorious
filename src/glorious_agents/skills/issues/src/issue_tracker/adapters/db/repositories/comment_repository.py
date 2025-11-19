@@ -1,9 +1,15 @@
 """Comment repository implementation with SQLModel."""
 
+import logging
+
 from sqlmodel import Session, select
 
 from issue_tracker.adapters.db.models import CommentModel
 from issue_tracker.domain.entities.comment import Comment
+
+logger = logging.getLogger(__name__)
+
+__all__ = ["CommentRepository"]
 
 
 class CommentRepository:
@@ -41,11 +47,16 @@ class CommentRepository:
         Returns:
             Saved comment with updated timestamps
         """
+        logger.debug(
+            "Repository: saving comment: id=%s, issue_id=%s, author=%s", comment.id, comment.issue_id, comment.author
+        )
         model = self._entity_to_model(comment)
         merged = self.session.merge(model)
         self.session.flush()
         self.session.refresh(merged)
-        return self._model_to_entity(merged)
+        saved_comment = self._model_to_entity(merged)
+        logger.debug("Repository: comment saved: id=%s", saved_comment.id)
+        return saved_comment
 
     def delete(self, comment_id: str) -> bool:
         """Delete comment by ID.
@@ -56,11 +67,14 @@ class CommentRepository:
         Returns:
             True if comment was deleted, False if not found
         """
+        logger.debug("Repository: deleting comment: id=%s", comment_id)
         model = self.session.get(CommentModel, comment_id)
         if model:
             self.session.delete(model)
             self.session.flush()
+            logger.info("Repository: comment deleted: id=%s", comment_id)
             return True
+        logger.warning("Repository: comment not found for deletion: id=%s", comment_id)
         return False
 
     def list_by_issue(self, issue_id: str) -> list[Comment]:
@@ -72,10 +86,12 @@ class CommentRepository:
         Returns:
             List of comments ordered by creation time
         """
+        logger.debug("Repository: listing comments for issue: id=%s", issue_id)
         statement = (
             select(CommentModel).where(CommentModel.issue_id == issue_id).order_by(CommentModel.created_at)  # type: ignore
         )
         models = self.session.exec(statement).all()
+        logger.debug("Repository: found %d comments for issue: id=%s", len(models), issue_id)
         return [self._model_to_entity(model) for model in models]
 
     def list_by_author(self, author: str, limit: int = 100, offset: int = 0) -> list[Comment]:

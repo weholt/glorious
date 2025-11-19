@@ -75,10 +75,22 @@ def register(
         $ agent identity register --name "Code Reviewer" --role "Review PRs" --project-id "myapp"
         Agent 'Code Reviewer' registered with code: code-reviewer
     """
+    # Validate name is not empty
+    if not name or not name.strip():
+        console.print("[red]Error: Agent name cannot be empty.[/red]")
+        raise typer.Exit(code=1)
+
     init_master_db()
 
-    # Generate code from name
-    code = name.lower().replace(" ", "-")
+    # Generate code from name - sanitize special characters
+    code = (
+        name.lower()
+        .replace(" ", "-")
+        .replace("@", "")
+        .replace("#", "")
+        .replace("$", "")
+        .replace("%", "")
+    )
 
     db_path = get_master_db_path()
     conn = sqlite3.connect(str(db_path))
@@ -126,7 +138,7 @@ def use(code: str) -> None:
 
         if not row:
             console.print(f"[red]Agent '{code}' not found. Register it first.[/red]")
-            return
+            raise typer.Exit(code=1)
 
         set_active_agent(code)
         console.print(f"[green]Switched to agent: {row[0]} ({code})[/green]")

@@ -9,6 +9,8 @@ from pathlib import Path
 
 from issue_tracker.config import get_settings
 
+__all__ = ["configure_logging", "get_logger"]
+
 
 def configure_logging(log_file: Path | None = None) -> None:
     """Configure application logging.

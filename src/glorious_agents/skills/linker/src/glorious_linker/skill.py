@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Linker skill - semantic cross-references between entities."""
+
+from __future__ import annotations
 
 from typing import Any
 
@@ -13,6 +13,9 @@ from glorious_agents.core.context import SkillContext
 from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
+from .dependencies import get_linker_service
+from .service import LinkerService
+
 app = typer.Typer(help="Link management between entities")
 console = Console()
 _ctx: SkillContext | None = None
@@ -22,6 +25,21 @@ def init_context(ctx: SkillContext) -> None:
     """Initialize skill context."""
     global _ctx
     _ctx = ctx
+
+
+def _get_service() -> LinkerService:
+    """Get linker service with event bus from context.
+
+    Returns:
+        LinkerService instance
+
+    Raises:
+        RuntimeError: If context not initialized
+    """
+    if _ctx is None:
+        raise RuntimeError("Context not initialized")
+
+    return get_linker_service(event_bus=_ctx.event_bus if _ctx else None)
 
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
@@ -36,56 +54,8 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
     Returns:
         List of SearchResult objects
     """
-    from glorious_agents.core.search import SearchResult
-
-    if _ctx is None:
-        return []
-
-    rows = _ctx.conn.execute(
-        "SELECT id, kind, a_type, a_id, b_type, b_id, weight, created_at FROM links"
-    ).fetchall()
-
-    results = []
-    query_lower = query.lower()
-
-    for link_id, kind, a_type, a_id, b_type, b_id, weight, created_at in rows:
-        score = 0.0
-        matched = False
-
-        if query_lower in kind.lower():
-            score += 0.7
-            matched = True
-
-        if query_lower in a_type.lower() or query_lower in a_id.lower():
-            score += 0.5
-            matched = True
-
-        if query_lower in b_type.lower() or query_lower in b_id.lower():
-            score += 0.5
-            matched = True
-
-        if matched:
-            score = min(1.0, score)
-
-            results.append(
-                SearchResult(
-                    skill="linker",
-                    id=link_id,
-                    type="link",
-                    content=f"{kind}: {a_type}:{a_id} → {b_type}:{b_id}",
-                    metadata={
-                        "kind": kind,
-                        "source": f"{a_type}:{a_id}",
-                        "target": f"{b_type}:{b_id}",
-                        "weight": weight,
-                        "created_at": created_at,
-                    },
-                    score=score,
-                )
-            )
-
-    results.sort(key=lambda r: r.score, reverse=True)
-    return results[:limit]
+    service = _get_service()
+    return service.search_links(query, limit)
 
 
 class AddLinkInput(SkillInput):
@@ -118,16 +88,9 @@ def add_link(kind: str, a_type: str, a_id: str, b_type: str, b_id: str, weight: 
     Raises:
         ValidationException: If input validation fails.
     """
-    if _ctx is None:
-        raise RuntimeError("Context not initialized")
-
-    cur = _ctx.conn.execute(
-        """INSERT INTO links (kind, a_type, a_id, b_type, b_id, weight)
-           VALUES (?, ?, ?, ?, ?, ?)""",
-        (kind, a_type, a_id, b_type, b_id, weight),
-    )
-    _ctx.conn.commit()
-    return cur.lastrowid
+    service = _get_service()
+    link = service.add_link(kind, a_type, a_id, b_type, b_id, weight)
+    return link.id
 
 
 def get_context_bundle(entity_type: str, entity_id: str) -> list[dict[str, Any]]:
@@ -141,25 +104,8 @@ def get_context_bundle(entity_type: str, entity_id: str) -> list[dict[str, Any]]
     Returns:
         List of linked entities.
     """
-    if _ctx is None:
-        raise RuntimeError("Context not initialized")
-
-    cur = _ctx.conn.execute(
-        """
-        SELECT kind, b_type, b_id, weight FROM links
-        WHERE a_type = ? AND a_id = ?
-        UNION
-        SELECT kind, a_type, a_id, weight FROM links
-        WHERE b_type = ? AND b_id = ?
-        ORDER BY weight DESC
-    """,
-        (entity_type, entity_id, entity_type, entity_id),
-    )
-
-    results = []
-    for row in cur:
-        results.append({"kind": row[0], "type": row[1], "id": row[2], "weight": row[3]})
-    return results
+    service = _get_service()
+    return service.get_context_bundle(entity_type, entity_id)
 
 
 @app.command()
@@ -187,19 +133,8 @@ def add(
 @app.command()
 def list(limit: int = 50) -> None:
     """List all links."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
-
-    cur = _ctx.conn.execute(
-        """
-        SELECT id, kind, a_type, a_id, b_type, b_id, weight, created_at
-        FROM links
-        ORDER BY created_at DESC
-        LIMIT ?
-    """,
-        (limit,),
-    )
+    service = _get_service()
+    links = service.list_links(limit)
 
     table = Table(title="Links")
     table.add_column("ID", style="cyan")
@@ -208,11 +143,10 @@ def list(limit: int = 50) -> None:
     table.add_column("Target", style="blue")
     table.add_column("Weight", style="magenta")
 
-    for row in cur:
-        link_id, kind, a_type, a_id, b_type, b_id, weight, _ = row
-        source = f"{a_type}:{a_id}"
-        target = f"{b_type}:{b_id}"
-        table.add_row(str(link_id), kind, source, target, f"{weight:.1f}")
+    for link in links:
+        source = f"{link.a_type}:{link.a_id}"
+        target = f"{link.b_type}:{link.b_id}"
+        table.add_row(str(link.id), link.kind, source, target, f"{link.weight:.1f}")
 
     console.print(table)
 
@@ -258,14 +192,9 @@ def rebuild(project_id: str = typer.Option(..., help="Project ID to rebuild link
 @app.command()
 def delete(link_id: int) -> None:
     """Delete a link."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = _get_service()
 
-    cur = _ctx.conn.execute("DELETE FROM links WHERE id = ?", (link_id,))
-    _ctx.conn.commit()
-
-    if cur.rowcount > 0:
+    if service.delete_link(link_id):
         console.print(f"[green]Link {link_id} deleted[/green]")
     else:
         console.print(f"[yellow]Link {link_id} not found[/yellow]")

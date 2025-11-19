@@ -9,13 +9,15 @@ from typing import Any
 
 from aiohttp import ClientSession, ClientTimeout, web
 
+__all__ = ["IPCServer", "IPCClient"]
+
 logger = logging.getLogger(__name__)
 
 
 class IPCServer:
     """IPC server using HTTP on localhost (cross-platform)."""
 
-    def __init__(self, socket_path: Path, handler: Callable[[dict[str, Any]], dict[str, Any]]):
+    def __init__(self, socket_path: Path, handler: Callable[[dict[str, Any]], dict[str, Any]]) -> None:
         """Initialize IPC server.
 
         Args:
@@ -51,7 +53,10 @@ class IPCServer:
             return web.json_response({"error": str(e)}, status=500)
 
     async def start(self) -> None:
-        """Start the IPC server on a random available port."""
+        """Start the IPC server on a random available port.
+
+        Listens on localhost and writes the assigned port to socket_path file.
+        """
         self.runner = web.AppRunner(self.app)
         await self.runner.setup()
 
@@ -69,7 +74,10 @@ class IPCServer:
         logger.info(f"IPC server listening on http://localhost:{self.port}")
 
     async def stop(self) -> None:
-        """Stop the IPC server."""
+        """Stop the IPC server.
+
+        Cleans up resources and removes the port file.
+        """
         if self.runner:
             await self.runner.cleanup()
 
@@ -80,7 +88,7 @@ class IPCServer:
 class IPCClient:
     """IPC client for communicating with daemon via HTTP."""
 
-    def __init__(self, socket_path: Path):
+    def __init__(self, socket_path: Path) -> None:
         """Initialize IPC client.
 
         Args:

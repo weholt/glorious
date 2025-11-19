@@ -1,14 +1,14 @@
+"""Migrate skill - universal export/import system.
+
+Refactored to use service pattern while remaining
+discoverable as a separate installable skill.
+"""
+
 from __future__ import annotations
 
-"""Migrate skill - universal export/import system."""
-
-import base64
 import json
-import shutil
-import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import typer
 from rich.console import Console
@@ -16,6 +16,8 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from glorious_agents.core.context import SkillContext
 from glorious_agents.core.search import SearchResult
+
+from .dependencies import get_migrate_service
 
 app = typer.Typer(help="Data export/import and migration")
 console = Console()
@@ -43,109 +45,25 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
     return []
 
 
-def export_table(conn: sqlite3.Connection, table: str) -> list[dict[str, Any]]:
-    """Export all rows from a table."""
-    cursor = conn.execute(f"SELECT * FROM {table}")
-    columns = [desc[0] for desc in cursor.description]
-    rows = cursor.fetchall()
+def get_db_path(db_path: str | None = None) -> Path:
+    """Get database path from argument or config.
 
-    result = []
-    for row in rows:
-        row_dict = {}
-        for col, val in zip(columns, row):
-            # Convert bytes to base64 string for JSON serialization
-            if isinstance(val, bytes):
-                row_dict[col] = {"__type__": "bytes", "data": base64.b64encode(val).decode("utf-8")}
-            else:
-                row_dict[col] = val
-        result.append(row_dict)
-    return result
+    Args:
+        db_path: Optional explicit database path
 
+    Returns:
+        Path to database file
+    """
+    if db_path:
+        return Path(db_path)
 
-def import_table(conn: sqlite3.Connection, table: str, rows: list[dict[str, Any]]) -> int:
-    """Import rows into a table."""
-    if not rows:
-        return 0
+    from glorious_agents.config import config
 
-    columns = list(rows[0].keys())
-    placeholders = ",".join(["?"] * len(columns))
-    insert_sql = f"INSERT OR REPLACE INTO {table} ({','.join(columns)}) VALUES ({placeholders})"
-
-    count = 0
-    for row in rows:
-        values = []
-        for col in columns:
-            val = row[col]
-            # Convert base64-encoded bytes back to bytes
-            if isinstance(val, dict) and val.get("__type__") == "bytes":
-                values.append(base64.b64decode(val["data"]))
-            else:
-                values.append(val)
-        conn.execute(insert_sql, values)
-        count += 1
-
-    conn.commit()
-    return count
-
-
-def export_database(db_path: Path, output_dir: Path) -> dict[str, int]:
-    """Export entire database to JSON files."""
-    conn = sqlite3.connect(str(db_path))
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-    tables = [row[0] for row in cursor.fetchall()]
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-    stats = {}
-
-    for table in tables:
-        rows = export_table(conn, table)
-        output_file = output_dir / f"{table}.json"
-        with open(output_file, "w") as f:
-            json.dump(rows, f, indent=2)
-        stats[table] = len(rows)
-
-    cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-    schemas = [row[0] for row in cursor.fetchall() if row[0]]
-    schema_file = output_dir / "schema.sql"
-    with open(schema_file, "w") as f:
-        f.write("\n\n".join(schemas))
-
-    conn.close()
-    return stats
-
-
-def import_database(db_path: Path, input_dir: Path) -> dict[str, int]:
-    """Import database from JSON files."""
-    conn = sqlite3.connect(str(db_path))
-
-    schema_file = input_dir / "schema.sql"
-    if schema_file.exists():
-        with open(schema_file) as f:
-            schema_sql = f.read()
-            for statement in schema_sql.split(";"):
-                if statement.strip():
-                    try:
-                        conn.execute(statement)
-                    except sqlite3.OperationalError:
-                        pass
-
-    stats = {}
-    for json_file in input_dir.glob("*.json"):
-        if json_file.name == "metadata.json":
-            continue
-
-        table = json_file.stem
-        with open(json_file) as f:
-            rows = json.load(f)
-
-        count = import_table(conn, table, rows)
-        stats[table] = count
-
-    conn.commit()
-    conn.close()
-    return stats
+    # Check for agent-specific DB first
+    agent_db = Path(".agent/agents/default/agent.db")
+    if agent_db.exists():
+        return agent_db
+    return config.get_shared_db_path()
 
 
 @app.command()
@@ -154,28 +72,16 @@ def export(
     db_path: str = typer.Option(None, "--db", help="Database path (default: system DB)"),
 ) -> None:
     """Export database to JSON files."""
-    assert _ctx is not None
-
-    if db_path:
-        db = Path(db_path)
-    else:
-        # Get DB path from config
-        from glorious_agents.config import config
-
-        # Check for agent-specific DB first
-        agent_db = Path(".agent/agents/default/agent.db")
-        if agent_db.exists():
-            db = agent_db
-        else:
-            db = config.get_shared_db_path()
+    db = get_db_path(db_path)
     output_dir = Path(output)
+    service = get_migrate_service()
 
     try:
         with Progress(
             SpinnerColumn(), TextColumn("[progress.description]{task.description}")
         ) as progress:
             task = progress.add_task("Exporting database...", total=None)
-            stats = export_database(db, output_dir)
+            stats = service.export_database(db, output_dir)
             progress.update(task, completed=True)
 
         metadata = {
@@ -201,19 +107,9 @@ def import_cmd(
     backup: bool = typer.Option(True, "--backup/--no-backup", help="Backup existing DB"),
 ) -> None:
     """Import database from JSON files."""
-    assert _ctx is not None
-
-    if db_path:
-        db = Path(db_path)
-    else:
-        from glorious_agents.config import config
-
-        agent_db = Path(".agent/agents/default/agent.db")
-        if agent_db.exists():
-            db = agent_db
-        else:
-            db = config.get_shared_db_path()
+    db = get_db_path(db_path)
     input_dir = Path(input)
+    service = get_migrate_service()
 
     if not input_dir.exists():
         console.print(f"[red]Input directory not found:[/red] {input_dir}")
@@ -222,14 +118,14 @@ def import_cmd(
     try:
         if backup and db.exists():
             backup_path = db.with_suffix(f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}.db")
-            shutil.copy2(db, backup_path)
+            service.backup_database(db, backup_path)
             console.print(f"[blue]Backup created:[/blue] {backup_path}")
 
         with Progress(
             SpinnerColumn(), TextColumn("[progress.description]{task.description}")
         ) as progress:
             task = progress.add_task("Importing database...", total=None)
-            stats = import_database(db, input_dir)
+            stats = service.import_database(db, input_dir)
             progress.update(task, completed=True)
 
         console.print("[green]✓ Import complete[/green]")
@@ -246,24 +142,12 @@ def backup(
     db_path: str = typer.Option(None, "--db", help="Database path (default: system DB)"),
 ) -> None:
     """Create a backup copy of the database."""
-    assert _ctx is not None
-
-    if db_path:
-        db = Path(db_path)
-    else:
-        from glorious_agents.config import config
-
-        agent_db = Path(".agent/agents/default/agent.db")
-        if agent_db.exists():
-            db = agent_db
-        else:
-            db = config.get_shared_db_path()
+    db = get_db_path(db_path)
     backup_path = Path(output)
+    service = get_migrate_service()
 
     try:
-        backup_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(db, backup_path)
-        size = backup_path.stat().st_size
+        size = service.backup_database(db, backup_path)
         console.print(f"[green]✓ Backup created:[/green] {backup_path}")
         console.print(f"  Size: {size:,} bytes")
     except Exception as e:
@@ -277,32 +161,16 @@ def restore(
     db_path: str = typer.Option(None, "--db", help="Database path (default: system DB)"),
 ) -> None:
     """Restore database from backup."""
-    assert _ctx is not None
-
-    if db_path:
-        db = Path(db_path)
-    else:
-        from glorious_agents.config import config
-
-        agent_db = Path(".agent/agents/default/agent.db")
-        if agent_db.exists():
-            db = agent_db
-        else:
-            db = config.get_shared_db_path()
+    db = get_db_path(db_path)
     backup_path = Path(backup_file)
+    service = get_migrate_service()
 
     if not backup_path.exists():
         console.print(f"[red]Backup file not found:[/red] {backup_path}")
         raise typer.Exit(1)
 
     try:
-        current_backup = db.with_suffix(
-            f".pre-restore.{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
-        )
-        shutil.copy2(db, current_backup)
-        console.print(f"[blue]Current DB backed up:[/blue] {current_backup}")
-
-        shutil.copy2(backup_path, db)
+        service.restore_database(backup_path, db)
         console.print(f"[green]✓ Restored from:[/green] {backup_path}")
     except Exception as e:
         console.print(f"[red]Restore failed:[/red] {e}")
@@ -315,6 +183,7 @@ def info(
 ) -> None:
     """Show information about export or database."""
     path_obj = Path(path)
+    service = get_migrate_service()
 
     if path_obj.is_dir():
         metadata_file = path_obj / "metadata.json"
@@ -331,24 +200,14 @@ def info(
         else:
             console.print("[yellow]No metadata found in export directory[/yellow]")
     elif path_obj.suffix == ".db":
-        conn = sqlite3.connect(str(path_obj))
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-        )
-        tables = [row[0] for row in cursor.fetchall()]
-
+        info_dict = service.get_database_info(path_obj)
         console.print("[bold]Database Information[/bold]")
-        console.print(f"  File: {path_obj}")
-        console.print(f"  Size: {path_obj.stat().st_size:,} bytes")
-        console.print(f"  Tables: {len(tables)}")
-
+        console.print(f"  File: {info_dict['file']}")
+        console.print(f"  Size: {info_dict['size']:,} bytes")
+        console.print(f"  Tables: {info_dict['table_count']}")
         console.print("\n[bold]Tables:[/bold]")
-        for table in tables:
-            count = cursor.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        for table, count in info_dict["tables"].items():
             console.print(f"  {table}: {count} rows")
-
-        conn.close()
     else:
         console.print("[red]Path must be a directory or .db file[/red]")
         raise typer.Exit(1)

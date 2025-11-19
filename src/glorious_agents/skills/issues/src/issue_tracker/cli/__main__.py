@@ -4,6 +4,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+__all__ = ["main"]
+
 
 def main() -> None:
     """Main entry point for the issues CLI.

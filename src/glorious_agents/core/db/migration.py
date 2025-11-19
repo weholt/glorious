@@ -29,6 +29,8 @@ def migrate_legacy_databases() -> None:
     legacy_master_db = data_folder / config.DB_MASTER_NAME
     if legacy_master_db.exists():
         # Migrate agents table to core_agents
+        legacy_conn = None
+        unified_conn = None
         try:
             legacy_conn = sqlite3.connect(str(legacy_master_db))
             unified_conn = get_connection()
@@ -42,8 +44,10 @@ def migrate_legacy_databases() -> None:
                 )
                 unified_conn.commit()
                 print(f"Migrated {len(rows)} agents from master.db")
-
-            legacy_conn.close()
-            unified_conn.close()
         except Exception as e:
             print(f"Warning: Could not migrate master.db: {e}")
+        finally:
+            if legacy_conn:
+                legacy_conn.close()
+            if unified_conn:
+                unified_conn.close()

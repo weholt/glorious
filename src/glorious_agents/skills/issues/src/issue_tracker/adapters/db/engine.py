@@ -6,6 +6,8 @@ from pathlib import Path
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.pool import StaticPool
 
+__all__ = ["create_db_engine", "get_database_path"]
+
 
 def _get_default_db_url() -> str:
     """Get default database URL from glorious-agents config."""

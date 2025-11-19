@@ -1,0 +1,9 @@
+[submodule "modules/cookiecutter-redux"]
+	path = modules/cookiecutter-redux
+	url = https://github.com/weholt/cookiecutter-redux.git
+[submodule "modules/zipparu"]
+	path = modules/zipparu
+	url = https://github.com/weholt/zipparu
+[submodule "modules/note-store"]
+	path = modules/note-store
+	url = https://github.com/weholt/note-store

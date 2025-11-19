@@ -14,6 +14,9 @@ from glorious_agents.core.migrations import run_migrations
 from glorious_agents.core.search import SearchResult
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
+from .dependencies import get_notes_service
+from .service import NotesService
+
 app = typer.Typer(help="Notes management")
 console = Console()
 _ctx: SkillContext | None = None
@@ -30,6 +33,21 @@ def init_context(ctx: SkillContext) -> None:
     migrations_dir = Path(__file__).parent / "migrations"
     if migrations_dir.exists():
         run_migrations("notes", migrations_dir)
+
+
+def _get_service() -> NotesService:
+    """Get notes service with event bus from context.
+
+    Returns:
+        NotesService instance
+
+    Raises:
+        RuntimeError: If context not initialized
+    """
+    if _ctx is None:
+        raise RuntimeError("Context not initialized")
+
+    return get_notes_service(event_bus=_ctx.event_bus if _ctx else None)
 
 
 class AddNoteInput(SkillInput):
@@ -64,22 +82,9 @@ def add_note(content: str, tags: str = "", importance: int = 0) -> int:
     Raises:
         ValidationException: If input validation fails.
     """
-    if _ctx is None:
-        raise RuntimeError("Context not initialized")
-
-    cur = _ctx.conn.execute(
-        "INSERT INTO notes(content, tags, importance) VALUES(?, ?, ?)", (content, tags, importance)
-    )
-    _ctx.conn.commit()
-    note_id = cur.lastrowid
-
-    # Publish event
-    _ctx.publish(
-        TOPIC_NOTE_CREATED,
-        {"id": note_id, "tags": tags, "content": content, "importance": importance},
-    )
-
-    return note_id
+    service = _get_service()
+    note = service.create_note(content, tags, importance)
+    return note.id
 
 
 @validate_input
@@ -96,33 +101,19 @@ def search_notes(query: str) -> list[dict[str, Any]]:
     Raises:
         ValidationException: If input validation fails.
     """
-    if _ctx is None:
-        raise RuntimeError("Context not initialized")
+    service = _get_service()
+    notes = service.repo.search_fts(query, limit=100)
 
-    cur = _ctx.conn.execute(
-        """
-        SELECT n.id, n.content, n.tags, n.created_at, n.importance
-        FROM notes n
-        JOIN notes_fts fts ON n.id = fts.rowid
-        WHERE notes_fts MATCH ?
-        ORDER BY n.importance DESC, rank
-    """,
-        (query,),
-    )
-
-    results = []
-    for row in cur:
-        results.append(
-            {
-                "id": row[0],
-                "content": row[1],
-                "tags": row[2],
-                "created_at": row[3],
-                "importance": row[4],
-            }
-        )
-
-    return results
+    return [
+        {
+            "id": note.id,
+            "content": note.content,
+            "tags": note.tags,
+            "created_at": str(note.created_at),
+            "importance": note.importance,
+        }
+        for note in notes
+    ]
 
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
@@ -136,43 +127,8 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
     Returns:
         List of SearchResult objects for universal search.
     """
-    if _ctx is None:
-        raise RuntimeError("Context not initialized")
-
-    cur = _ctx.conn.execute(
-        """
-        SELECT n.id, n.content, n.tags, n.created_at, n.importance, rank
-        FROM notes n
-        JOIN notes_fts fts ON n.id = fts.rowid
-        WHERE notes_fts MATCH ?
-        ORDER BY n.importance DESC, rank
-        LIMIT ?
-    """,
-        (query, limit),
-    )
-
-    results = []
-    for row in cur:
-        # Convert FTS5 rank to 0-1 score (rank is negative, higher absolute value = better match)
-        base_score = min(1.0, abs(row[5]) / 10.0) if row[5] else 0.5
-
-        # Boost score based on importance (critical=+0.3, important=+0.15)
-        importance = row[4]
-        importance_boost = importance * 0.15
-        score = min(1.0, base_score + importance_boost)
-
-        results.append(
-            SearchResult(
-                skill="notes",
-                id=row[0],
-                type="note",
-                content=row[1],
-                metadata={"tags": row[2], "created_at": row[3], "importance": importance},
-                score=score,
-            )
-        )
-
-    return results
+    service = _get_service()
+    return service.search_notes(query, limit)
 
 
 @app.command()
@@ -213,23 +169,16 @@ def list(
     critical_only: bool = typer.Option(False, "--critical", "-c", help="Show only critical notes"),
 ) -> None:
     """List recent notes."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = _get_service()
 
-    # Build query based on filters
-    query = "SELECT id, content, tags, created_at, importance FROM notes"
-    params: tuple = ()
-
+    # Determine filter
+    min_importance = None
     if critical_only:
-        query += " WHERE importance = 2"
+        min_importance = 2
     elif important_only:
-        query += " WHERE importance >= 1"
+        min_importance = 1
 
-    query += " ORDER BY importance DESC, created_at DESC LIMIT ?"
-    params = (limit,)
-
-    cur = _ctx.conn.execute(query, params)
+    notes = service.list_notes(limit=limit, min_importance=min_importance)
 
     title = "Recent Notes"
     if critical_only:
@@ -244,19 +193,24 @@ def list(
     table.add_column("Tags", style="yellow")
     table.add_column("Created", style="dim")
 
-    for row in cur:
-        content = row[1][:50] + "..." if len(row[1]) > 50 else row[1]
-        importance = row[4] if len(row) > 4 else 0
+    for note in notes:
+        content = note.content[:50] + "..." if len(note.content) > 50 else note.content
 
         # Importance indicator
-        if importance == 2:
+        if note.importance == 2:
             indicator = "[red]⚠[/red]"
-        elif importance == 1:
+        elif note.importance == 1:
             indicator = "[yellow]★[/yellow]"
         else:
             indicator = ""
 
-        table.add_row(str(row[0]), indicator, content, row[2] or "-", row[3])
+        table.add_row(
+            str(note.id),
+            indicator,
+            content,
+            note.tags or "-",
+            str(note.created_at),
+        )
 
     console.print(table)
 
@@ -319,36 +273,24 @@ def search(
 @app.command()
 def get(note_id: int) -> None:
     """Get a specific note by ID."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = _get_service()
+    note = service.get_note(note_id)
 
-    cur = _ctx.conn.execute(
-        """
-        SELECT id, content, tags, created_at, updated_at, importance
-        FROM notes
-        WHERE id = ?
-    """,
-        (note_id,),
-    )
-
-    row = cur.fetchone()
-    if not row:
+    if not note:
         console.print(f"[red]Note {note_id} not found.[/red]")
         return
 
-    importance = row[5] if len(row) > 5 else 0
     importance_str = ""
-    if importance == 2:
+    if note.importance == 2:
         importance_str = " [red bold]⚠ CRITICAL[/red bold]"
-    elif importance == 1:
+    elif note.importance == 1:
         importance_str = " [yellow bold]★ IMPORTANT[/yellow bold]"
 
-    console.print(f"\n[bold cyan]Note #{row[0]}{importance_str}[/bold cyan]")
-    console.print(f"[dim]Created: {row[3]} | Updated: {row[4]}[/dim]\n")
-    console.print(row[1])
-    if row[2]:
-        console.print(f"\n[yellow]Tags: {row[2]}[/yellow]")
+    console.print(f"\n[bold cyan]Note #{note.id}{importance_str}[/bold cyan]")
+    console.print(f"[dim]Created: {note.created_at} | Updated: {note.updated_at}[/dim]\n")
+    console.print(note.content)
+    if note.tags:
+        console.print(f"\n[yellow]Tags: {note.tags}[/yellow]")
 
 
 @app.command()
@@ -359,9 +301,7 @@ def mark(
     normal: bool = typer.Option(False, "--normal", "-n", help="Mark as normal"),
 ) -> None:
     """Update the importance level of a note."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = _get_service()
 
     # Determine new importance level
     if critical:
@@ -377,11 +317,10 @@ def mark(
         console.print("[red]Please specify --important, --critical, or --normal[/red]")
         return
 
-    _ctx.conn.execute(
-        "UPDATE notes SET importance = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        (importance, note_id),
-    )
-    _ctx.conn.commit()
+    note = service.update_importance(note_id, importance)
+    if not note:
+        console.print(f"[red]Note {note_id} not found.[/red]")
+        return
 
     console.print(f"[green]Note {note_id} marked as {label}[/green]")
 
@@ -389,10 +328,9 @@ def mark(
 @app.command()
 def delete(note_id: int) -> None:
     """Delete a note."""
-    if _ctx is None:
-        console.print("[red]Context not initialized[/red]")
-        return
+    service = _get_service()
 
-    _ctx.conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
-    _ctx.conn.commit()
-    console.print(f"[green]Note {note_id} deleted.[/green]")
+    if service.delete_note(note_id):
+        console.print(f"[green]Note {note_id} deleted.[/green]")
+    else:
+        console.print(f"[red]Note {note_id} not found.[/red]")

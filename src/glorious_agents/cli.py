@@ -230,7 +230,7 @@ def daemon(
         $ curl http://localhost:8765/skills
         $ curl -X POST http://localhost:8765/rpc/notes/list_notes -H "Content-Type: application/json" -d '{}'
     """
-    from glorious_agents.core.daemon import run_daemon
+    from glorious_agents.core.daemon_rpc import run_daemon
 
     run_daemon(host, port)
 

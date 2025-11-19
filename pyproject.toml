@@ -29,6 +29,10 @@ dependencies = [
     "tomli-w>=1.0.0",
     "ruff>=0.14.5",
     "sqlparse>=0.5.0",
+    "sqlalchemy>=2.0.0",
+    "sqlmodel>=0.0.16",
+    "watchdog>=4.0.0",
+    "aiohttp>=3.9.0",
 ]
 
 [project.optional-dependencies]
@@ -129,9 +133,12 @@ omit = [
   "*/skills_cli.py",
   "*/identity_cli.py",
   "*/daemon.py",
+  "*/daemon/*",
+  "*/daemon_rpc.py",
   "*/skills_cli/*",
   "*/migrations.py",
   "*/skills/*",
+  "*/loader/__init__.py",
 ]
 
 [tool.coverage.report]
@@ -168,6 +175,7 @@ exclude = [
 dev = [
     "mypy>=1.18.2",
     "types-jsonschema>=4.25.1.20251009",
+    "types-psutil>=7.0.0.20251116",
 ]
 
 [tool.uv.sources]
