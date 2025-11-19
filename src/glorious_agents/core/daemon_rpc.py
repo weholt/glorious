@@ -27,9 +27,9 @@ def verify_api_key(x_api_key: str | None = Header(None)) -> None:
     """
     # Get fresh config to support dynamic config changes in tests
     from glorious_agents.config import get_config
-    
+
     current_config = get_config()
-    
+
     # If no API key is configured, allow all requests
     if current_config.DAEMON_API_KEY is None:
         logger.debug("API key authentication disabled")
