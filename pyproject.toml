@@ -43,6 +43,7 @@ dev = [
     "mypy>=1.11.0",
     "pre-commit>=3.8.0",
     "bandit>=1.7.0",
+    "httpx>=0.25.0",
 ]
 
 # Individual skills - Install via: uv pip install -e ".[notes,planner,issues]"
