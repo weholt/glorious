@@ -1,116 +1,76 @@
-version: 1
-
-review_guidelines:
-
-  # ============================================================
-  # HIGH-LEVEL QUALITY PRINCIPLES (Best-Practices Document)
-  # ============================================================
-  - Enforce strict PEP-8 formatting and naming conventions.
-  - Enforce consistent import grouping: stdlib → third-party → local.
-  - Never allow direct imports from `src` (e.g. `from src.x import y` is forbidden).
-  - Enforce small, focused functions; anything above ~15 lines should be flagged for refactor.
-  - Enforce Single Responsibility Principle for all modules, classes, and functions.
-  - Detect violations of DRY; duplicated logic must be consolidated.
-  - Reject unnecessary complexity; prefer straightforward code over clever code.
-  - Enforce separation of concerns between domain, services, infra, API, and CLI layers.
-  - Flag business logic inside transport layers (CLI/API/routes).
-  - Flag domain-layer imports from infra/api/cli (dependency inversion violation).
-  - All public functions/classes must have meaningful docstrings.
-  - Flag long classes (>200 lines or >10 methods).
-  - Ensure all I/O (FS, DB, network) is isolated away from pure logic.
-  - Enforce typing for all functions and return values.
-  - Enforce pathlib.Path instead of string paths.
-  - Enforce clean architecture: domain-first, abstractions at the core, adapters at edges.
-  - Prefer interfaces/Protocols over concrete types for cross-layer boundaries.
-  - Detect hard-coded configuration; require `.env` or config modules.
-  - Ensure no secrets, tokens, or API keys appear in code.
-  - Detect performance issues such as repeated expensive operations, misused data structures, unnecessary loops.
-  - Detect unused, unreachable, or dead code.
-  - Detect HTML inside Python code – HTML must live in templates.
-  - Detect misplaced modules violating project folder conventions.
-  - Ensure CI-friendly, testable structure; tests should be isolated from real external services.
-  - Ensure project architecture and module naming align with maintainability expectations.
-
-  # ============================================================
-  # STRUCTURAL & DUPLICATION ANALYSIS (code-analysis.prompt.md)
-  # ============================================================
-  - Search for duplicated or near-duplicated functions, classes, or logic using token/AST similarity.
-  - Ensure protocols/interfaces live in `protocols/`, concrete implementations in `infra/` or `adapters/`.
-  - Flag unimplemented or partially implemented Protocols/ABCs.
-  - Detect cross-layer violations such as infra code calling domain directly or vice versa.
-  - Detect magic numbers/strings that should be named constants or config values.
-  - Detect nested control flow deeper than 3 levels.
-  - Detect catch-all `except:` blocks — require explicit exception types.
-  - Detect public API elements not used outside their own module.
-  - Detect overuse of globals or implicit shared state.
-  - Detect inlined imports inside functions (non-local imports).
-  - Detect misplaced utility methods outside a utilities module.
-  - Detect overly abstract or over-engineered architecture.
-  - Detect performance bottlenecks or unnecessary work within loops.
-  - Enforce extremely nitpicky and critical review — err on the side of strictness.
-  - All issues must be actionable and mapped to specific files, line ranges, and suggested fixes.
-
-  # ============================================================
-  # PYTHONIC STYLE REQUIREMENTS (pythonic-code.prompt.md)
-  # ============================================================
-  - Enforce code that is Pythonic, idiomatic, and easy to read.
-  - Prefer simple functions over classes unless state is required.
-  - Enforce usage of comprehensions where appropriate.
-  - Prefer context managers for file/IO/resource handling.
-  - Prefer EAFP style rather than excessive pre-checks.
-  - Prefer generators/iterators for streaming or incremental processing.
-  - Replace print()-style debug statements with logging.
-  - Require dataclasses for structured data models.
-  - Require `field(default_factory=...)` for dynamic defaults.
-  - Explicit top-level constants for configuration; no magic values buried in code.
-  - Ensure entry-point pattern `if __name__ == "__main__": main()`.
-  - Leverage built-ins and standard-library features before adding custom logic.
-  - Remove unnecessary abstractions and redundant wrapper classes.
-  - Prefer thin modules composed of small, reusable functions.
-  - Ensure rewritten code would pass a “Pythonic idiom review”.
-
-  # ============================================================
-  # PYTHON-SPECIFIC REQUIREMENTS
-  # ============================================================
-  - Enforce typing everywhere.
-  - Prefer Protocols for abstractions.
-  - All modules must be import-safe (no side effects at import time).
-  - Validate folder structure: domain, services, infra, adapters, api, cli.
-  - Ensure tests do not depend on real external systems.
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 language: en-US
 
-rules:
-  small_pr:
-    review_guidelines:
-      - Focus on correctness, architectural violations, and readability.
-      - No acceptance of new complexity without justification.
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+  
+  # Custom review guidelines for Python code quality
+  guidelines:
+    - "Enforce strict PEP-8 formatting and naming conventions"
+    - "Enforce consistent import grouping: stdlib → third-party → local"
+    - "Never allow direct imports from `src` (e.g. `from src.x import y` is forbidden)"
+    - "Enforce small, focused functions; anything above ~15 lines should be flagged for refactor"
+    - "Enforce Single Responsibility Principle for all modules, classes, and functions"
+    - "Detect violations of DRY; duplicated logic must be consolidated"
+    - "Reject unnecessary complexity; prefer straightforward code over clever code"
+    - "Enforce separation of concerns between domain, services, infra, API, and CLI layers"
+    - "Flag business logic inside transport layers (CLI/API/routes)"
+    - "Flag domain-layer imports from infra/api/cli (dependency inversion violation)"
+    - "All public functions/classes must have meaningful docstrings"
+    - "Flag long classes (>200 lines or >10 methods)"
+    - "Ensure all I/O (FS, DB, network) is isolated away from pure logic"
+    - "Enforce typing for all functions and return values"
+    - "Enforce pathlib.Path instead of string paths"
+    - "Enforce clean architecture: domain-first, abstractions at the core, adapters at edges"
+    - "Prefer interfaces/Protocols over concrete types for cross-layer boundaries"
+    - "Detect hard-coded configuration; require `.env` or config modules"
+    - "Ensure no secrets, tokens, or API keys appear in code"
+    - "Detect performance issues such as repeated expensive operations, misused data structures, unnecessary loops"
+    - "Detect unused, unreachable, or dead code"
+    - "Detect HTML inside Python code – HTML must live in templates"
+    - "Detect misplaced modules violating project folder conventions"
+    - "Ensure CI-friendly, testable structure; tests should be isolated from real external services"
+    - "Search for duplicated or near-duplicated functions, classes, or logic"
+    - "Ensure protocols/interfaces live in `protocols/`, concrete implementations in `infra/` or `adapters/`"
+    - "Flag unimplemented or partially implemented Protocols/ABCs"
+    - "Detect cross-layer violations such as infra code calling domain directly or vice versa"
+    - "Detect magic numbers/strings that should be named constants or config values"
+    - "Detect nested control flow deeper than 3 levels"
+    - "Detect catch-all `except:` blocks — require explicit exception types"
+    - "Detect public API elements not used outside their own module"
+    - "Detect overuse of globals or implicit shared state"
+    - "Detect inlined imports inside functions (non-local imports)"
+    - "Detect misplaced utility methods outside a utilities module"
+    - "Detect overly abstract or over-engineered architecture"
+    - "Detect performance bottlenecks or unnecessary work within loops"
+    - "Enforce code that is Pythonic, idiomatic, and easy to read"
+    - "Prefer simple functions over classes unless state is required"
+    - "Enforce usage of comprehensions where appropriate"
+    - "Prefer context managers for file/IO/resource handling"
+    - "Prefer EAFP style rather than excessive pre-checks"
+    - "Prefer generators/iterators for streaming or incremental processing"
+    - "Replace print()-style debug statements with logging"
+    - "Require dataclasses for structured data models"
+    - "Require `field(default_factory=...)` for dynamic defaults"
+    - "Explicit top-level constants for configuration; no magic values buried in code"
+    - "Ensure entry-point pattern `if __name__ == \"__main__\": main()`"
+    - "Leverage built-ins and standard-library features before adding custom logic"
+    - "Remove unnecessary abstractions and redundant wrapper classes"
+    - "Prefer thin modules composed of small, reusable functions"
+    - "Enforce typing everywhere"
+    - "Prefer Protocols for abstractions"
+    - "All modules must be import-safe (no side effects at import time)"
+    - "Validate folder structure: domain, services, infra, adapters, api, cli"
+    - "Ensure tests do not depend on real external systems"
 
-  large_pr:
-    review_guidelines:
-      - Focus heavily on decomposition and proper layering.
-      - Require refactoring if structural issues appear.
-      - Reject PR unless separation of concerns is maintained.
-
-profiles:
-  strict:
-    review_guidelines:
-      - Apply ALL guidelines in their strictest interpretation.
-      - Prefer refactor over acceptance for any borderline case.
-      - No TODO/FIXME allowed.
-      - Require docstrings, typing, tests, and clear separation of concerns.
-
-  pythonic:
-    review_guidelines:
-      - Apply all Pythonic rules.
-      - Require transformation into idiomatic Python.
-      - Reject non-Pythonic constructs such as overly OO designs without need.
-
-  structural:
-    review_guidelines:
-      - Focus on folder structure, layer boundaries, interface usage, and dependency inversion.
-
-  duplication:
-    review_guidelines:
-      - Perform exhaustive duplicate-detection across entire codebase.
-      - Attempt AST-level comparison where possible.
+chat:
+  auto_reply: true
