@@ -90,14 +90,10 @@ def isolated_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[d
     agent_folder = tmp_path / ".agent"
     agent_folder.mkdir()
 
-    # Create temporary home directory for complete isolation
-    temp_home = tmp_path / "home"
-    temp_home.mkdir()
-
     # Set environment variables to use temp folders
+    # Note: We don't override HOME to avoid breaking Python package discovery
     monkeypatch.setenv("GLORIOUS_DATA_FOLDER", str(agent_folder))
     monkeypatch.setenv("DATA_FOLDER", str(agent_folder))
-    monkeypatch.setenv("HOME", str(temp_home))
     monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
 
     # Create tmp directory
@@ -109,10 +105,10 @@ def isolated_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[d
     reset_config()
 
     # Prepare environment dict for subprocess calls
+    # Note: We don't override HOME to avoid breaking Python package discovery
     test_env = {
         "GLORIOUS_DATA_FOLDER": str(agent_folder),
         "DATA_FOLDER": str(agent_folder),
-        "HOME": str(temp_home),
         "TMPDIR": str(tmp_path / "tmp"),
     }
 
@@ -129,7 +125,7 @@ def run_agent_cli(
     env: dict[str, str] | None = None,
     input_data: str | None = None,
     expect_failure: bool = False,
-    isolated_env: dict[str, any] | None = None,
+    isolated_env: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Run agent CLI command and capture output.
@@ -148,15 +144,8 @@ def run_agent_cli(
     # Use sys.executable to ensure we use the same Python that's running the tests
     cmd = [sys.executable, "-m", "glorious_agents.cli"] + args
 
-    # Start with a minimal environment to avoid leaking current workspace settings
-    # Include Python-related env vars to ensure subprocess can find installed packages
-    full_env = {
-        "PATH": os.environ.get("PATH", ""),
-        "PYTHONPATH": os.environ.get("PYTHONPATH", ""),
-        "VIRTUAL_ENV": os.environ.get("VIRTUAL_ENV", ""),
-        "PYTHONUSERBASE": os.environ.get("PYTHONUSERBASE", ""),
-        "PYTHON_KEYRING_BACKEND": os.environ.get("PYTHON_KEYRING_BACKEND", ""),
-    }
+    # Start with current environment to ensure Python can find installed packages
+    full_env = os.environ.copy()
 
     # Add isolated environment variables if provided
     if isolated_env and "env" in isolated_env:
