@@ -69,14 +69,16 @@ review_guidelines:
   - Prefer thin modules composed of small, reusable functions.
   - Ensure rewritten code would pass a “Pythonic idiom review”.
 
-language:
-  python:
-    review_guidelines:
-      - Enforce typing everywhere.
-      - Prefer Protocols for abstractions.
-      - All modules must be import-safe (no side effects at import time).
-      - Validate folder structure: domain, services, infra, adapters, api, cli.
-      - Ensure tests do not depend on real external systems.
+  # ============================================================
+  # PYTHON-SPECIFIC REQUIREMENTS
+  # ============================================================
+  - Enforce typing everywhere.
+  - Prefer Protocols for abstractions.
+  - All modules must be import-safe (no side effects at import time).
+  - Validate folder structure: domain, services, infra, adapters, api, cli.
+  - Ensure tests do not depend on real external systems.
+
+language: en-US
 
 rules:
   small_pr:

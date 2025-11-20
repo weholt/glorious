@@ -5,6 +5,12 @@ from pathlib import Path
 
 from glorious_agents.config import get_config
 
+# SQLite Performance Configuration Constants
+CACHE_SIZE_KB = -64000  # 64MB cache (negative value = KB)
+MMAP_SIZE_BYTES = 268435456  # 256MB memory-mapped I/O
+PAGE_SIZE_BYTES = 4096  # Optimal page size for modern systems
+BUSY_TIMEOUT_MS = 5000  # Wait 5s on lock before failing
+
 
 def get_data_folder() -> Path:
     """
@@ -52,11 +58,11 @@ def get_connection(check_same_thread: bool = False) -> sqlite3.Connection:
     # Performance optimizations
     conn.execute("PRAGMA journal_mode=WAL;")  # Better concurrency
     conn.execute("PRAGMA synchronous=NORMAL;")  # Balanced durability/performance
-    conn.execute("PRAGMA cache_size=-64000;")  # 64MB cache (negative = KB)
+    conn.execute(f"PRAGMA cache_size={CACHE_SIZE_KB};")  # 64MB cache
     conn.execute("PRAGMA temp_store=MEMORY;")  # Store temp tables in memory
-    conn.execute("PRAGMA mmap_size=268435456;")  # 256MB memory-mapped I/O
-    conn.execute("PRAGMA page_size=4096;")  # Optimal page size for modern systems
-    conn.execute("PRAGMA busy_timeout=5000;")  # Wait 5s on lock instead of failing
+    conn.execute(f"PRAGMA mmap_size={MMAP_SIZE_BYTES};")  # 256MB memory-mapped I/O
+    conn.execute(f"PRAGMA page_size={PAGE_SIZE_BYTES};")  # Optimal page size
+    conn.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS};")  # Wait 5s on lock
 
     # Enable foreign keys
     conn.execute("PRAGMA foreign_keys=ON;")
