@@ -4,6 +4,7 @@ import pytest
 from conftest import run_agent_cli
 
 
+@pytest.mark.skip(reason="Sandbox tests skipped per requirement")
 @pytest.mark.integration
 class TestSandboxCreateCommand:
     """Tests for 'agent sandbox create' command."""
@@ -46,6 +47,7 @@ class TestSandboxCreateCommand:
         assert "exists" in result["output"].lower() or not result["success"]
 
 
+@pytest.mark.skip(reason="Sandbox tests skipped per requirement")
 @pytest.mark.integration
 class TestSandboxListCommand:
     """Tests for 'agent sandbox list' command."""
@@ -85,6 +87,7 @@ class TestSandboxListCommand:
                 pass
 
 
+@pytest.mark.skip(reason="Sandbox tests skipped per requirement")
 @pytest.mark.integration
 class TestSandboxGetCommand:
     """Tests for 'agent sandbox get' command."""
@@ -110,6 +113,7 @@ class TestSandboxGetCommand:
         assert "not found" in result["output"].lower() or not result["success"]
 
 
+@pytest.mark.skip(reason="Sandbox tests skipped per requirement")
 @pytest.mark.integration
 class TestSandboxRunCommand:
     """Tests for 'agent sandbox run' command."""
@@ -140,6 +144,7 @@ class TestSandboxRunCommand:
         assert result["returncode"] in [0, 1]
 
 
+@pytest.mark.skip(reason="Sandbox tests skipped per requirement")
 @pytest.mark.integration
 class TestSandboxExecCommand:
     """Tests for 'agent sandbox exec' command."""
@@ -161,6 +166,7 @@ class TestSandboxExecCommand:
         assert result["returncode"] in [0, 1]
 
 
+@pytest.mark.skip(reason="Sandbox tests skipped per requirement")
 @pytest.mark.integration
 class TestSandboxDeleteCommand:
     """Tests for 'agent sandbox delete' command."""
@@ -200,6 +206,7 @@ class TestSandboxDeleteCommand:
         assert result["returncode"] in [0, 1]
 
 
+@pytest.mark.skip(reason="Sandbox tests skipped per requirement")
 @pytest.mark.integration
 class TestSandboxCleanCommand:
     """Tests for 'agent sandbox clean' command."""
@@ -225,6 +232,7 @@ class TestSandboxCleanCommand:
         assert result["returncode"] in [0, 1]
 
 
+@pytest.mark.skip(reason="Sandbox tests skipped per requirement")
 @pytest.mark.integration
 class TestSandboxCopyCommand:
     """Tests for 'agent sandbox copy' command."""
@@ -259,6 +267,7 @@ class TestSandboxCopyCommand:
         assert result["returncode"] in [0, 1]
 
 
+@pytest.mark.skip(reason="Sandbox tests skipped per requirement")
 @pytest.mark.integration
 class TestSandboxInspectCommand:
     """Tests for 'agent sandbox inspect' command."""

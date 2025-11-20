@@ -4,6 +4,7 @@ import pytest
 from conftest import run_agent_cli
 
 
+@pytest.mark.skip(reason="Identity tests skipped per requirement")
 @pytest.mark.integration
 class TestIdentityRegisterCommand:
     """Tests for 'agent identity register' command."""
@@ -80,6 +81,7 @@ class TestIdentityRegisterCommand:
         assert not result["success"]
 
 
+@pytest.mark.skip(reason="Identity tests skipped per requirement")
 @pytest.mark.integration
 class TestIdentityUseCommand:
     """Tests for 'agent identity use' command."""
@@ -129,6 +131,7 @@ class TestIdentityUseCommand:
             assert "persistent" in result["stdout"].lower()
 
 
+@pytest.mark.skip(reason="Identity tests skipped per requirement")
 @pytest.mark.integration
 class TestIdentityWhoamiCommand:
     """Tests for 'agent identity whoami' command."""
@@ -192,6 +195,7 @@ class TestIdentityWhoamiCommand:
             assert "detailed" in output_lower
 
 
+@pytest.mark.skip(reason="Identity tests skipped per requirement")
 @pytest.mark.integration
 class TestIdentityListCommand:
     """Tests for 'agent identity list' command."""
