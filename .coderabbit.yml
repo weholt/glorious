@@ -1,76 +1,111 @@
-# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-
 language: en-US
 
 reviews:
-  profile: chill
-  request_changes_workflow: false
+  profile: assertive
+  request_changes_workflow: true
   high_level_summary: true
-  poem: false
+  high_level_summary_instructions: "Generate a bullet-list summary of key changes and items requiring design discussion."
+  high_level_summary_placeholder: "@coderabbitai summary"
+  high_level_summary_in_walkthrough: false
+  auto_title_placeholder: "@coderabbitai"
+  auto_title_instructions: "Create a concise descriptive title under 50 characters following ‘<area>: <action>’ format."
   review_status: true
+  commit_status: true
+  fail_commit_status: true
   collapse_walkthrough: false
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  auto_apply_labels: false
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  path_filters: []
+  path_instructions:
+    - path: "**/*.py"
+      instructions: |
+        Apply Python-specific guidelines: typing, dataclasses, EAFP, context managers, pathlib, etc.
+    - path: "infra/**"
+      instructions: |
+        Ensure infra layer uses abstractions and doesn’t mix domain logic.
+  abort_on_close: true
+  disable_cache: false
   auto_review:
     enabled: true
+    auto_incremental_review: true
+    ignore_title_keywords: []
+    labels: []
     drafts: false
-  
-  # Custom review guidelines for Python code quality
-  guidelines:
-    - "Enforce strict PEP-8 formatting and naming conventions"
-    - "Enforce consistent import grouping: stdlib → third-party → local"
-    - "Never allow direct imports from `src` (e.g. `from src.x import y` is forbidden)"
-    - "Enforce small, focused functions; anything above ~15 lines should be flagged for refactor"
-    - "Enforce Single Responsibility Principle for all modules, classes, and functions"
-    - "Detect violations of DRY; duplicated logic must be consolidated"
-    - "Reject unnecessary complexity; prefer straightforward code over clever code"
-    - "Enforce separation of concerns between domain, services, infra, API, and CLI layers"
-    - "Flag business logic inside transport layers (CLI/API/routes)"
-    - "Flag domain-layer imports from infra/api/cli (dependency inversion violation)"
-    - "All public functions/classes must have meaningful docstrings"
-    - "Flag long classes (>200 lines or >10 methods)"
-    - "Ensure all I/O (FS, DB, network) is isolated away from pure logic"
-    - "Enforce typing for all functions and return values"
-    - "Enforce pathlib.Path instead of string paths"
-    - "Enforce clean architecture: domain-first, abstractions at the core, adapters at edges"
-    - "Prefer interfaces/Protocols over concrete types for cross-layer boundaries"
-    - "Detect hard-coded configuration; require `.env` or config modules"
-    - "Ensure no secrets, tokens, or API keys appear in code"
-    - "Detect performance issues such as repeated expensive operations, misused data structures, unnecessary loops"
-    - "Detect unused, unreachable, or dead code"
-    - "Detect HTML inside Python code – HTML must live in templates"
-    - "Detect misplaced modules violating project folder conventions"
-    - "Ensure CI-friendly, testable structure; tests should be isolated from real external services"
-    - "Search for duplicated or near-duplicated functions, classes, or logic"
-    - "Ensure protocols/interfaces live in `protocols/`, concrete implementations in `infra/` or `adapters/`"
-    - "Flag unimplemented or partially implemented Protocols/ABCs"
-    - "Detect cross-layer violations such as infra code calling domain directly or vice versa"
-    - "Detect magic numbers/strings that should be named constants or config values"
-    - "Detect nested control flow deeper than 3 levels"
-    - "Detect catch-all `except:` blocks — require explicit exception types"
-    - "Detect public API elements not used outside their own module"
-    - "Detect overuse of globals or implicit shared state"
-    - "Detect inlined imports inside functions (non-local imports)"
-    - "Detect misplaced utility methods outside a utilities module"
-    - "Detect overly abstract or over-engineered architecture"
-    - "Detect performance bottlenecks or unnecessary work within loops"
-    - "Enforce code that is Pythonic, idiomatic, and easy to read"
-    - "Prefer simple functions over classes unless state is required"
-    - "Enforce usage of comprehensions where appropriate"
-    - "Prefer context managers for file/IO/resource handling"
-    - "Prefer EAFP style rather than excessive pre-checks"
-    - "Prefer generators/iterators for streaming or incremental processing"
-    - "Replace print()-style debug statements with logging"
-    - "Require dataclasses for structured data models"
-    - "Require `field(default_factory=...)` for dynamic defaults"
-    - "Explicit top-level constants for configuration; no magic values buried in code"
-    - "Ensure entry-point pattern `if __name__ == \"__main__\": main()`"
-    - "Leverage built-ins and standard-library features before adding custom logic"
-    - "Remove unnecessary abstractions and redundant wrapper classes"
-    - "Prefer thin modules composed of small, reusable functions"
-    - "Enforce typing everywhere"
-    - "Prefer Protocols for abstractions"
-    - "All modules must be import-safe (no side effects at import time)"
-    - "Validate folder structure: domain, services, infra, adapters, api, cli"
-    - "Ensure tests do not depend on real external systems"
+    base_branches: []
+    ignore_usernames: []
 
-chat:
-  auto_reply: true
+finishing_touches:
+  docstrings:
+    enabled: true
+  unit_tests:
+    enabled: true
+
+pre_merge_checks:
+  docstrings:
+    mode: warning
+    threshold: 80
+  title:
+    mode: warning
+    requirements: "Title should be under 50 chars in format '<area>: <action>'."
+  description:
+    mode: warning
+  issue_assessment:
+    mode: warning
+  custom_checks:
+    - name: "SRP‐enforcement"
+      mode: error
+      instructions: "All modules, classes, and functions must follow the Single Responsibility Principle: one reason to change. Flag if more than one area of concern is addressed."
+    - name: "Layer‐boundary‐violation"
+      mode: error
+      instructions: "Domain layer must not import from infra/api/cli; infra/adapters must not import domain internals. Flag any import crossing these boundaries."
+    - name: "Magic‐values"
+      mode: warning
+      instructions: "Check for magic numbers or strings in code; constants or config references should be used instead."
+
+tools:
+  ast-grep:
+    rule_dirs: []
+    util_dirs: []
+    essential_rules: true
+    packages: []
+  shellcheck:
+    enabled: true
+  ruff:
+    enabled: true
+  markdownlint:
+    enabled: true
+  github-checks:
+    enabled: true
+    timeout_ms: 90000
+
+knowledge_base:
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "best-practices-check.prompt.md"
+      - "code-analysis.prompt.md"
+      - "pythonic-code.prompt.md"
+
+code_generation:
+  docstrings:
+    language: en-US
+    path_instructions:
+      - path: "**/*.py"
+        instructions: "Generate full docstrings for modules, classes and functions following Google style."
+  unit_tests:
+    path_instructions:
+      - path: "src/**/*.py"
+        instructions: "Generate pytest tests covering edge cases, business logic, and error handling."
+
