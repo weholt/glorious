@@ -602,9 +602,14 @@ The framework provides a validation system for ensuring robust input handling:
 The `@validate_input` decorator automatically validates function arguments against Pydantic schemas matching the function signature:
 
 ```python
+import typer
 from pydantic import Field
+from rich.console import Console
 from glorious_agents.core.db import get_connection
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
+
+app = typer.Typer()
+console = Console()
 
 class AddItemInput(SkillInput):
     """Input validation schema for adding items.
