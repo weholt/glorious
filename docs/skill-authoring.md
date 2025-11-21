@@ -1228,7 +1228,8 @@ def add(
 
         console.print(f"[green]✓ Added item #{item_id}: {title}[/green]")
 
-        # Publish event
+        # Publish event (if context is initialized)
+        # Note: _ctx is None only during testing or before init_context() is called
         if _ctx:
             _ctx.publish("example_item_created", {"id": item_id, "title": title})
     except Exception as e:
