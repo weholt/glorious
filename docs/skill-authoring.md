@@ -47,6 +47,8 @@ ctx.publish("event_name", {"data": "value"})
 
 **Local Context Storage**: Store the context reference in your skill module:
 ```python
+from glorious_agents.core.context import SkillContext
+
 _ctx: SkillContext | None = None
 
 def init_context(ctx: SkillContext) -> None:
@@ -597,20 +599,29 @@ The framework provides a validation system for ensuring robust input handling:
 
 ### Using the @validate_input Decorator
 
+The `@validate_input` decorator automatically validates function arguments against Pydantic schemas matching the function signature:
+
 ```python
 from pydantic import Field
+from glorious_agents.core.db import get_connection
 from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
 
 class AddItemInput(SkillInput):
-    """Input validation schema for adding items."""
+    """Input validation schema for adding items.
+    
+    The schema class name should match the function name in PascalCase with 'Input' suffix.
+    For function 'add_item', use 'AddItemInput'.
+    """
     
     name: str = Field(..., min_length=1, max_length=200, description="Item name")
     value: str = Field("", max_length=1000, description="Item value")
     priority: int = Field(0, ge=0, le=10, description="Priority level (0-10)")
 
-@validate_input
+@validate_input  # Automatically uses AddItemInput for validation
 def add_item(name: str, value: str = "", priority: int = 0) -> int:
     """Add a new item with validated inputs.
+    
+    The decorator finds AddItemInput by converting 'add_item' to 'AddItemInput'.
     
     Args:
         name: Item name (1-200 chars).
