@@ -27,6 +27,41 @@ Skills are self-contained Python packages that extend the Glorious Agents framew
 - Depend on other skills
 - Provide documentation for both agents and humans
 
+### Core Methodology
+
+The framework uses a modern architecture with the following patterns:
+
+**Context Management**: Skills receive a `SkillContext` instance via `init_context()` that provides:
+- Database connection access
+- Event bus for pub/sub messaging
+- Configuration management
+- Cached state
+
+**Runtime Access**: Use `get_ctx()` from `glorious_agents.core.runtime` to access the global context singleton:
+```python
+from glorious_agents.core.runtime import get_ctx
+
+ctx = get_ctx()
+ctx.publish("event_name", {"data": "value"})
+```
+
+**Local Context Storage**: Store the context reference in your skill module:
+```python
+_ctx: SkillContext | None = None
+
+def init_context(ctx: SkillContext) -> None:
+    global _ctx
+    _ctx = ctx
+```
+
+**Service Layer** (Optional): For complex skills, use a service/repository architecture:
+- Domain entities define your data models
+- Repositories handle database operations
+- Services implement business logic
+- Unit of Work pattern manages transactions
+
+See the `issues` and `feedback` skills for examples of this advanced pattern.
+
 ## Skill Structure
 
 A typical skill package has the following structure:
@@ -227,7 +262,7 @@ CREATE TABLE IF NOT EXISTS my_skill_metadata (
 import typer
 from rich.console import Console
 from glorious_agents.core.db import get_connection
-from glorious_agents.core.runtime import get_skill_context
+from glorious_agents.core.runtime import get_ctx
 
 app = typer.Typer()
 console = Console()
@@ -254,7 +289,7 @@ def add(
         console.print(f"[green]Added item #{item_id}: {name}[/green]")
         
         # Publish event
-        ctx = get_skill_context()
+        ctx = get_ctx()
         ctx.publish("my_skill_item_created", {
             "id": item_id,
             "name": name,
@@ -362,7 +397,7 @@ def update(
         console.print(f"[green]Updated item #{item_id}[/green]")
         
         # Publish event
-        ctx = get_skill_context()
+        ctx = get_ctx()
         ctx.publish("my_skill_item_updated", {"id": item_id})
     finally:
         conn.close()
@@ -390,7 +425,7 @@ def delete(
         console.print(f"[green]Deleted item #{item_id}[/green]")
         
         # Publish event
-        ctx = get_skill_context()
+        ctx = get_ctx()
         ctx.publish("my_skill_item_deleted", {"id": item_id})
     finally:
         conn.close()
@@ -441,14 +476,24 @@ def search(query: str = typer.Argument(..., help="Search query")) -> None:
 
 ### Initializing Event Context
 
+The `init_context()` function is called automatically when the skill loads. It's where you:
+- Store the context reference for later use
+- Subscribe to events from other skills
+- Perform one-time initialization
+
 ```python
 from glorious_agents.core.context import SkillContext
+
+_ctx: SkillContext | None = None
 
 def init_context(ctx: SkillContext) -> None:
     """Initialize skill context and subscribe to events.
     
     This function is called automatically when the skill loads.
     """
+    global _ctx
+    _ctx = ctx
+    
     # Subscribe to events from other skills
     ctx.subscribe("note_created", handle_note_created)
     ctx.subscribe("issue_created", handle_issue_created)
@@ -459,6 +504,8 @@ def init_context(ctx: SkillContext) -> None:
 def setup_skill() -> None:
     """Perform one-time skill setup."""
     # Example: ensure required data exists
+    from glorious_agents.core.db import get_connection
+    
     conn = get_connection()
     try:
         conn.execute(
@@ -473,11 +520,11 @@ def setup_skill() -> None:
 ### Publishing Events
 
 ```python
-from glorious_agents.core.runtime import get_skill_context
+from glorious_agents.core.runtime import get_ctx
 
 def publish_item_event(item_id: int, name: str, value: str) -> None:
     """Publish an event when an item is created."""
-    ctx = get_skill_context()
+    ctx = get_ctx()
     ctx.publish("my_skill_item_created", {
         "id": item_id,
         "name": name,
@@ -543,6 +590,68 @@ Include standard fields in all events:
     # ... skill-specific fields
 }
 ```
+
+## Input Validation
+
+The framework provides a validation system for ensuring robust input handling:
+
+### Using the @validate_input Decorator
+
+```python
+from pydantic import Field
+from glorious_agents.core.validation import SkillInput, ValidationException, validate_input
+
+class AddItemInput(SkillInput):
+    """Input validation schema for adding items."""
+    
+    name: str = Field(..., min_length=1, max_length=200, description="Item name")
+    value: str = Field("", max_length=1000, description="Item value")
+    priority: int = Field(0, ge=0, le=10, description="Priority level (0-10)")
+
+@validate_input
+def add_item(name: str, value: str = "", priority: int = 0) -> int:
+    """Add a new item with validated inputs.
+    
+    Args:
+        name: Item name (1-200 chars).
+        value: Item value (max 1000 chars).
+        priority: Priority level (0-10).
+    
+    Returns:
+        Item ID.
+    
+    Raises:
+        ValidationException: If input validation fails.
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            "INSERT INTO my_skill_items (name, value, priority) VALUES (?, ?, ?)",
+            (name, value, priority)
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
+
+@app.command()
+def add(name: str, value: str = "", priority: int = 0) -> None:
+    """Add a new item (CLI wrapper)."""
+    try:
+        item_id = add_item(name, value, priority)
+        console.print(f"[green]Added item #{item_id}[/green]")
+    except ValidationException as e:
+        console.print(f"[red]Validation error: {e.message}[/red]")
+        raise typer.Exit(1)
+```
+
+### Validation Features
+
+- **Type checking**: Pydantic validates types automatically
+- **Length constraints**: `min_length`, `max_length` for strings
+- **Range constraints**: `ge` (>=), `le` (<=) for numbers
+- **Custom validators**: Add custom validation logic with Pydantic
+- **Automatic error messages**: Clear, actionable error messages
 
 ## Testing Skills
 
@@ -914,10 +1023,33 @@ ALTER TABLE my_skill_items ADD COLUMN status TEXT DEFAULT 'active';
 ### Security
 
 1. **Parameterized queries**: Never use string formatting for SQL
-2. **Validate input**: Check user input before database operations
+2. **Validate input**: Use `@validate_input` decorator for all public APIs
 3. **Sanitize output**: Escape special characters in output
 4. **Limit permissions**: Don't require admin privileges
 5. **Review dependencies**: Keep dependencies minimal and updated
+
+### Architecture Patterns
+
+For complex skills, consider using:
+
+1. **Service/Repository Pattern**: Separate business logic (services) from data access (repositories)
+2. **Unit of Work**: Manage database transactions consistently
+3. **Dependency Injection**: Use a `dependencies.py` module to create service instances
+4. **Domain Entities**: Define data models as Pydantic or SQLModel classes
+5. **Validation Layer**: Use `@validate_input` for all public APIs
+
+Example structure for advanced skills:
+```
+my_skill/
+├── skill.py              # CLI commands and framework integration
+├── dependencies.py       # Service factory functions
+├── service.py           # Business logic
+├── repository.py        # Database operations
+├── entities.py          # Domain models
+└── migrations/          # Database migrations
+```
+
+See the `issues` and `feedback` skills in the codebase for complete examples.
 
 ### Testing
 
@@ -1043,14 +1175,18 @@ from rich.table import Table
 
 from glorious_agents.core.context import SkillContext
 from glorious_agents.core.db import get_connection
-from glorious_agents.core.runtime import get_skill_context
+from glorious_agents.core.runtime import get_ctx
 
 app = typer.Typer(help="Example skill commands")
 console = Console()
 
+_ctx: SkillContext | None = None
+
 
 def init_context(ctx: SkillContext) -> None:
     """Initialize event subscriptions."""
+    global _ctx
+    _ctx = ctx
     ctx.subscribe("note_created", handle_note_created)
 
 
@@ -1082,8 +1218,8 @@ def add(
         console.print(f"[green]✓ Added item #{item_id}: {title}[/green]")
 
         # Publish event
-        ctx = get_skill_context()
-        ctx.publish("example_item_created", {"id": item_id, "title": title})
+        if _ctx:
+            _ctx.publish("example_item_created", {"id": item_id, "title": title})
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(code=1)
