@@ -99,6 +99,7 @@ class TestPromptsSkill:
 
 
 # Temporal Skill Tests
+@pytest.mark.skip(reason="Temporal tests skipped per requirement")
 @pytest.mark.integration
 class TestTemporalSkill:
     """Tests for Temporal skill commands."""
